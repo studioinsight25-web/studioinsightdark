@@ -109,19 +109,23 @@ export async function POST(
     // Check if user has access to the product
     // In production, verify user has purchased the product
     
-    // Generate secure download URL
-    const secureUrl = DigitalProductService.generateSecureDownloadUrl(productId, userId)
+    // Get digital product to generate download URL
+    const digitalProduct = await DigitalProductService.getDigitalProduct(productId)
     
-    if (!secureUrl) {
+    if (!digitalProduct) {
       return NextResponse.json(
-        { error: 'Cannot generate download link' },
-        { status: 403 }
+        { error: 'Digital product not found' },
+        { status: 404 }
       )
     }
 
+    // Generate a simple download URL with token
+    const token = btoa(`${userId}-${productId}-${Date.now() + 3600000}`) // 1 hour expiry
+    const downloadUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/download/${productId}?token=${token}&userId=${userId}`
+
     return NextResponse.json({
       success: true,
-      downloadUrl: secureUrl
+      downloadUrl: downloadUrl
     })
 
   } catch (error) {
