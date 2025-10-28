@@ -204,8 +204,8 @@ async function migrateCorrectProducts() {
             students: product.students,
             lessons: product.lessons,
             imageUrl: product.imageUrl,
-            imagePublicId: product.imagePublicId,
-            externalUrl: product.externalUrl,
+            imagePublicId: (product as any).imagePublicId,
+            externalUrl: (product as any).externalUrl,
             createdAt: new Date(product.createdAt),
             updatedAt: new Date(product.updatedAt)
           }
