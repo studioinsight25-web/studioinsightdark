@@ -83,7 +83,7 @@ export default function ProductDetailPage() {
 
   const handleCourseEnrollment = () => {
     if (!product) return
-    trackCourseEnrollment(product)
+    trackCourseEnrollment(product.id, product.name)
     // Redirect to course content or dashboard
     router.push('/dashboard')
   }
