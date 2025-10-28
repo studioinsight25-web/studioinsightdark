@@ -50,8 +50,9 @@ export default function TestLoginPage() {
       } else {
         setResult(`❌ Login failed: ${data.error || 'Unknown error'}`)
       }
-    } catch (error) {
-      setResult(`❌ Error: ${error.message}`)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      setResult(`❌ Error: ${message}`)
     } finally {
       setIsLoading(false)
     }
