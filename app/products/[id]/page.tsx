@@ -90,7 +90,7 @@ export default function ProductDetailPage() {
 
   const handleEbookDownload = () => {
     if (!product) return
-    trackEbookDownload(product)
+    trackEbookDownload(product.id, product.name)
     // Handle ebook download logic
     alert('E-book download gestart!')
   }
