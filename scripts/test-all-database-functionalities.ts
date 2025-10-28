@@ -107,7 +107,8 @@ async function testAllDatabaseFunctionalities() {
         await prisma.product.delete({ where: { id: testProduct.id } })
         console.log('🧹 Cleanup: Test product removed')
       } catch (error) {
-        console.log('🧹 Cleanup: Test product already removed or error:', error.message)
+        const msg = error instanceof Error ? error.message : String(error)
+        console.log('🧹 Cleanup: Test product already removed or error:', msg)
       }
     }
     await prisma.$disconnect()
