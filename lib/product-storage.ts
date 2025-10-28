@@ -77,7 +77,7 @@ class ProductStorage {
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY)
       const products = stored ? JSON.parse(stored) : []
-      const index = products.findIndex(p => p.id === id)
+      const index = products.findIndex((p: any) => p.id === id)
       
       if (index === -1) return null
 
