@@ -74,7 +74,7 @@ export class MollieService {
 
   static async refundPayment(paymentId: string, amount?: { value: string; currency: string }) {
     try {
-      const refund = await mollieClient.payments_refunds.create({
+      const refund = await mollieClient.paymentRefunds.create({
         paymentId,
         amount: amount || undefined
       })
