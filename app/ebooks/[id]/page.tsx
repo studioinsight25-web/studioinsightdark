@@ -1,6 +1,7 @@
 import { getCurrentUser } from '@/lib/auth'
 import { DatabaseProductService } from '@/lib/products-database'
 import { redirect } from 'next/navigation'
+import { OrderService } from '@/lib/orders'
 import Link from 'next/link'
 import { Download, Lock, ArrowLeft, FileText, Clock, Eye } from 'lucide-react'
 
@@ -23,7 +24,8 @@ export default async function EbookPage({ params }: EbookPageProps) {
     redirect('/ebooks')
   }
 
-  const hasAccess = OrderService.hasAccessToProduct(user.id, params.id)
+  const purchased = await OrderService.getUserPurchasedProducts(user.id)
+  const hasAccess = purchased.includes(params.id)
 
   if (!hasAccess) {
     return (
