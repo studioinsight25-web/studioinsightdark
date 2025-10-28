@@ -40,7 +40,7 @@ export class DatabaseProductService {
       shortDescription: product.shortDescription,
       price: product.price,
       type: product.type?.toUpperCase() as ProductType,
-      category: product.category?.toUpperCase() as ReviewCategory | undefined,
+      category: product.category?.toUpperCase() as any,
       isActive: product.isActive,
       featured: product.featured,
       comingSoon: product.comingSoon,
