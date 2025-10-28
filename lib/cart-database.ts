@@ -95,7 +95,8 @@ export class CartService {
   static async updateCartItemQuantity(userId: string, productId: string, quantity: number): Promise<CartItem | null> {
     try {
       if (quantity <= 0) {
-        return await this.removeFromCart(userId, productId)
+        await this.removeFromCart(userId, productId)
+        return null
       }
 
       const updatedItem = await prisma.cartItem.updateMany({
