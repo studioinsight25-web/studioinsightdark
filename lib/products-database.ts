@@ -129,7 +129,7 @@ export class DatabaseProductService {
     try {
       const prismaData = this.convertToPrismaData(productData)
       const newProduct = await prisma.product.create({
-        data: prismaData
+        data: prismaData as any
       })
       return this.convertPrismaProduct(newProduct)
     } catch (error) {
