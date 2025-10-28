@@ -168,7 +168,7 @@ export class DatabaseProductService {
     try {
       const products = await prisma.product.findMany({
         where: { 
-          category: category.toUpperCase() as ReviewCategory,
+          category: category.toUpperCase() as any,
           type: 'REVIEW',
           isActive: true
         },
