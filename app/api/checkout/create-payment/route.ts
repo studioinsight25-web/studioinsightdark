@@ -2,7 +2,8 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { MollieService } from '@/lib/mollie'
-import { OrderService, OrderItem } from '@/lib/orders'
+import { OrderService } from '@/lib/orders'
+import type { Product } from '@/lib/products'
 import { z } from 'zod'
 
 const checkoutSchema = z.object({
@@ -42,14 +43,14 @@ export async function POST(request: Request) {
     const totalAmount = subtotal + vat
 
     // Create order
-    const orderItems: OrderItem[] = validatedData.items.map(item => ({
+    const orderItems: Product[] = validatedData.items.map(item => ({
       id: item.id,
       name: item.name,
       price: item.price,
       type: item.type
     }))
 
-    const order = OrderService.createOrder(user.id, orderItems)
+    const order = await OrderService.createOrder(user.id, orderItems)
 
     // Create Mollie payment
     const paymentData = {
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
     }
 
     // Update order with payment ID
-    OrderService.updateOrderStatus(order.id, 'pending', paymentResult.paymentId)
+    await OrderService.updateOrderStatus(order.id, 'pending', paymentResult.paymentId)
 
     return NextResponse.json({
       success: true,
