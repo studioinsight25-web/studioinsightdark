@@ -76,7 +76,7 @@ export class MollieService {
     try {
       const refund = await mollieClient.paymentRefunds.create({
         paymentId,
-        amount: amount || undefined
+        ...(amount && { amount })
       })
 
       return {
