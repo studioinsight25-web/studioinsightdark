@@ -1,4 +1,4 @@
-import { PrismaClient, ProductType, ReviewCategory } from '@prisma/client'
+import { PrismaClient, ProductType } from '@prisma/client'
 import { DatabaseProductService } from '../lib/products-database'
 
 const prisma = new PrismaClient()
