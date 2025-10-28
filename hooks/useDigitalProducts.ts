@@ -9,18 +9,16 @@ export function useDigitalProducts(productId?: string) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const loadDigitalProducts = () => {
+    const loadDigitalProducts = async () => {
       try {
         DigitalProductService.initializeWithDefaults()
         
         if (productId) {
-          const products = DigitalProductService.getDigitalProductsByProductId(productId)
+          const products = await DigitalProductService.getDigitalProductsByProductId(productId)
           setDigitalProducts(products)
         } else {
-          // Load all digital products
-          const allProducts = Object.values(DigitalProductService as any).filter(
-            (item: any) => typeof item === 'object' && item.id && item.productId
-          )
+          // Load all digital products (from DB with fallback)
+          const allProducts = await DigitalProductService.getAllDigitalProducts()
           setDigitalProducts(allProducts)
         }
       } catch (error) {
