@@ -74,10 +74,12 @@ export class MollieService {
 
   static async refundPayment(paymentId: string, amount?: { value: string; currency: string }) {
     try {
-      const refund = await mollieClient.paymentRefunds.create({
-        paymentId,
-        ...(amount && { amount })
-      })
+      const refundParams: any = { paymentId }
+      if (amount) {
+        refundParams.amount = amount
+      }
+      
+      const refund = await mollieClient.paymentRefunds.create(refundParams)
 
       return {
         success: true,
