@@ -2,6 +2,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Disable Turbopack for production builds (Vercel compatibility)
+  experimental: {
+    // Disable Turbopack to avoid WASM binding issues on Vercel
+  },
+  
   images: {
     remotePatterns: [
       {
