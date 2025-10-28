@@ -1,5 +1,5 @@
 // lib/orders-database.ts - Database Orders Service
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, OrderStatus } from '@prisma/client'
 import { Product } from './products'
 
 const prisma = new PrismaClient()
