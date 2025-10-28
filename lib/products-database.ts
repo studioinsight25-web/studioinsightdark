@@ -1,5 +1,5 @@
 // lib/products-database.ts - Database Product Service
-import { PrismaClient, ProductType, ReviewCategory } from '@prisma/client'
+import { PrismaClient, ProductType } from '@prisma/client'
 import { Product } from './products'
 
 const prisma = new PrismaClient()
