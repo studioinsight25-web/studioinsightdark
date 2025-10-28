@@ -118,9 +118,9 @@ export default function AffiliateRedirectPage() {
         </div>
 
         <div className="space-y-3">
-          {link.externalUrl ? (
+          {affiliateLink?.externalUrl ? (
             <button
-              onClick={() => window.open(link.externalUrl, '_blank')}
+              onClick={() => window.open(affiliateLink.externalUrl, '_blank')}
               className="w-full bg-primary text-black py-3 px-6 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-300 inline-flex items-center justify-center gap-2"
             >
               <ExternalLink className="w-4 h-4" />
