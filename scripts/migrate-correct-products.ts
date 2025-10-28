@@ -197,7 +197,7 @@ async function migrateCorrectProducts() {
             category: product.category?.toUpperCase() as any,
             isActive: product.isActive,
             featured: product.featured,
-            comingSoon: product.comingSoon || false,
+            comingSoon: (product as any).comingSoon || false,
             sales: product.sales,
             duration: product.duration,
             level: product.level,
