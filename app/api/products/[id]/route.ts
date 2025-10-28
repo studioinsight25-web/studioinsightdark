@@ -3,10 +3,11 @@ import { DatabaseProductService } from '@/lib/products-database'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const product = await DatabaseProductService.getProduct(params.id)
+    const { id } = await params
+    const product = await DatabaseProductService.getProduct(id)
     
     if (!product) {
       return NextResponse.json(
@@ -27,12 +28,13 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const updates = await request.json()
     
-    const updatedProduct = await DatabaseProductService.updateProduct(params.id, updates)
+    const updatedProduct = await DatabaseProductService.updateProduct(id, updates)
     
     if (!updatedProduct) {
       return NextResponse.json(
@@ -53,10 +55,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const success = await DatabaseProductService.deleteProduct(params.id)
+    const { id } = await params
+    const success = await DatabaseProductService.deleteProduct(id)
     
     if (!success) {
       return NextResponse.json(

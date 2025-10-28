@@ -4,10 +4,10 @@ import DigitalProductService from '@/lib/digital-products'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const { productId } = params
+    const { productId } = await params
     const { searchParams } = new URL(request.url)
     const token = searchParams.get('token')
     const userId = searchParams.get('userId')
@@ -91,10 +91,10 @@ export async function GET(
 // Generate secure download link
 export async function POST(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const { productId } = params
+    const { productId } = await params
     const { userId } = await request.json()
 
     if (!userId) {

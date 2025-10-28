@@ -4,10 +4,10 @@ import AffiliateService from '@/lib/affiliate'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { linkCode: string } }
+  { params }: { params: Promise<{ linkCode: string }> }
 ) {
   try {
-    const { linkCode } = params
+    const { linkCode } = await params
     const { searchParams } = new URL(request.url)
     const productId = searchParams.get('productId')
 

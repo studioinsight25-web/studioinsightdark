@@ -19,12 +19,12 @@ const updateProductSchema = z.object({
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAdminAPI()
     
-    const productId = params.id
+    const { id: productId } = await params
     
     // Mock data - in echte app zou je database query maken
     const mockProduct = {
@@ -68,12 +68,12 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAdminAPI()
     
-    const productId = params.id
+    const { id: productId } = await params
     const body = await request.json()
     const validatedData = updateProductSchema.parse(body)
     
@@ -117,12 +117,12 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAdminAPI()
     
-    const productId = params.id
+    const { id: productId } = await params
     
     // In een echte app zou je hier de database verwijderen
     console.log('Product deleted:', productId)
