@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
   experimental: {
     // Disable Turbopack to avoid WASM binding issues on Vercel
   },
+
+  // Silence multi-lockfile root inference warnings by pinning root
+  turbopack: {
+    root: '.'
+  },
   
   images: {
     remotePatterns: [
