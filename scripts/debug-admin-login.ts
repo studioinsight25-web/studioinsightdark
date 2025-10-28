@@ -67,7 +67,8 @@ async function debugAdminLogin() {
         console.log('❌ API login failed:', result.error)
       }
     } catch (apiError) {
-      console.log('❌ API test failed:', apiError.message)
+      const msg = apiError instanceof Error ? apiError.message : String(apiError)
+      console.log('❌ API test failed:', msg)
     }
 
   } catch (error) {
