@@ -70,6 +70,34 @@ class ProductStorage {
     }
   }
 
+  // Create a product from partial data (client-side fallback)
+  static createProduct(product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Product {
+    if (typeof window === 'undefined') {
+      throw new Error('Cannot create product on server side')
+    }
+
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY)
+      const products: Product[] = stored ? JSON.parse(stored) : []
+
+      const newProduct: Product = {
+        ...product as Product,
+        id: `prod-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+
+      products.push(newProduct)
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(products))
+
+      console.log('Product created in storage:', newProduct)
+      return newProduct
+    } catch (error) {
+      console.error('Error creating product:', error)
+      throw error
+    }
+  }
+
   // Update a product
   static updateProduct(id: string, updates: Partial<Product>): Product | null {
     if (typeof window === 'undefined') return null
