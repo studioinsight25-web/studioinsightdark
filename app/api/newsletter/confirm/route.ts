@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     // Sync with Brevo (confirmed status)
     try {
-      await brevoUpsertContact(subscription.email, subscription.name, 'confirmed')
+      await brevoUpsertContact(subscription.email, subscription.name || undefined, 'confirmed')
     } catch (e) {
       console.warn('Brevo sync failed (non-blocking):', e)
     }
