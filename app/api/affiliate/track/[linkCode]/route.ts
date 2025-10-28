@@ -18,11 +18,11 @@ export async function GET(
       )
     }
 
-    // Get client IP and user agent
-    const ipAddress = request.ip || 
-      request.headers.get('x-forwarded-for') || 
-      request.headers.get('x-real-ip') || 
-      'unknown'
+    // Get client IP (via headers) and user agent
+    const xff = request.headers.get('x-forwarded-for')
+    const ipAddress = (xff ? xff.split(',')[0]?.trim() : undefined)
+      || request.headers.get('x-real-ip')
+      || 'unknown'
     
     const userAgent = request.headers.get('user-agent') || 'unknown'
     const referrer = request.headers.get('referer') || undefined
