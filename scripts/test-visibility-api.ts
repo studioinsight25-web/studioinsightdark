@@ -13,7 +13,7 @@ async function testVisibilityCourseAPI() {
       
       // Check for the visibility course
       console.log('\n2️⃣ Looking for visibility course...')
-      const visibilityCourse = products.find(p => p.name === 'Zichtbaarheid voor kleine bedrijven')
+      const visibilityCourse = products.find((p: any) => p.name === 'Zichtbaarheid voor kleine bedrijven')
       
       if (visibilityCourse) {
         console.log('✅ Visibility course found in API!')
@@ -27,15 +27,15 @@ async function testVisibilityCourseAPI() {
       } else {
         console.log('❌ Visibility course NOT found in API!')
         console.log('\n📋 Available products:')
-        products.forEach((product, index) => {
+        products.forEach((product: any, index: number) => {
           console.log(`   ${index + 1}. ${product.name} (${product.type})`)
         })
       }
       
       // Test 3: Check courses specifically
       console.log('\n3️⃣ All courses in API:')
-      const courses = products.filter(p => p.type === 'course')
-      courses.forEach((course, index) => {
+      const courses = products.filter((p: any) => p.type === 'course')
+      courses.forEach((course: any, index: number) => {
         console.log(`   ${index + 1}. ${course.name} - €${(course.price / 100).toFixed(2)} ${course.featured ? '⭐' : ''}`)
       })
       

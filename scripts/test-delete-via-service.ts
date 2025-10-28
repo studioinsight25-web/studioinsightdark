@@ -32,7 +32,8 @@ async function testDeleteViaAPI() {
     
   } catch (error) {
     console.error('❌ Error testing delete via DatabaseProductService:', error)
-    console.error('Error details:', error.message)
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error('Error details:', msg)
   }
 }
 

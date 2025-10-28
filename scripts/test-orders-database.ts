@@ -9,6 +9,10 @@ async function testOrdersDatabase() {
     // Create a test user first
     console.log('\n0️⃣ Creating test user...')
     const testUser = await UserService.createUser('test-orders@example.com', 'password123', 'Test User')
+    if (!testUser) {
+      console.log('❌ Failed to create test user')
+      return
+    }
     console.log(`✅ Test user created: ${testUser.email}`)
 
     // Get some products for testing

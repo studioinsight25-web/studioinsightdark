@@ -29,7 +29,7 @@ async function testCorrectProducts() {
       console.log('\n2️⃣ Checking for expected products...')
       let foundCount = 0
       expectedProducts.forEach(expectedName => {
-        const found = products.find(p => p.name === expectedName)
+        const found = products.find((p: any) => p.name === expectedName)
         if (found) {
           console.log(`✅ Found: ${expectedName} (${found.type}) - €${(found.price / 100).toFixed(2)}`)
           foundCount++

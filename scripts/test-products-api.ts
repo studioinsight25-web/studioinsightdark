@@ -13,7 +13,7 @@ async function testProductsAPI() {
       
       if (products.length > 0) {
         console.log('\n📋 First few products:')
-        products.slice(0, 3).forEach((product, index) => {
+        products.slice(0, 3).forEach((product: any, index: number) => {
           console.log(`   ${index + 1}. ${product.name} (${product.type}) - €${(product.price / 100).toFixed(2)}`)
         })
       }

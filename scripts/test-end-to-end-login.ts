@@ -62,7 +62,8 @@ async function testEndToEndLogin() {
           console.log('❌ Admin dashboard not accessible:', dashboardResponse.status)
         }
       } catch (dashboardError) {
-        console.log('❌ Dashboard access error:', dashboardError.message)
+        const msg = dashboardError instanceof Error ? dashboardError.message : String(dashboardError)
+        console.log('❌ Dashboard access error:', msg)
       }
       
     } else {

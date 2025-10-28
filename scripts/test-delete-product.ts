@@ -30,10 +30,11 @@ async function testDeleteProduct() {
     
   } catch (error) {
     console.error('❌ Error deleting product:', error)
-    console.error('Error details:', error.message)
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error('Error details:', msg)
     
     // Check if there are foreign key constraints
-    if (error.code === 'P2003') {
+    if ((error as any).code === 'P2003') {
       console.log('\n🔍 This error suggests foreign key constraints.')
       console.log('The product might be referenced by other tables (orders, cart items, etc.)')
     }
