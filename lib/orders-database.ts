@@ -185,7 +185,7 @@ export class OrderDatabaseService {
   static async getOrdersByStatus(status: Order['status']): Promise<Order[]> {
     try {
       const orders = await prisma.order.findMany({
-        where: { status: status.toUpperCase() },
+        where: { status: status.toUpperCase() as OrderStatus },
         include: {
           items: {
             include: {
