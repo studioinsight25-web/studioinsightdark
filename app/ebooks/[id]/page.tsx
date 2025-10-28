@@ -143,7 +143,7 @@ export default async function EbookPage({ params }: EbookPageProps) {
                   <div className="space-y-2">
                     <h4 className="font-semibold text-white">Wat je leert:</h4>
                     <ul className="space-y-1 text-text-secondary">
-                      {ebookContent.learningPoints.map((point, index) => (
+                      {ebookContent.learningPoints.map((point: string, index: number) => (
                         <li key={index} className="flex items-start gap-2">
                           <span className="text-primary mt-1">•</span>
                           <span>{point}</span>
