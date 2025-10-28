@@ -24,15 +24,25 @@ export default function DigitalProductUpload({
 
   // Load existing digital products on mount
   useEffect(() => {
-    console.log('Loading digital products for productId:', productId)
-    
-    // Initialize the service
-    DigitalProductService.initializeWithDefaults()
-    
-    const existingProducts = DigitalProductService.getDigitalProductsByProductId(productId)
-    console.log('Found existing digital products:', existingProducts)
-    setDigitalProducts(existingProducts)
-    onDigitalProductsChange(existingProducts)
+    const loadDigitalProducts = async () => {
+      console.log('Loading digital products for productId:', productId)
+      
+      try {
+        const existingProducts = await DigitalProductService.getDigitalProductsByProductId(productId)
+        console.log('Found existing digital products:', existingProducts)
+        setDigitalProducts(existingProducts)
+        onDigitalProductsChange(existingProducts)
+      } catch (error) {
+        console.error('Error loading digital products:', error)
+        // Fallback to sync method
+        DigitalProductService.initializeWithDefaults()
+        const existingProducts = DigitalProductService.getDigitalProductsByProductIdSync(productId)
+        setDigitalProducts(existingProducts)
+        onDigitalProductsChange(existingProducts)
+      }
+    }
+
+    loadDigitalProducts()
   }, [productId, onDigitalProductsChange])
 
   const allowedTypes = [
@@ -92,7 +102,7 @@ export default function DigitalProductUpload({
       DigitalProductService.initializeWithDefaults()
 
       // Create digital product
-      const digitalProduct = DigitalProductService.addDigitalProduct({
+      const digitalProduct = await DigitalProductService.addDigitalProduct({
         productId,
         fileName: file.name,
         fileType: getFileType(file.type),
@@ -127,19 +137,26 @@ export default function DigitalProductUpload({
     }
   }
 
-  const handleDeleteDigitalProduct = (id: string) => {
+  const handleDeleteDigitalProduct = async (id: string) => {
     if (confirm('Weet je zeker dat je dit digitale bestand wilt verwijderen?')) {
       console.log('Deleting digital product:', id)
       
-      // Initialize the service
-      DigitalProductService.initializeWithDefaults()
-      
-      DigitalProductService.deleteDigitalProduct(id)
-      const updatedProducts = digitalProducts.filter(dp => dp.id !== id)
-      setDigitalProducts(updatedProducts)
-      onDigitalProductsChange(updatedProducts)
-      
-      console.log('Digital product deleted, updated list:', updatedProducts)
+      try {
+        await DigitalProductService.deleteDigitalProduct(id)
+        const updatedProducts = digitalProducts.filter(dp => dp.id !== id)
+        setDigitalProducts(updatedProducts)
+        onDigitalProductsChange(updatedProducts)
+        
+        console.log('Digital product deleted, updated list:', updatedProducts)
+      } catch (error) {
+        console.error('Error deleting digital product:', error)
+        // Fallback to sync method
+        DigitalProductService.initializeWithDefaults()
+        DigitalProductService.deleteDigitalProductSync(id)
+        const updatedProducts = digitalProducts.filter(dp => dp.id !== id)
+        setDigitalProducts(updatedProducts)
+        onDigitalProductsChange(updatedProducts)
+      }
     }
   }
 

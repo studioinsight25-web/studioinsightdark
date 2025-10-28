@@ -1,3 +1,10 @@
+'use client'
+
+import dynamic from 'next/dynamic'
+import { Mail, MapPin, Phone } from 'lucide-react'
+
+const NewsletterSignup = dynamic(() => import('./NewsletterSignup'), { ssr: false })
+
 export default function Footer() {
   const footerLinks = [
     { name: 'Over Studio Insight', href: '/over-ons' },
@@ -15,50 +22,61 @@ export default function Footer() {
   ]
 
   return (
-    <footer className="bg-dark-section py-12 border-t border-dark-border">
-      <div className="container mx-auto px-4 max-w-6xl">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-          {/* Brand Section */}
-          <div>
-            <h3 className="text-2xl font-bold text-primary mb-4">
-              Studio Insight
-            </h3>
-            <p className="text-text-secondary mb-4">
-              Ontwikkel jouw studio, je merk en je impact met onze praktische cursussen, 
-              e-books en eerlijke reviews.
-            </p>
-            <div className="text-text-secondary text-sm">
-              <p>Keizersgracht 123</p>
-              <p>1015 CJ Amsterdam</p>
-              <p>info@studioinsight.nl</p>
+    <footer className="bg-dark-section py-16 border-t border-dark-border">
+      <div className="container mx-auto px-4 max-w-7xl">
+        {/* Main Footer Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-12 mb-12">
+          {/* Brand Section - Takes 2 columns on large screens */}
+          <div className="lg:col-span-2">
+            <div className="mb-6">
+              <h3 className="text-3xl font-bold text-primary mb-4">
+                Studio Insight
+              </h3>
+              <p className="text-text-secondary text-lg leading-relaxed max-w-md">
+                Ontwikkel jouw studio, je merk en je impact met onze praktische cursussen, 
+                e-books en eerlijke reviews.
+              </p>
+            </div>
+            
+            {/* Contact Information with Icons */}
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 text-text-secondary">
+                <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">Adres</p>
+                  <p>De Veken 122b</p>
+                  <p>1716KG Opmeer</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-text-secondary">
+                <Mail className="w-5 h-5 text-primary flex-shrink-0" />
+                <div>
+                  <p className="font-medium">E-mail</p>
+                  <a 
+                    href="mailto:info@studio-insight.nl"
+                    className="hover:text-primary transition-colors"
+                  >
+                    info@studio-insight.nl
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Navigation Links */}
-          <div>
-            <h4 className="text-lg font-semibold text-white mb-4">Navigatie</h4>
-            <nav className="space-y-2">
+          {/* Newsletter Section */}
+          <div className="lg:col-span-1">
+            <NewsletterSignup />
+          </div>
+
+          {/* Navigation Section */}
+          <div className="lg:col-span-1">
+            <h4 className="text-xl font-semibold text-white mb-6">Navigatie</h4>
+            <nav className="space-y-3">
               {footerLinks.map((link) => (
                 <a
                   key={link.name}
                   href={link.href}
-                  className="block text-text-secondary hover:text-primary transition-colors duration-300"
-                >
-                  {link.name}
-                </a>
-              ))}
-            </nav>
-          </div>
-
-          {/* Legal Links */}
-          <div>
-            <h4 className="text-lg font-semibold text-white mb-4">Juridisch</h4>
-            <nav className="space-y-2">
-              {legalLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="block text-text-secondary hover:text-primary transition-colors duration-300"
+                  className="block text-text-secondary hover:text-primary transition-colors duration-300 text-lg"
                 >
                   {link.name}
                 </a>
@@ -67,22 +85,23 @@ export default function Footer() {
           </div>
         </div>
         
+        {/* Bottom Section */}
         <div className="pt-8 border-t border-dark-border">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <p className="text-text-secondary text-sm">
               © 2024 Studio Insight. Alle rechten voorbehouden.
             </p>
-            <div className="flex gap-6 text-sm">
-              <a href="/privacy" className="text-text-secondary hover:text-primary transition-colors">
-                Privacy
-              </a>
-              <a href="/cookies" className="text-text-secondary hover:text-primary transition-colors">
-                Cookies
-              </a>
-              <a href="/voorwaarden" className="text-text-secondary hover:text-primary transition-colors">
-                Voorwaarden
-              </a>
-            </div>
+            <nav className="flex gap-8 text-sm">
+              {legalLinks.map((link) => (
+                <a 
+                  key={link.name}
+                  href={link.href} 
+                  className="text-text-secondary hover:text-primary transition-colors"
+                >
+                  {link.name}
+                </a>
+              ))}
+            </nav>
           </div>
         </div>
       </div>

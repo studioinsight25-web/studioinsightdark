@@ -1,6 +1,8 @@
 // lib/digital-products.ts
 'use client'
 
+import { DigitalProductDatabaseService } from './digital-products-database'
+
 export interface DigitalProduct {
   id: string
   productId: string
@@ -49,7 +51,189 @@ class DigitalProductService {
     localStorage.setItem('studio-insight-user-downloads', JSON.stringify(this.userDownloads))
   }
 
-  static addDigitalProduct(product: Omit<DigitalProduct, 'id' | 'createdAt' | 'updatedAt'>): DigitalProduct {
+  // Database methods
+  static async getAllDigitalProducts(): Promise<DigitalProduct[]> {
+    try {
+      return await DigitalProductDatabaseService.getAllDigitalProducts()
+    } catch (error) {
+      console.error('Error fetching digital products:', error)
+      // Fallback to localStorage
+      if (typeof window !== 'undefined') {
+        this.initializeWithDefaults()
+        return Object.values(this.digitalProducts)
+      }
+      return []
+    }
+  }
+
+  static async getDigitalProductsByProductId(productId: string): Promise<DigitalProduct[]> {
+    try {
+      return await DigitalProductDatabaseService.getDigitalProductsByProductId(productId)
+    } catch (error) {
+      console.error('Error fetching digital products by product ID:', error)
+      // Fallback to localStorage
+      if (typeof window !== 'undefined') {
+        this.initializeWithDefaults()
+        return Object.values(this.digitalProducts).filter(p => p.productId === productId)
+      }
+      return []
+    }
+  }
+
+  static async getDigitalProduct(digitalProductId: string): Promise<DigitalProduct | null> {
+    try {
+      return await DigitalProductDatabaseService.getDigitalProduct(digitalProductId)
+    } catch (error) {
+      console.error('Error fetching digital product:', error)
+      // Fallback to localStorage
+      if (typeof window !== 'undefined') {
+        this.initializeWithDefaults()
+        return this.digitalProducts[digitalProductId] || null
+      }
+      return null
+    }
+  }
+
+  static async addDigitalProduct(product: Omit<DigitalProduct, 'id' | 'createdAt' | 'updatedAt'>): Promise<DigitalProduct> {
+    try {
+      return await DigitalProductDatabaseService.addDigitalProduct(product)
+    } catch (error) {
+      console.error('Error adding digital product:', error)
+      // Fallback to localStorage
+      if (typeof window !== 'undefined') {
+        const id = `digital-${Date.now()}`
+        const newProduct: DigitalProduct = {
+          ...product,
+          id,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+        this.digitalProducts[id] = newProduct
+        this.saveToStorage()
+        return newProduct
+      }
+      throw error
+    }
+  }
+
+  static async updateDigitalProduct(digitalProductId: string, updates: Partial<DigitalProduct>): Promise<DigitalProduct | null> {
+    try {
+      return await DigitalProductDatabaseService.updateDigitalProduct(digitalProductId, updates)
+    } catch (error) {
+      console.error('Error updating digital product:', error)
+      // Fallback to localStorage
+      if (typeof window !== 'undefined') {
+        const product = this.digitalProducts[digitalProductId]
+        if (product) {
+          const updatedProduct = { ...product, ...updates, updatedAt: new Date().toISOString() }
+          this.digitalProducts[digitalProductId] = updatedProduct
+          this.saveToStorage()
+          return updatedProduct
+        }
+      }
+      return null
+    }
+  }
+
+  static async deleteDigitalProduct(digitalProductId: string): Promise<boolean> {
+    try {
+      return await DigitalProductDatabaseService.deleteDigitalProduct(digitalProductId)
+    } catch (error) {
+      console.error('Error deleting digital product:', error)
+      // Fallback to localStorage
+      if (typeof window !== 'undefined') {
+        if (this.digitalProducts[digitalProductId]) {
+          delete this.digitalProducts[digitalProductId]
+          this.saveToStorage()
+          return true
+        }
+      }
+      return false
+    }
+  }
+
+  static async trackDownload(userId: string, digitalProductId: string): Promise<UserDownload> {
+    try {
+      return await DigitalProductDatabaseService.trackDownload(userId, digitalProductId)
+    } catch (error) {
+      console.error('Error tracking download:', error)
+      // Fallback to localStorage
+      if (typeof window !== 'undefined') {
+        const downloadKey = `${userId}-${digitalProductId}`
+        const existingDownload = this.userDownloads[downloadKey]
+        
+        if (existingDownload) {
+          existingDownload.downloadCount++
+          existingDownload.lastDownloadedAt = new Date().toISOString()
+        } else {
+          this.userDownloads[downloadKey] = {
+            id: `download-${Date.now()}`,
+            userId,
+            digitalProductId,
+            downloadCount: 1,
+            lastDownloadedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString()
+          }
+        }
+        this.saveToStorage()
+        return this.userDownloads[downloadKey]
+      }
+      throw error
+    }
+  }
+
+  static async canUserDownload(userId: string, digitalProductId: string): Promise<boolean> {
+    try {
+      return await DigitalProductDatabaseService.canUserDownload(userId, digitalProductId)
+    } catch (error) {
+      console.error('Error checking download access:', error)
+      // Fallback to localStorage (simplified check)
+      if (typeof window !== 'undefined') {
+        // For demo purposes, allow access to products 1, 2, 3
+        const product = this.digitalProducts[digitalProductId]
+        if (product && ['1', '2', '3'].includes(product.productId)) {
+          return true
+        }
+      }
+      return false
+    }
+  }
+
+  static async getUserDownloads(userId: string): Promise<UserDownload[]> {
+    try {
+      return await DigitalProductDatabaseService.getUserDownloads(userId)
+    } catch (error) {
+      console.error('Error fetching user downloads:', error)
+      // Fallback to localStorage
+      if (typeof window !== 'undefined') {
+        this.initializeWithDefaults()
+        return Object.values(this.userDownloads).filter(d => d.userId === userId)
+      }
+      return []
+    }
+  }
+
+  static async getDownloadStats(digitalProductId: string): Promise<{ totalDownloads: number, uniqueUsers: number }> {
+    try {
+      return await DigitalProductDatabaseService.getDownloadStats(digitalProductId)
+    } catch (error) {
+      console.error('Error getting download stats:', error)
+      return { totalDownloads: 0, uniqueUsers: 0 }
+    }
+  }
+
+  // Legacy localStorage methods (for backward compatibility)
+  static getDigitalProductsByProductIdSync(productId: string): DigitalProduct[] {
+    if (typeof window === 'undefined') return []
+    this.initializeWithDefaults()
+    return Object.values(this.digitalProducts).filter(p => p.productId === productId)
+  }
+
+  static addDigitalProductSync(product: Omit<DigitalProduct, 'id' | 'createdAt' | 'updatedAt'>): DigitalProduct {
+    if (typeof window === 'undefined') {
+      throw new Error('Cannot add digital product on server side')
+    }
+    
     const id = `digital-${Date.now()}`
     const newProduct: DigitalProduct = {
       ...product,
@@ -57,118 +241,20 @@ class DigitalProductService {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
-
     this.digitalProducts[id] = newProduct
     this.saveToStorage()
     return newProduct
   }
 
-  static getDigitalProductsByProductId(productId: string): DigitalProduct[] {
-    this.initializeWithDefaults()
-    return Object.values(this.digitalProducts).filter(dp => dp.productId === productId)
-  }
-
-  static getDigitalProduct(id: string): DigitalProduct | null {
-    this.initializeWithDefaults()
-    return this.digitalProducts[id] || null
-  }
-
-  static updateDigitalProduct(id: string, updates: Partial<DigitalProduct>): DigitalProduct | null {
-    this.initializeWithDefaults()
-    if (!this.digitalProducts[id]) return null
-
-    this.digitalProducts[id] = {
-      ...this.digitalProducts[id],
-      ...updates,
-      updatedAt: new Date().toISOString()
-    }
-    this.saveToStorage()
-    return this.digitalProducts[id]
-  }
-
-  static deleteDigitalProduct(id: string): boolean {
+  static deleteDigitalProductSync(id: string): boolean {
+    if (typeof window === 'undefined') return false
+    
     this.initializeWithDefaults()
     if (!this.digitalProducts[id]) return false
 
     delete this.digitalProducts[id]
     this.saveToStorage()
     return true
-  }
-
-  static trackDownload(userId: string, digitalProductId: string): UserDownload {
-    this.initializeWithDefaults()
-    
-    const downloadKey = `${userId}-${digitalProductId}`
-    const existingDownload = this.userDownloads[downloadKey]
-
-    if (existingDownload) {
-      existingDownload.downloadCount += 1
-      existingDownload.lastDownloadedAt = new Date().toISOString()
-      this.userDownloads[downloadKey] = existingDownload
-    } else {
-      const newDownload: UserDownload = {
-        id: `download-${Date.now()}`,
-        userId,
-        digitalProductId,
-        downloadCount: 1,
-        lastDownloadedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString()
-      }
-      this.userDownloads[downloadKey] = newDownload
-    }
-
-    this.saveToStorage()
-    return this.userDownloads[downloadKey]
-  }
-
-  static getUserDownloads(userId: string): UserDownload[] {
-    this.initializeWithDefaults()
-    return Object.values(this.userDownloads).filter(download => download.userId === userId)
-  }
-
-  static canUserDownload(userId: string, digitalProductId: string): boolean {
-    this.initializeWithDefaults()
-    
-    const digitalProduct = this.digitalProducts[digitalProductId]
-    if (!digitalProduct) return false
-
-    // Check if product has download limit
-    if (digitalProduct.downloadLimit) {
-      const downloadKey = `${userId}-${digitalProductId}`
-      const userDownload = this.userDownloads[downloadKey]
-      
-      if (userDownload && userDownload.downloadCount >= digitalProduct.downloadLimit) {
-        return false
-      }
-    }
-
-    // Check if product has expired
-    if (digitalProduct.expiresAt) {
-      const expirationDate = new Date(digitalProduct.expiresAt)
-      if (expirationDate < new Date()) {
-        return false
-      }
-    }
-
-    return true
-  }
-
-  static generateSecureDownloadUrl(digitalProductId: string, userId: string): string | null {
-    this.initializeWithDefaults()
-    
-    const digitalProduct = this.digitalProducts[digitalProductId]
-    if (!digitalProduct) return null
-
-    // Check if user can download
-    if (!this.canUserDownload(userId, digitalProductId)) {
-      return null
-    }
-
-    // Generate secure URL with expiration (1 hour)
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString()
-    const secureUrl = `${digitalProduct.fileUrl}?token=${btoa(`${userId}-${digitalProductId}-${expiresAt}`)}&expires=${expiresAt}`
-    
-    return secureUrl
   }
 }
 

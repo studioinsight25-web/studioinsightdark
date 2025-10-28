@@ -127,7 +127,7 @@ export default function EditProductPage() {
       }
       
       // Update product using the hook
-      const updatedProduct = updateProduct(productId, productData)
+      const updatedProduct = await updateProduct(productId, productData)
       
       if (updatedProduct) {
         console.log('Product updated:', updatedProduct)
@@ -146,7 +146,7 @@ export default function EditProductPage() {
   const handleDelete = async () => {
     if (confirm('Weet je zeker dat je dit product wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.')) {
       try {
-        const success = deleteProduct(productId)
+        const success = await deleteProduct(productId)
         
         if (success) {
           console.log('Product deleted:', productId)

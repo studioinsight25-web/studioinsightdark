@@ -1,5 +1,5 @@
 import { getCurrentUser } from '@/lib/auth'
-import { OrderService, getProduct } from '@/lib/orders'
+import { DatabaseProductService } from '@/lib/products-database'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Download, Lock, ArrowLeft, FileText, Clock, Eye } from 'lucide-react'
@@ -17,7 +17,7 @@ export default async function EbookPage({ params }: EbookPageProps) {
     redirect('/inloggen')
   }
 
-  const product = getProduct(params.id)
+  const product = await DatabaseProductService.getProduct(params.id)
   
   if (!product || product.type !== 'ebook') {
     redirect('/ebooks')
@@ -300,4 +300,5 @@ function getEbookDescription(ebookId: string): string {
   
   return descriptions[ebookId] || 'Een praktische gids vol tips en strategieën die je helpen om je doelen te bereiken.'
 }
+
 

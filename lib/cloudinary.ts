@@ -145,3 +145,4 @@ export const getResponsiveImageUrls = (publicId: string) => {
 }
 
 export default cloudinary
+

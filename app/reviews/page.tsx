@@ -289,13 +289,6 @@ export default function ReviewsPage() {
                   Stuur een product in
                   <ArrowRight className="w-4 h-4" />
                 </Link>
-                <Link
-                  href="/cursussen"
-                  className="bg-transparent border border-primary text-primary px-8 py-4 rounded-lg font-semibold hover:bg-primary hover:text-black transition-colors duration-300 inline-flex items-center gap-2"
-                >
-                  Bekijk onze cursussen
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
               </div>
             </div>
           </div>

@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { Menu, X, User, LogOut, LayoutDashboard, ShoppingCart } from 'lucide-react'
+import { CartService } from '@/lib/cart-database'
+import SessionManager from '@/lib/session'
 
 interface User {
   id: string
@@ -15,81 +17,63 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [cartItems, setCartItems] = useState<any[]>([])
+  const [cartItemCount, setCartItemCount] = useState(0)
 
-  // Load cart items on mount and listen for changes
+  // Load user and cart data
   useEffect(() => {
-    const loadCartItems = () => {
-      const savedCart = localStorage.getItem('studio-insight-cart')
-      if (savedCart) {
-        setCartItems(JSON.parse(savedCart))
+    const loadUserData = () => {
+      const session = SessionManager.getSession()
+      if (session) {
+        setUser({
+          id: session.userId,
+          email: session.email,
+          name: session.name || '',
+          role: session.role
+        })
+      }
+      setIsLoading(false)
+    }
+
+    loadUserData()
+  }, [])
+
+  // Load cart item count
+  useEffect(() => {
+    const loadCartCount = async () => {
+      const userId = SessionManager.getCurrentUserId()
+      if (userId) {
+        try {
+          const count = await CartService.getCartItemCount(userId)
+          setCartItemCount(count)
+        } catch (error) {
+          console.error('Error loading cart count:', error)
+        }
       }
     }
 
-    loadCartItems()
+    loadCartCount()
 
-    // Listen for storage changes (when cart is updated from other tabs/components)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'studio-insight-cart') {
-        loadCartItems()
-      }
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-    
-    // Also listen for custom events (for same-tab updates)
+    // Listen for cart updates
     const handleCartUpdate = () => {
-      loadCartItems()
+      loadCartCount()
     }
 
     window.addEventListener('cartUpdated', handleCartUpdate)
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('cartUpdated', handleCartUpdate)
     }
   }, [])
 
-  const handleCheckout = (items: any[]) => {
-    // Redirect to checkout page with items
-    const checkoutData = {
-      items: items.map(item => ({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        type: item.type
-      })),
-      total: items.reduce((sum, item) => sum + item.price, 0)
-    }
-    
-    // Store checkout data in sessionStorage
-    sessionStorage.setItem('checkout-data', JSON.stringify(checkoutData))
-    
-    // Redirect to checkout page
-    window.location.href = '/checkout'
-  }
-
-  useEffect(() => {
-    // Check if user is logged in
-    fetch('/api/auth/me')
-      .then(res => res.json())
-      .then(data => {
-        if (data.user) {
-          setUser(data.user)
-        }
-      })
-      .catch(() => {
-        // User not logged in
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
-  }, [])
-
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
+      // Clear session
+      SessionManager.clearSession()
+      
+      // Clear user state
       setUser(null)
+      
+      // Redirect to home
       window.location.href = '/'
     } catch (error) {
       console.error('Logout error:', error)
@@ -141,9 +125,9 @@ export default function Header() {
             >
               <ShoppingCart className="w-4 h-4" />
               <span className="hidden xl:inline">Winkelwagen</span>
-              {cartItems.length > 0 && (
+              {cartItemCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-primary text-black text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                  {cartItems.length}
+                  {cartItemCount}
                 </span>
               )}
             </Link>
@@ -160,8 +144,8 @@ export default function Header() {
                   <span className="text-sm font-medium text-white">{user.name}</span>
                 </div>
                 
-                {/* Admin Link */}
-                {(user.email === 'admin@studioinsight.nl' || user.email === 'demo@studioinsight.nl') && (
+                {/* Admin Link - Only visible for admin users */}
+                {SessionManager.isAdmin() && (
                   <Link
                     href="/admin"
                     className="flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-300 rounded-lg border border-primary/20"
@@ -231,9 +215,9 @@ export default function Header() {
                 >
                   <ShoppingCart className="w-5 h-5" />
                   <span>Winkelwagen</span>
-                  {cartItems.length > 0 && (
+                  {cartItemCount > 0 && (
                     <span className="ml-auto bg-primary text-black text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                      {cartItems.length}
+                      {cartItemCount}
                     </span>
                   )}
                 </Link>
@@ -257,7 +241,8 @@ export default function Header() {
                       Account
                     </Link>
                     
-                    {(user.email === 'admin@studioinsight.nl' || user.email === 'demo@studioinsight.nl') && (
+                    {/* Admin Link - Only visible for admin users */}
+                    {SessionManager.isAdmin() && (
                       <Link
                         href="/admin"
                         className="flex items-center gap-3 px-4 py-3 bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-300 rounded-lg border border-primary/20"

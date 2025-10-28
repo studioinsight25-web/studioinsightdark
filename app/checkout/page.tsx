@@ -6,6 +6,8 @@ import { CreditCard, Lock, ArrowLeft, Check, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { OrderItem } from '@/lib/orders'
 import { trackPurchase } from '@/lib/analytics'
+import { OrderService } from '@/lib/orders'
+import SessionManager from '@/lib/session'
 
 interface CheckoutItem {
   id: string
@@ -47,10 +49,31 @@ export default function CheckoutPage() {
     setError('')
 
     try {
+      // Check if user is logged in
+      const userId = SessionManager.getCurrentUserId()
+      if (!userId) {
+        setError('Je moet ingelogd zijn om te betalen.')
+        router.push('/login')
+        return
+      }
+
+      // Create order in database
+      const order = await OrderService.createOrder(userId, items.map(item => ({
+        id: item.id,
+        name: item.name,
+        description: '',
+        price: item.price,
+        type: item.type,
+        isActive: true,
+        featured: false,
+        sales: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      })))
+
       // Track purchase event
-      const orderId = `order-${Date.now()}`
       trackPurchase({
-        id: orderId,
+        id: order.id,
         total: getTotalPrice(),
         items: items.map(item => ({
           id: item.id,
@@ -66,6 +89,7 @@ export default function CheckoutPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          orderId: order.id,
           items: items.map(item => ({
             id: item.id,
             name: item.name,

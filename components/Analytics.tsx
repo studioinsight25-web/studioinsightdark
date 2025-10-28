@@ -8,13 +8,10 @@ interface AnalyticsProps {
 }
 
 export default function Analytics({ gaId }: AnalyticsProps) {
-  // Use environment variable or prop
-  const measurementId = gaId || process.env.NEXT_PUBLIC_GA_ID
+  // Use your Google Analytics ID directly
+  const measurementId = gaId || 'G-YPF60909JC'
 
-  if (!measurementId) {
-    console.warn('Google Analytics ID not found. Set NEXT_PUBLIC_GA_ID in .env.local')
-    return null
-  }
+  console.log('🔍 Analytics component loaded with ID:', measurementId)
 
   return (
     <>
@@ -30,9 +27,19 @@ export default function Analytics({ gaId }: AnalyticsProps) {
           gtag('config', '${measurementId}', {
             page_title: document.title,
             page_location: window.location.href,
+            send_page_view: true
           });
+          
+          // Send initial page view
+          gtag('event', 'page_view', {
+            page_title: document.title,
+            page_location: window.location.href
+          });
+          
+          console.log('✅ Google Analytics initialized with ID: ${measurementId}');
         `}
       </Script>
     </>
   )
 }
+

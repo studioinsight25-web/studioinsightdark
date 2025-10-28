@@ -145,3 +145,4 @@ JWT_SECRET=your-super-secret-jwt-key-here
 3. Te betalen via Mollie test mode
 4. Toegang te krijgen tot gekochte content
 
+

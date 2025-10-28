@@ -1,44 +1,40 @@
-// middleware.ts - Security Middleware
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  // Rate limiting (basic implementation)
-  const ip = request.ip ?? request.headers.get('x-forwarded-for') ?? 'unknown'
-  
-  // Security headers for API routes
-  if (request.nextUrl.pathname.startsWith('/api/')) {
-    const response = NextResponse.next()
+  // Check if the request is for admin routes
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    // Skip login page
+    if (request.nextUrl.pathname === '/admin/login') {
+      return NextResponse.next()
+    }
+
+    // Check for session cookie or authorization header
+    const sessionCookie = request.cookies.get('studio-insight-session')
     
-    // Add security headers for API routes
-    response.headers.set('X-Content-Type-Options', 'nosniff')
-    response.headers.set('X-Frame-Options', 'DENY')
-    response.headers.set('X-XSS-Protection', '1; mode=block')
-    
-    return response
-  }
+    if (!sessionCookie) {
+      // Redirect to admin login
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
 
-  // Block suspicious requests
-  const userAgent = request.headers.get('user-agent') || ''
-  const suspiciousPatterns = [
-    /bot/i,
-    /crawler/i,
-    /spider/i,
-    /scraper/i
-  ]
+    try {
+      const session = JSON.parse(sessionCookie.value)
+      
+      // Check if session is expired
+      if (new Date(session.expiresAt) < new Date()) {
+        return NextResponse.redirect(new URL('/admin/login', request.url))
+      }
 
-  // Allow legitimate bots (Google, Bing)
-  const allowedBots = [
-    /googlebot/i,
-    /bingbot/i,
-    /slurp/i
-  ]
+      // Check if user is admin
+      if (session.role !== 'ADMIN') {
+        return NextResponse.redirect(new URL('/admin/login', request.url))
+      }
 
-  const isAllowedBot = allowedBots.some(pattern => pattern.test(userAgent))
-  const isSuspiciousBot = suspiciousPatterns.some(pattern => pattern.test(userAgent))
-
-  if (isSuspiciousBot && !isAllowedBot) {
-    return new NextResponse('Access Denied', { status: 403 })
+      // Allow access
+      return NextResponse.next()
+    } catch (error) {
+      // Invalid session
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
   }
 
   return NextResponse.next()
@@ -46,13 +42,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/admin/:path*',
   ],
 }
-

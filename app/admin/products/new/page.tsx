@@ -91,7 +91,7 @@ export default function NewProductPage() {
       }
       
       // Add to ProductService using the hook
-      const newProduct = addProduct(productData)
+      const newProduct = await addProduct(productData)
       
       console.log('Product created:', newProduct)
       console.log('Image URL saved:', imageUrl)

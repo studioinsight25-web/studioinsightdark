@@ -1,126 +1,207 @@
-// lib/products-database.ts - Database-based Product Service
-import { prisma } from './prisma'
-import { Product, ProductType } from '@prisma/client'
+// lib/products-database.ts - Database Product Service
+import { PrismaClient, ProductType, ReviewCategory } from '@prisma/client'
+import { Product } from './products'
+
+const prisma = new PrismaClient()
 
 export class DatabaseProductService {
-  // Get all products
-  static async getAllProducts(): Promise<Product[]> {
-    return await prisma.product.findMany({
-      orderBy: { createdAt: 'desc' }
-    })
-  }
-
-  // Get products by type
-  static async getProductsByType(type: ProductType): Promise<Product[]> {
-    return await prisma.product.findMany({
-      where: { type, isActive: true },
-      orderBy: { createdAt: 'desc' }
-    })
-  }
-
-  // Get featured products
-  static async getFeaturedProducts(): Promise<Product[]> {
-    return await prisma.product.findMany({
-      where: { featured: true, isActive: true },
-      orderBy: { createdAt: 'desc' }
-    })
-  }
-
-  // Get single product
-  static async getProduct(id: string): Promise<Product | null> {
-    return await prisma.product.findUnique({
-      where: { id }
-    })
-  }
-
-  // Create product
-  static async createProduct(productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Promise<Product> {
-    return await prisma.product.create({
-      data: productData
-    })
-  }
-
-  // Update product
-  static async updateProduct(id: string, data: Partial<Product>): Promise<Product> {
-    return await prisma.product.update({
-      where: { id },
-      data: {
-        ...data,
-        updatedAt: new Date()
-      }
-    })
-  }
-
-  // Delete product
-  static async deleteProduct(id: string): Promise<void> {
-    await prisma.product.delete({
-      where: { id }
-    })
-  }
-
-  // Get products by category (for reviews)
-  static async getProductsByCategory(category: string): Promise<Product[]> {
-    return await prisma.product.findMany({
-      where: { 
-        category,
-        type: 'REVIEW',
-        isActive: true 
-      },
-      orderBy: { createdAt: 'desc' }
-    })
-  }
-
-  // Search products
-  static async searchProducts(query: string): Promise<Product[]> {
-    return await prisma.product.findMany({
-      where: {
-        isActive: true,
-        OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-          { shortDescription: { contains: query, mode: 'insensitive' } }
-        ]
-      },
-      orderBy: { createdAt: 'desc' }
-    })
-  }
-
-  // Get product statistics
-  static async getProductStats() {
-    const [total, active, featured, courses, ebooks, reviews] = await Promise.all([
-      prisma.product.count(),
-      prisma.product.count({ where: { isActive: true } }),
-      prisma.product.count({ where: { featured: true } }),
-      prisma.product.count({ where: { type: 'COURSE' } }),
-      prisma.product.count({ where: { type: 'EBOOK' } }),
-      prisma.product.count({ where: { type: 'REVIEW' } })
-    ])
-
+  // Convert Prisma Product to our Product interface
+  private static convertPrismaProduct(prismaProduct: any): Product {
     return {
-      total,
-      active,
-      featured,
-      courses,
-      ebooks,
-      reviews
+      id: prismaProduct.id,
+      name: prismaProduct.name,
+      description: prismaProduct.description,
+      shortDescription: prismaProduct.shortDescription,
+      price: prismaProduct.price,
+      type: prismaProduct.type.toLowerCase() as 'course' | 'ebook' | 'review',
+      category: prismaProduct.category?.toLowerCase() as 'microfoon' | 'webcam' | 'accessoires' | undefined,
+      isActive: prismaProduct.isActive,
+      featured: prismaProduct.featured,
+      comingSoon: prismaProduct.comingSoon,
+      sales: prismaProduct.sales,
+      createdAt: prismaProduct.createdAt.toISOString(),
+      updatedAt: prismaProduct.updatedAt.toISOString(),
+      duration: prismaProduct.duration,
+      level: prismaProduct.level,
+      students: prismaProduct.students,
+      lessons: prismaProduct.lessons,
+      imageId: prismaProduct.imageId,
+      imageUrl: prismaProduct.imageUrl,
+      imagePublicId: prismaProduct.imagePublicId,
+      externalUrl: prismaProduct.externalUrl,
     }
   }
-}
 
-// Backward compatibility functions
-export async function getProduct(productId: string): Promise<Product | null> {
-  return await DatabaseProductService.getProduct(productId)
-}
+  // Convert our Product interface to Prisma data
+  private static convertToPrismaData(product: Partial<Product>) {
+    return {
+      name: product.name,
+      description: product.description,
+      shortDescription: product.shortDescription,
+      price: product.price,
+      type: product.type?.toUpperCase() as ProductType,
+      category: product.category?.toUpperCase() as ReviewCategory | undefined,
+      isActive: product.isActive,
+      featured: product.featured,
+      comingSoon: product.comingSoon,
+      sales: product.sales,
+      duration: product.duration,
+      level: product.level,
+      students: product.students,
+      lessons: product.lessons,
+      imageId: product.imageId,
+      imageUrl: product.imageUrl,
+      imagePublicId: product.imagePublicId,
+      externalUrl: product.externalUrl,
+    }
+  }
 
-export async function getAllProducts(): Promise<Product[]> {
-  return await DatabaseProductService.getAllProducts()
-}
+  static async getAllProducts(): Promise<Product[]> {
+    try {
+      const products = await prisma.product.findMany({
+        orderBy: { createdAt: 'desc' }
+      })
+      return products.map(this.convertPrismaProduct)
+    } catch (error) {
+      console.error('Error fetching products:', error)
+      return []
+    }
+  }
 
-export async function getProductsByType(type: ProductType): Promise<Product[]> {
-  return await DatabaseProductService.getProductsByType(type)
-}
+  static async getProduct(productId: string): Promise<Product | null> {
+    try {
+      const product = await prisma.product.findUnique({
+        where: { id: productId }
+      })
+      return product ? this.convertPrismaProduct(product) : null
+    } catch (error) {
+      console.error('Error fetching product:', error)
+      return null
+    }
+  }
 
-// Price formatting utility
-export function formatPrice(priceInCents: number): string {
-  return (priceInCents / 100).toFixed(2)
+  static async getProductsByType(type: 'course' | 'ebook' | 'review'): Promise<Product[]> {
+    try {
+      const products = await prisma.product.findMany({
+        where: { 
+          type: type.toUpperCase() as ProductType,
+          isActive: true
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+      return products.map(this.convertPrismaProduct)
+    } catch (error) {
+      console.error('Error fetching products by type:', error)
+      return []
+    }
+  }
+
+  static async getActiveProducts(): Promise<Product[]> {
+    try {
+      const products = await prisma.product.findMany({
+        where: { isActive: true },
+        orderBy: { createdAt: 'desc' }
+      })
+      return products.map(this.convertPrismaProduct)
+    } catch (error) {
+      console.error('Error fetching active products:', error)
+      return []
+    }
+  }
+
+  static async getFeaturedProducts(): Promise<Product[]> {
+    try {
+      const products = await prisma.product.findMany({
+        where: { 
+          featured: true,
+          isActive: true
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+      return products.map(this.convertPrismaProduct)
+    } catch (error) {
+      console.error('Error fetching featured products:', error)
+      return []
+    }
+  }
+
+  static async createProduct(productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Promise<Product> {
+    try {
+      const prismaData = this.convertToPrismaData(productData)
+      const newProduct = await prisma.product.create({
+        data: prismaData
+      })
+      return this.convertPrismaProduct(newProduct)
+    } catch (error) {
+      console.error('Error creating product:', error)
+      throw error
+    }
+  }
+
+  static async updateProduct(productId: string, updates: Partial<Product>): Promise<Product | null> {
+    try {
+      const prismaData = this.convertToPrismaData(updates)
+      const updatedProduct = await prisma.product.update({
+        where: { id: productId },
+        data: prismaData
+      })
+      return this.convertPrismaProduct(updatedProduct)
+    } catch (error) {
+      console.error('Error updating product:', error)
+      return null
+    }
+  }
+
+  static async deleteProduct(productId: string): Promise<boolean> {
+    try {
+      await prisma.product.delete({
+        where: { id: productId }
+      })
+      return true
+    } catch (error) {
+      console.error('Error deleting product:', error)
+      return false
+    }
+  }
+
+  static async getProductsByCategory(category: 'microfoon' | 'webcam' | 'accessoires'): Promise<Product[]> {
+    try {
+      const products = await prisma.product.findMany({
+        where: { 
+          category: category.toUpperCase() as ReviewCategory,
+          type: 'REVIEW',
+          isActive: true
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+      return products.map(this.convertPrismaProduct)
+    } catch (error) {
+      console.error('Error fetching products by category:', error)
+      return []
+    }
+  }
+
+  static async searchProducts(query: string): Promise<Product[]> {
+    try {
+      const products = await prisma.product.findMany({
+        where: {
+          AND: [
+            { isActive: true },
+            {
+              OR: [
+                { name: { contains: query, mode: 'insensitive' } },
+                { description: { contains: query, mode: 'insensitive' } },
+                { shortDescription: { contains: query, mode: 'insensitive' } }
+              ]
+            }
+          ]
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+      return products.map(this.convertPrismaProduct)
+    } catch (error) {
+      console.error('Error searching products:', error)
+      return []
+    }
+  }
 }

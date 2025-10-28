@@ -1,7 +1,7 @@
 // app/api/admin/products/route.ts - Admin Products API
 import { NextResponse } from 'next/server'
 import { requireAdminAPI } from '@/lib/admin-auth'
-import { getAllProducts, getProductsByType } from '@/lib/orders'
+import { DatabaseProductService } from '@/lib/products-database'
 import { z } from 'zod'
 
 const createProductSchema = z.object({
@@ -26,10 +26,10 @@ export async function GET(request: Request) {
     const type = searchParams.get('type')
     const category = searchParams.get('category')
     
-    let products = getAllProducts()
+    let products = await DatabaseProductService.getAllProducts()
     
     if (type) {
-      products = getProductsByType(type as 'course' | 'ebook')
+      products = await DatabaseProductService.getProductsByType(type as 'course' | 'ebook')
     }
     
     if (category) {
@@ -106,4 +106,5 @@ export async function POST(request: Request) {
     )
   }
 }
+
 

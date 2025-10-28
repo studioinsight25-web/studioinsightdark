@@ -57,6 +57,8 @@ export default function CoursePage() {
       </main>
     )
   }
+
+  if (!hasAccess) {
     return (
       <main className="min-h-screen bg-background">
         {/* Header */}
@@ -107,8 +109,8 @@ export default function CoursePage() {
   }
 
   // Course content for users with access
-  const courseLessons = getCourseLessons(params.id)
-  const courseProgress = getCourseProgress(user.id, params.id)
+  const courseLessons = getCourseLessons(params.id as string)
+  const courseProgress = getCourseProgress('temp-user', params.id as string)
 
   return (
     <main className="min-h-screen bg-background">
@@ -163,7 +165,7 @@ export default function CoursePage() {
                 <h3 className="text-lg font-semibold mb-4">Over deze cursus</h3>
                 <div className="prose prose-invert max-w-none">
                   <p className="text-text-secondary leading-relaxed">
-                    {getCourseDescription(params.id)}
+                    {getCourseDescription(params.id as string)}
                   </p>
                 </div>
               </div>

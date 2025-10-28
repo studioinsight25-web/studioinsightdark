@@ -1,20 +1,20 @@
-// app/api/auth/login/route.ts - Login API
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { authenticateUser, generateToken, setAuthCookie } from '@/lib/auth'
-
-const loginSchema = z.object({
-  email: z.string().email('Ongeldig e-mailadres'),
-  password: z.string().min(6, 'Wachtwoord moet minimaal 6 karakters bevatten'),
-})
+import { UserService } from '@/lib/user-database'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { email, password } = loginSchema.parse(body)
+    const { email, password } = await request.json()
 
-    const user = await authenticateUser(email, password)
-    
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: 'Email en wachtwoord zijn verplicht' },
+        { status: 400 }
+      )
+    }
+
+    // Authenticate user
+    const user = await UserService.authenticateUser(email, password)
+
     if (!user) {
       return NextResponse.json(
         { error: 'Ongeldige inloggegevens' },
@@ -22,33 +22,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const token = generateToken(user)
-    await setAuthCookie(token)
-
+    // Return user data (without password)
     return NextResponse.json({
-      success: true,
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
       }
     })
 
   } catch (error) {
     console.error('Login error:', error)
-
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validatiefout', details: error.errors },
-        { status: 400 }
-      )
-    }
-
     return NextResponse.json(
-      { error: 'Er is een fout opgetreden' },
+      { error: 'Er is een fout opgetreden bij het inloggen' },
       { status: 500 }
     )
   }
 }
-
