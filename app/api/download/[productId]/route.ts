@@ -46,7 +46,7 @@ export async function GET(
     }
 
     // Get digital product
-    const digitalProduct = DigitalProductService.getDigitalProduct(productId)
+    const digitalProduct = await DigitalProductService.getDigitalProduct(productId)
     if (!digitalProduct) {
       return NextResponse.json(
         { error: 'Digital product not found' },
