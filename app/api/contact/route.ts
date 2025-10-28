@@ -35,8 +35,11 @@ function rateLimit(ip: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get client IP for rate limiting
-    const ip = request.ip ?? request.headers.get('x-forwarded-for') ?? 'unknown'
+    // Get client IP for rate limiting (from headers)
+    const xff = request.headers.get('x-forwarded-for')
+    const ip = (xff ? xff.split(',')[0]?.trim() : undefined)
+      || request.headers.get('x-real-ip')
+      || 'unknown'
     
     // Rate limiting check
     if (!rateLimit(ip)) {
@@ -110,7 +113,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'Validatiefout', 
-          details: error.errors 
+          details: error.issues 
         },
         { status: 400 }
       )
