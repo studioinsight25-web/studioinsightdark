@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     // Find order by payment ID
     // In a real application, you'd query your database
     // For now, we'll use a simple approach
-    const orders = OrderService.getUserOrders('') // This would need to be improved
+    const orders = await OrderService.getUserOrders('') // This would need to be improved
     const order = orders.find(o => o.paymentId === paymentId)
 
     if (!order) {
@@ -42,13 +42,13 @@ export async function POST(request: Request) {
 
     // Update order status based on payment status
     if (paymentStatus.paid) {
-      OrderService.updateOrderStatus(order.id, 'paid', paymentId)
+      await OrderService.updateOrderStatus(order.id, 'paid', paymentId)
       console.log(`Order ${order.id} marked as paid`)
     } else if (paymentStatus.failed) {
-      OrderService.updateOrderStatus(order.id, 'failed', paymentId)
+      await OrderService.updateOrderStatus(order.id, 'failed', paymentId)
       console.log(`Order ${order.id} marked as failed`)
     } else if (paymentStatus.canceled) {
-      OrderService.updateOrderStatus(order.id, 'failed', paymentId)
+      await OrderService.updateOrderStatus(order.id, 'failed', paymentId)
       console.log(`Order ${order.id} marked as canceled`)
     }
 
