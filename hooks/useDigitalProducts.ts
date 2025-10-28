@@ -31,22 +31,27 @@ export function useDigitalProducts(productId?: string) {
     loadDigitalProducts()
   }, [productId])
 
-  const addDigitalProduct = (product: Omit<DigitalProduct, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newProduct = DigitalProductService.addDigitalProduct(product)
+  const addDigitalProduct = async (
+    product: Omit<DigitalProduct, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<DigitalProduct> => {
+    const newProduct = await DigitalProductService.addDigitalProduct(product)
     setDigitalProducts(prev => [...prev, newProduct])
     return newProduct
   }
 
-  const updateDigitalProduct = (id: string, updates: Partial<DigitalProduct>) => {
-    const updatedProduct = DigitalProductService.updateDigitalProduct(id, updates)
+  const updateDigitalProduct = async (
+    id: string,
+    updates: Partial<DigitalProduct>
+  ): Promise<DigitalProduct | null> => {
+    const updatedProduct = await DigitalProductService.updateDigitalProduct(id, updates)
     if (updatedProduct) {
       setDigitalProducts(prev => prev.map(dp => dp.id === id ? updatedProduct : dp))
     }
     return updatedProduct
   }
 
-  const deleteDigitalProduct = (id: string) => {
-    const success = DigitalProductService.deleteDigitalProduct(id)
+  const deleteDigitalProduct = async (id: string): Promise<boolean> => {
+    const success = await DigitalProductService.deleteDigitalProduct(id)
     if (success) {
       setDigitalProducts(prev => prev.filter(dp => dp.id !== id))
     }
