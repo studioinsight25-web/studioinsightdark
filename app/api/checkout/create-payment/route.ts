@@ -3,8 +3,15 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { MollieService } from '@/lib/mollie'
 import { OrderService } from '@/lib/orders'
-import type { Product } from '@/lib/products'
 import { z } from 'zod'
+
+// Define OrderItem interface for checkout
+interface OrderItem {
+  id: string
+  name: string
+  price: number
+  type: 'course' | 'ebook'
+}
 
 const checkoutSchema = z.object({
   items: z.array(z.object({
@@ -43,14 +50,24 @@ export async function POST(request: Request) {
     const totalAmount = subtotal + vat
 
     // Create order
-    const orderItems: Product[] = validatedData.items.map(item => ({
+    const orderItems: OrderItem[] = validatedData.items.map(item => ({
       id: item.id,
       name: item.name,
       price: item.price,
       type: item.type
     }))
 
-    const order = await OrderService.createOrder(user.id, orderItems)
+    // Convert OrderItem to Product for OrderService
+    const products = await Promise.all(orderItems.map(async (item) => {
+      // Fetch full product details from database
+      const product = await import('@/lib/products-database').then(m => m.DatabaseProductService.getProduct(item.id))
+      if (!product) {
+        throw new Error(`Product ${item.id} not found`)
+      }
+      return product
+    }))
+
+    const order = await OrderService.createOrder(user.id, products)
 
     // Create Mollie payment
     const paymentData = {
