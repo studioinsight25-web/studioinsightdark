@@ -97,7 +97,7 @@ export default function ProductDetailPage() {
 
   const handleReviewView = () => {
     if (!product) return
-    trackReviewView(product)
+    trackReviewView(product.id, product.name)
   }
 
   if (loading) {
