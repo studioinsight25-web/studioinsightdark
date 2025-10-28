@@ -133,7 +133,8 @@ async function testAdminFunctionality() {
         console.log('✅ Test user removed')
       }
     } catch (error) {
-      console.log('🧹 Cleanup error (some items may already be removed):', error.message)
+      const msg = error instanceof Error ? error.message : String(error)
+      console.log('🧹 Cleanup error (some items may already be removed):', msg)
     }
     await prisma.$disconnect()
   }
