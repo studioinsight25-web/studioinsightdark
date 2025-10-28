@@ -58,10 +58,10 @@ export class MollieService {
       return {
         success: true,
         status: payment.status,
-        paid: payment.isPaid(),
-        failed: payment.isFailed(),
-        canceled: payment.isCanceled(),
-        expired: payment.isExpired()
+        paid: payment.status === 'paid',
+        failed: payment.status === 'failed',
+        canceled: payment.status === 'canceled',
+        expired: payment.status === 'expired'
       }
     } catch (error) {
       console.error('Mollie payment status error:', error)
