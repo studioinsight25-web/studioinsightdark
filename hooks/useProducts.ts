@@ -18,7 +18,7 @@ export function useProducts() {
         if (response.ok) {
           const allProducts = await response.json()
           console.log('useProducts: Loaded products from database:', allProducts.length)
-          console.log('useProducts: Products with images:', allProducts.filter(p => p.imageUrl))
+          console.log('useProducts: Products with images:', allProducts.filter((p: Product) => p.imageUrl))
           setProducts(allProducts)
         } else {
           console.error('Failed to load products from API')
