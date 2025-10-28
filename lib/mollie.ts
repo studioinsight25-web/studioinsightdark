@@ -34,7 +34,7 @@ export class MollieService {
         redirectUrl: paymentData.redirectUrl,
         webhookUrl: paymentData.webhookUrl,
         metadata: paymentData.metadata,
-        locale: 'nl_NL',
+        locale: 'nl_NL' as any,
         method: ['ideal', 'creditcard', 'paypal', 'bancontact']
       })
 
