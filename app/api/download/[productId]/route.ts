@@ -20,9 +20,11 @@ export async function GET(
     }
 
     // Verify token (in production, use proper JWT verification)
+    let expiresAt: string
     try {
       const decoded = atob(token)
-      const [tokenUserId, tokenProductId, expiresAt] = decoded.split('-')
+      const [tokenUserId, tokenProductId, tokenExpiresAt] = decoded.split('-')
+      expiresAt = tokenExpiresAt
       
       if (tokenUserId !== userId || tokenProductId !== productId) {
         return NextResponse.json(
