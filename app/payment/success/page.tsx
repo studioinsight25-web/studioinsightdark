@@ -29,7 +29,7 @@ async function SuccessContent({ orderId }: { orderId?: string }) {
     )
   }
 
-  const order = OrderService.getOrder(orderId)
+  const order = await OrderService.getOrder(orderId)
   
   if (!order) {
     return (
