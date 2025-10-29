@@ -7,15 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "echo 'Skipping prisma generate'",
-    "db:migrate": "prisma migrate dev",
-    "db:generate": "prisma generate",
-    "db:seed": "tsx scripts/migrate-to-database.ts",
-    "db:studio": "prisma studio"
+    "postinstall": "echo 'No postinstall needed'",
+    "db:seed": "tsx scripts/migrate-to-database.ts"
   },
   "dependencies": {
     "@mollie/api-client": "^4.3.3",
-    "@prisma/client": "^6.18.0",
     "@supabase/supabase-js": "^2.76.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
@@ -32,7 +28,6 @@
     "next": "16.0.0",
     "node-fetch": "^3.3.2",
     "pg": "^8.16.3",
-    "prisma": "^6.18.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "uuid": "^13.0.0",

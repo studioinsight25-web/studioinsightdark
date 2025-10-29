@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { DatabaseService } from '@/lib/database-direct'
 import { brevoUpsertContact, brevoSendConfirmationEmail } from '@/lib/brevo'
 import { randomBytes } from 'crypto'
 
@@ -14,24 +14,29 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = email.trim().toLowerCase()
     const confirmationToken = randomBytes(32).toString('hex')
 
-    // Upsert subscription (DB) with pending status
-    const subscription = await prisma.newsletterSubscription.upsert({
-      where: { email: normalizedEmail },
-      update: {
-        name: name || null,
-        consent,
-        status: 'pending',
-        confirmationToken,
-        confirmedAt: null,
-      },
-      create: {
-        email: normalizedEmail,
-        name: name || null,
-        consent,
-        status: 'pending',
-        confirmationToken,
-      },
-    })
+    // Check if subscription exists
+    const existing = await DatabaseService.query(
+      'SELECT id FROM "newsletterSubscriptions" WHERE email = $1',
+      [normalizedEmail]
+    )
+
+    let subscription
+    if (existing.length > 0) {
+      // Update existing subscription
+      const result = await DatabaseService.query(
+        'UPDATE "newsletterSubscriptions" SET name = $1, consent = $2, status = $3, "confirmationToken" = $4, "confirmedAt" = NULL, "updatedAt" = NOW() WHERE email = $5 RETURNING *',
+        [name || null, consent, 'pending', confirmationToken, normalizedEmail]
+      )
+      subscription = result[0]
+    } else {
+      // Create new subscription
+      const id = `newsletter-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const result = await DatabaseService.query(
+        'INSERT INTO "newsletterSubscriptions" (id, email, name, consent, status, "confirmationToken", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) RETURNING *',
+        [id, normalizedEmail, name || null, consent, 'pending', confirmationToken]
+      )
+      subscription = result[0]
+    }
 
     // Send confirmation email
     const confirmationUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/newsletter/confirm?token=${confirmationToken}`
@@ -62,13 +67,12 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   // Optional: basic count endpoint (no listing for privacy)
   try {
-    const count = await prisma.newsletterSubscription.count({
-      where: { status: 'confirmed' }
-    })
-    return NextResponse.json({ count })
+    const result = await DatabaseService.query(
+      'SELECT COUNT(*) as count FROM "newsletterSubscriptions" WHERE status = $1',
+      ['confirmed']
+    )
+    return NextResponse.json({ count: parseInt(result[0].count || '0', 10) })
   } catch (error) {
     return NextResponse.json({ count: 0 })
   }
 }
-
-

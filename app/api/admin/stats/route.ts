@@ -1,33 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { DatabaseService } from '@/lib/database-direct'
 
 export async function GET(request: NextRequest) {
   try {
     // Get real statistics from database
-    const [
-      totalUsers,
-      totalProducts,
-      totalOrders,
-      totalRevenue
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.product.count(),
-      prisma.order.count(),
-      prisma.order.aggregate({
-        _sum: {
-          totalAmount: true
-        },
-        where: {
-          status: 'PAID'
-        }
-      })
+    const [usersResult, productsResult, ordersResult, revenueResult] = await Promise.all([
+      DatabaseService.query('SELECT COUNT(*) as count FROM users'),
+      DatabaseService.query('SELECT COUNT(*) as count FROM products'),
+      DatabaseService.query('SELECT COUNT(*) as count FROM orders'),
+      DatabaseService.query('SELECT COALESCE(SUM("totalAmount"), 0) as total FROM orders WHERE status = $1', ['PAID'])
     ])
 
     const stats = {
-      totalUsers,
-      totalProducts,
-      totalOrders,
-      totalRevenue: totalRevenue._sum.totalAmount || 0
+      totalUsers: parseInt(usersResult[0].count || '0', 10),
+      totalProducts: parseInt(productsResult[0].count || '0', 10),
+      totalOrders: parseInt(ordersResult[0].count || '0', 10),
+      totalRevenue: parseFloat(revenueResult[0].total || '0')
     }
 
     return NextResponse.json(stats)
@@ -39,4 +27,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-

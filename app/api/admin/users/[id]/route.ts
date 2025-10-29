@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { UserRole } from '@prisma/client'
+import { DatabaseService } from '@/lib/database-direct'
 
 export async function PUT(
   request: NextRequest,
@@ -17,20 +16,27 @@ export async function PUT(
       )
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      data: { role: role as UserRole },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true
-      }
-    })
+    const result = await DatabaseService.query(
+      'UPDATE users SET role = $1, "updatedAt" = NOW() WHERE id = $2 RETURNING id, email, name, role, "createdAt", "updatedAt"',
+      [role, id]
+    )
 
-    return NextResponse.json(updatedUser)
+    if (result.length === 0) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    const user = result[0]
+    return NextResponse.json({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    })
   } catch (error) {
     console.error('Error updating user:', error)
     return NextResponse.json(
@@ -47,9 +53,10 @@ export async function DELETE(
   try {
     const { id } = await params
 
-    await prisma.user.delete({
-      where: { id }
-    })
+    await DatabaseService.query(
+      'DELETE FROM users WHERE id = $1',
+      [id]
+    )
 
     return NextResponse.json({ success: true })
   } catch (error) {

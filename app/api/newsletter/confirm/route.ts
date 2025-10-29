@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { DatabaseService } from '@/lib/database-direct'
 import { brevoUpsertContact, brevoSendWelcomeEmail } from '@/lib/brevo'
 
 export async function GET(request: NextRequest) {
@@ -12,25 +12,22 @@ export async function GET(request: NextRequest) {
     }
 
     // Find subscription by token
-    const subscription = await prisma.newsletterSubscription.findFirst({
-      where: {
-        confirmationToken: token,
-        status: 'pending'
-      }
-    })
+    const result = await DatabaseService.query(
+      'SELECT * FROM "newsletterSubscriptions" WHERE "confirmationToken" = $1 AND status = $2',
+      [token, 'pending']
+    )
 
-    if (!subscription) {
+    if (result.length === 0) {
       return NextResponse.json({ error: 'Ongeldige of verlopen token' }, { status: 404 })
     }
 
+    const subscription = result[0]
+
     // Confirm subscription
-    await prisma.newsletterSubscription.update({
-      where: { id: subscription.id },
-      data: {
-        status: 'confirmed',
-        confirmedAt: new Date(),
-      }
-    })
+    await DatabaseService.query(
+      'UPDATE "newsletterSubscriptions" SET status = $1, "confirmedAt" = NOW(), "updatedAt" = NOW() WHERE id = $2',
+      ['confirmed', subscription.id]
+    )
 
     // Sync with Brevo (confirmed status)
     try {

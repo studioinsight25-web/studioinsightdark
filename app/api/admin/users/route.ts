@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { DatabaseService } from '@/lib/database-direct'
 
 export async function GET(request: NextRequest) {
   try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true
-      },
-      orderBy: { createdAt: 'desc' }
-    })
+    const users = await DatabaseService.query(
+      'SELECT id, email, name, role, "createdAt", "updatedAt" FROM users ORDER BY "createdAt" DESC'
+    )
 
-    return NextResponse.json(users)
+    return NextResponse.json(users.map(user => ({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    })))
   } catch (error) {
     console.error('Error fetching users:', error)
     return NextResponse.json(
@@ -24,4 +23,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-

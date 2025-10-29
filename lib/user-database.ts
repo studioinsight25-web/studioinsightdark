@@ -1,8 +1,8 @@
-// lib/user-database.ts - Database User Service
-import { PrismaClient, UserRole } from '@prisma/client'
+// lib/user-database.ts - Database User Service (without Prisma)
+import { DatabaseService } from '@/lib/database-direct'
 import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient()
+export type UserRole = 'USER' | 'ADMIN'
 
 export interface User {
   id: string
@@ -14,43 +14,45 @@ export interface User {
 }
 
 export class UserService {
-  // Convert Prisma User to our User interface
-  private static convertPrismaUser(prismaUser: any): User {
+  // Convert database row to User interface
+  private static convertDbUser(dbUser: any): User {
     return {
-      id: prismaUser.id,
-      email: prismaUser.email,
-      name: prismaUser.name,
-      role: prismaUser.role,
-      createdAt: prismaUser.createdAt.toISOString(),
-      updatedAt: prismaUser.updatedAt.toISOString(),
+      id: dbUser.id,
+      email: dbUser.email,
+      name: dbUser.name,
+      role: dbUser.role as UserRole,
+      createdAt: dbUser.createdat ? new Date(dbUser.createdat).toISOString() : new Date().toISOString(),
+      updatedAt: dbUser.updatedat ? new Date(dbUser.updatedat).toISOString() : new Date().toISOString(),
     }
   }
 
   static async createUser(email: string, password: string, name?: string): Promise<User | null> {
     try {
       // Check if user already exists
-      const existingUser = await prisma.user.findUnique({
-        where: { email }
-      })
+      const existingUsers = await DatabaseService.query(
+        'SELECT id FROM users WHERE email = $1',
+        [email]
+      )
 
-      if (existingUser) {
+      if (existingUsers.length > 0) {
         throw new Error('User already exists')
       }
 
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 12)
+      const id = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
       // Create user
-      const newUser = await prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          name,
-          role: UserRole.USER
-        }
-      })
+      const result = await DatabaseService.query(
+        'INSERT INTO users (id, email, name, password, role, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING id, email, name, role, "createdAt", "updatedAt"',
+        [id, email, name || null, hashedPassword, 'USER']
+      )
 
-      return this.convertPrismaUser(newUser)
+      if (result.length === 0) {
+        return null
+      }
+
+      return this.convertDbUser(result[0])
     } catch (error) {
       console.error('Error creating user:', error)
       return null
@@ -59,13 +61,16 @@ export class UserService {
 
   static async authenticateUser(email: string, password: string): Promise<User | null> {
     try {
-      const user = await prisma.user.findUnique({
-        where: { email }
-      })
+      const result = await DatabaseService.query(
+        'SELECT id, email, name, password, role, "createdAt", "updatedAt" FROM users WHERE email = $1',
+        [email]
+      )
 
-      if (!user) {
+      if (result.length === 0) {
         return null
       }
+
+      const user = result[0]
 
       // Verify password
       const isValidPassword = await bcrypt.compare(password, user.password)
@@ -73,7 +78,7 @@ export class UserService {
         return null
       }
 
-      return this.convertPrismaUser(user)
+      return this.convertDbUser(user)
     } catch (error) {
       console.error('Error authenticating user:', error)
       return null
@@ -82,11 +87,16 @@ export class UserService {
 
   static async getUserById(id: string): Promise<User | null> {
     try {
-      const user = await prisma.user.findUnique({
-        where: { id }
-      })
+      const result = await DatabaseService.query(
+        'SELECT id, email, name, role, "createdAt", "updatedAt" FROM users WHERE id = $1',
+        [id]
+      )
 
-      return user ? this.convertPrismaUser(user) : null
+      if (result.length === 0) {
+        return null
+      }
+
+      return this.convertDbUser(result[0])
     } catch (error) {
       console.error('Error fetching user:', error)
       return null
@@ -95,11 +105,16 @@ export class UserService {
 
   static async getUserByEmail(email: string): Promise<User | null> {
     try {
-      const user = await prisma.user.findUnique({
-        where: { email }
-      })
+      const result = await DatabaseService.query(
+        'SELECT id, email, name, role, "createdAt", "updatedAt" FROM users WHERE email = $1',
+        [email]
+      )
 
-      return user ? this.convertPrismaUser(user) : null
+      if (result.length === 0) {
+        return null
+      }
+
+      return this.convertDbUser(result[0])
     } catch (error) {
       console.error('Error fetching user by email:', error)
       return null
@@ -108,12 +123,40 @@ export class UserService {
 
   static async updateUser(id: string, updates: Partial<Omit<User, 'id' | 'createdAt' | 'updatedAt'>>): Promise<User | null> {
     try {
-      const updatedUser = await prisma.user.update({
-        where: { id },
-        data: updates
-      })
+      const updateFields: string[] = []
+      const updateValues: any[] = []
+      let paramIndex = 1
 
-      return this.convertPrismaUser(updatedUser)
+      if (updates.email !== undefined) {
+        updateFields.push(`email = $${paramIndex++}`)
+        updateValues.push(updates.email)
+      }
+      if (updates.name !== undefined) {
+        updateFields.push(`name = $${paramIndex++}`)
+        updateValues.push(updates.name)
+      }
+      if (updates.role !== undefined) {
+        updateFields.push(`role = $${paramIndex++}`)
+        updateValues.push(updates.role)
+      }
+
+      if (updateFields.length === 0) {
+        return this.getUserById(id)
+      }
+
+      updateFields.push(`"updatedAt" = NOW()`)
+      updateValues.push(id)
+
+      const result = await DatabaseService.query(
+        `UPDATE users SET ${updateFields.join(', ')} WHERE id = $${paramIndex} RETURNING id, email, name, role, "createdAt", "updatedAt"`,
+        updateValues
+      )
+
+      if (result.length === 0) {
+        return null
+      }
+
+      return this.convertDbUser(result[0])
     } catch (error) {
       console.error('Error updating user:', error)
       return null
@@ -122,9 +165,10 @@ export class UserService {
 
   static async deleteUser(id: string): Promise<boolean> {
     try {
-      await prisma.user.delete({
-        where: { id }
-      })
+      await DatabaseService.query(
+        'DELETE FROM users WHERE id = $1',
+        [id]
+      )
       return true
     } catch (error) {
       console.error('Error deleting user:', error)
@@ -135,30 +179,32 @@ export class UserService {
   static async createDefaultAdmin(): Promise<User | null> {
     try {
       // Check if admin already exists
-      const existingAdmin = await prisma.user.findFirst({
-        where: { role: UserRole.ADMIN }
-      })
+      const existingAdmins = await DatabaseService.query(
+        'SELECT id, email, name, role, "createdAt", "updatedAt" FROM users WHERE role = $1 LIMIT 1',
+        ['ADMIN']
+      )
 
-      if (existingAdmin) {
-        return this.convertPrismaUser(existingAdmin)
+      if (existingAdmins.length > 0) {
+        return this.convertDbUser(existingAdmins[0])
       }
 
       // Create default admin
       const hashedPassword = await bcrypt.hash('admin123', 12)
-      const admin = await prisma.user.create({
-        data: {
-          email: 'admin@studio-insight.nl',
-          password: hashedPassword,
-          name: 'Admin',
-          role: UserRole.ADMIN
-        }
-      })
+      const id = `admin-${Date.now()}`
 
-      return this.convertPrismaUser(admin)
+      const result = await DatabaseService.query(
+        'INSERT INTO users (id, email, name, password, role, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING id, email, name, role, "createdAt", "updatedAt"',
+        [id, 'admin@studio-insight.nl', 'Admin', hashedPassword, 'ADMIN']
+      )
+
+      if (result.length === 0) {
+        return null
+      }
+
+      return this.convertDbUser(result[0])
     } catch (error) {
       console.error('Error creating default admin:', error)
       return null
     }
   }
 }
-
