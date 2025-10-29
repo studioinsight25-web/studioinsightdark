@@ -259,5 +259,6 @@ export class DatabaseOrderService {
   }
 }
 
-// Alias for backward compatibility
-export const OrderDatabaseService = DatabaseOrderService
+// Export both names for compatibility
+export { DatabaseOrderService as OrderDatabaseService }
+export { DatabaseOrderService }
