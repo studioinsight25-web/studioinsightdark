@@ -2,11 +2,13 @@
 import { createMollieClient } from '@mollie/api-client'
 
 const apiKey = process.env.MOLLIE_API_KEY
-if (!apiKey) {
-  throw new Error('MOLLIE_API_KEY environment variable is required')
-}
+let mollieClient: any = null
 
-const mollieClient = createMollieClient({ apiKey })
+if (apiKey) {
+  mollieClient = createMollieClient({ apiKey })
+} else {
+  console.warn('MOLLIE_API_KEY not found - Mollie payments will not work')
+}
 
 export interface PaymentData {
   amount: {
@@ -32,6 +34,13 @@ export interface OrderItem {
 
 export class MollieService {
   static async createPayment(paymentData: PaymentData) {
+    if (!mollieClient) {
+      return {
+        success: false,
+        error: 'Mollie API key not configured'
+      }
+    }
+
     try {
       const payment = await mollieClient.payments.create({
         amount: paymentData.amount,
@@ -58,6 +67,13 @@ export class MollieService {
   }
 
   static async getPaymentStatus(paymentId: string) {
+    if (!mollieClient) {
+      return {
+        success: false,
+        error: 'Mollie API key not configured'
+      }
+    }
+
     try {
       const payment = await mollieClient.payments.get(paymentId)
       return {
@@ -78,6 +94,13 @@ export class MollieService {
   }
 
   static async refundPayment(paymentId: string, amount?: { value: string; currency: string }) {
+    if (!mollieClient) {
+      return {
+        success: false,
+        error: 'Mollie API key not configured'
+      }
+    }
+
     try {
       const refundParams: any = { paymentId }
       if (amount) {
