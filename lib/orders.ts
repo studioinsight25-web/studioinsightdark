@@ -22,7 +22,37 @@ export class OrderService {
   // Database methods
   static async createOrder(userId: string, items: Product[]): Promise<Order> {
     try {
-      return await OrderDatabaseService.createOrder(userId, items)
+      const totalAmount = items.reduce((sum, item) => sum + item.price, 0)
+      const dbOrder = await OrderDatabaseService.createOrder({
+        userId,
+        status: 'PENDING',
+        totalAmount
+      })
+      
+      if (!dbOrder) {
+        throw new Error('Failed to create order')
+      }
+
+      // Create order items
+      const { DatabaseService } = await import('@/lib/database-direct')
+      for (const item of items) {
+        const itemId = `order-item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        await DatabaseService.query(
+          'INSERT INTO "orderItems" (id, "orderId", "productId", quantity, price, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, NOW(), NOW())',
+          [itemId, dbOrder.id, item.id, 1, item.price]
+        )
+      }
+
+      return {
+        id: dbOrder.id,
+        userId: dbOrder.userId,
+        items,
+        totalAmount: dbOrder.totalAmount,
+        currency: 'EUR',
+        status: dbOrder.status.toLowerCase() as Order['status'],
+        createdAt: dbOrder.createdAt,
+        paidAt: dbOrder.paidAt
+      }
     } catch (error) {
       console.error('Error creating order:', error)
       // Fallback to in-memory storage
@@ -45,7 +75,28 @@ export class OrderService {
 
   static async getOrder(orderId: string): Promise<Order | null> {
     try {
-      return await OrderDatabaseService.getOrder(orderId)
+      const dbOrder = await OrderDatabaseService.getOrder(orderId)
+      if (!dbOrder) return null
+
+      // Convert items
+      const items: Product[] = []
+      for (const item of dbOrder.items) {
+        const product = await ProductService.getProduct(item.productId)
+        if (product) {
+          items.push(product)
+        }
+      }
+
+      return {
+        id: dbOrder.id,
+        userId: dbOrder.userId,
+        items,
+        totalAmount: dbOrder.totalAmount,
+        currency: 'EUR',
+        status: dbOrder.status.toLowerCase() as Order['status'],
+        createdAt: dbOrder.createdAt,
+        paidAt: dbOrder.paidAt
+      }
     } catch (error) {
       console.error('Error fetching order:', error)
       // Fallback to in-memory storage
@@ -55,7 +106,31 @@ export class OrderService {
 
   static async getUserOrders(userId: string): Promise<Order[]> {
     try {
-      return await OrderDatabaseService.getUserOrders(userId)
+      const dbOrders = await OrderDatabaseService.getOrdersByUser(userId)
+      
+      const orders: Order[] = []
+      for (const dbOrder of dbOrders) {
+        const items: Product[] = []
+        for (const item of dbOrder.items) {
+          const product = await ProductService.getProduct(item.productId)
+          if (product) {
+            items.push(product)
+          }
+        }
+        
+        orders.push({
+          id: dbOrder.id,
+          userId: dbOrder.userId,
+          items,
+          totalAmount: dbOrder.totalAmount,
+          currency: 'EUR',
+          status: dbOrder.status.toLowerCase() as Order['status'],
+          createdAt: dbOrder.createdAt,
+          paidAt: dbOrder.paidAt
+        })
+      }
+      
+      return orders
     } catch (error) {
       console.error('Error fetching user orders:', error)
       // Fallback to in-memory storage
@@ -65,7 +140,8 @@ export class OrderService {
 
   static async updateOrderStatus(orderId: string, status: Order['status'], paymentId?: string): Promise<boolean> {
     try {
-      return await OrderDatabaseService.updateOrderStatus(orderId, status, paymentId)
+      const dbOrder = await OrderDatabaseService.updateOrderStatus(orderId, status.toUpperCase() as any)
+      return dbOrder !== null
     } catch (error) {
       console.error('Error updating order status:', error)
       // Fallback to in-memory storage
@@ -100,7 +176,12 @@ export class OrderService {
 
   static async getOrderStats(): Promise<{ totalOrders: number, totalRevenue: number, averageOrderValue: number }> {
     try {
-      return await OrderDatabaseService.getOrderStats()
+      const paidOrders = await OrderDatabaseService.getOrdersByStatus('PAID')
+      const totalOrders = paidOrders.length
+      const totalRevenue = paidOrders.reduce((sum, order) => sum + order.totalAmount, 0)
+      const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
+
+      return { totalOrders, totalRevenue, averageOrderValue }
     } catch (error) {
       console.error('Error getting order stats:', error)
       // Fallback to in-memory storage
@@ -115,7 +196,31 @@ export class OrderService {
 
   static async getOrdersByStatus(status: Order['status']): Promise<Order[]> {
     try {
-      return await OrderDatabaseService.getOrdersByStatus(status)
+      const dbOrders = await OrderDatabaseService.getOrdersByStatus(status.toUpperCase() as any)
+      
+      const orders: Order[] = []
+      for (const dbOrder of dbOrders) {
+        const items: Product[] = []
+        for (const item of dbOrder.items) {
+          const product = await ProductService.getProduct(item.productId)
+          if (product) {
+            items.push(product)
+          }
+        }
+        
+        orders.push({
+          id: dbOrder.id,
+          userId: dbOrder.userId,
+          items,
+          totalAmount: dbOrder.totalAmount,
+          currency: 'EUR',
+          status: dbOrder.status.toLowerCase() as Order['status'],
+          createdAt: dbOrder.createdAt,
+          paidAt: dbOrder.paidAt
+        })
+      }
+      
+      return orders
     } catch (error) {
       console.error('Error fetching orders by status:', error)
       // Fallback to in-memory storage
@@ -125,7 +230,31 @@ export class OrderService {
 
   static async getRecentOrders(limit: number = 10): Promise<Order[]> {
     try {
-      return await OrderDatabaseService.getRecentOrders(limit)
+      const dbOrders = await OrderDatabaseService.getAllOrders()
+      
+      const orders: Order[] = []
+      for (const dbOrder of dbOrders.slice(0, limit)) {
+        const items: Product[] = []
+        for (const item of dbOrder.items) {
+          const product = await ProductService.getProduct(item.productId)
+          if (product) {
+            items.push(product)
+          }
+        }
+        
+        orders.push({
+          id: dbOrder.id,
+          userId: dbOrder.userId,
+          items,
+          totalAmount: dbOrder.totalAmount,
+          currency: 'EUR',
+          status: dbOrder.status.toLowerCase() as Order['status'],
+          createdAt: dbOrder.createdAt,
+          paidAt: dbOrder.paidAt
+        })
+      }
+      
+      return orders
     } catch (error) {
       console.error('Error fetching recent orders:', error)
       // Fallback to in-memory storage
@@ -137,7 +266,31 @@ export class OrderService {
 
   static async getOrdersByDateRange(startDate: Date, endDate: Date): Promise<Order[]> {
     try {
-      return await OrderDatabaseService.getOrdersByDateRange(startDate, endDate)
+      const dbOrders = await OrderDatabaseService.getOrdersByDateRange(startDate.toISOString(), endDate.toISOString())
+      
+      const orders: Order[] = []
+      for (const dbOrder of dbOrders) {
+        const items: Product[] = []
+        for (const item of dbOrder.items) {
+          const product = await ProductService.getProduct(item.productId)
+          if (product) {
+            items.push(product)
+          }
+        }
+        
+        orders.push({
+          id: dbOrder.id,
+          userId: dbOrder.userId,
+          items,
+          totalAmount: dbOrder.totalAmount,
+          currency: 'EUR',
+          status: dbOrder.status.toLowerCase() as Order['status'],
+          createdAt: dbOrder.createdAt,
+          paidAt: dbOrder.paidAt
+        })
+      }
+      
+      return orders
     } catch (error) {
       console.error('Error fetching orders by date range:', error)
       // Fallback to in-memory storage
@@ -150,7 +303,20 @@ export class OrderService {
 
   static async getTopProducts(limit: number = 10): Promise<{ productId: string, productName: string, totalSold: number, totalRevenue: number }[]> {
     try {
-      return await OrderDatabaseService.getTopProducts(limit)
+      const topProducts = await OrderDatabaseService.getTopProducts(limit)
+      
+      const result = []
+      for (const topProduct of topProducts) {
+        const product = await ProductService.getProduct(topProduct.productId)
+        result.push({
+          productId: topProduct.productId,
+          productName: product?.name || 'Unknown',
+          totalSold: topProduct.totalSold,
+          totalRevenue: topProduct.totalRevenue
+        })
+      }
+      
+      return result
     } catch (error) {
       console.error('Error getting top products:', error)
       // Fallback to in-memory storage

@@ -1,7 +1,5 @@
-// lib/digital-products-database.ts - Database Digital Products Service
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+// lib/digital-products-database.ts - Database Digital Products Service (without Prisma)
+import { DatabaseService } from '@/lib/database-direct'
 
 export interface DigitalProduct {
   id: string
@@ -27,41 +25,12 @@ export interface UserDownload {
 }
 
 export class DigitalProductDatabaseService {
-  // Convert Prisma DigitalProduct to our DigitalProduct interface
-  private static convertPrismaDigitalProduct(prismaProduct: any): DigitalProduct {
-    return {
-      id: prismaProduct.id,
-      productId: prismaProduct.productId,
-      fileName: prismaProduct.fileName,
-      fileType: prismaProduct.mimeType.toLowerCase() as 'pdf' | 'video' | 'audio' | 'zip' | 'doc' | 'docx',
-      fileSize: prismaProduct.fileSize,
-      fileUrl: prismaProduct.filePath, // Use filePath as fileUrl
-      secureUrl: prismaProduct.filePath, // Use filePath as secureUrl
-      downloadLimit: prismaProduct.downloadLimit,
-      expiresAt: prismaProduct.expiresAt?.toISOString(),
-      createdAt: prismaProduct.createdAt.toISOString(),
-      updatedAt: prismaProduct.createdAt.toISOString(), // Prisma schema doesn't have updatedAt
-    }
-  }
-
-  // Convert Prisma UserDownload to our UserDownload interface
-  private static convertPrismaUserDownload(prismaDownload: any): UserDownload {
-    return {
-      id: prismaDownload.id,
-      userId: prismaDownload.userId,
-      digitalProductId: prismaDownload.digitalProductId,
-      downloadCount: prismaDownload.downloadCount,
-      lastDownloadedAt: prismaDownload.lastDownloadedAt.toISOString(),
-      createdAt: prismaDownload.createdAt.toISOString(),
-    }
-  }
-
   static async getAllDigitalProducts(): Promise<DigitalProduct[]> {
     try {
-      const products = await prisma.digitalProduct.findMany({
-        orderBy: { createdAt: 'desc' }
-      })
-      return products.map(this.convertPrismaDigitalProduct)
+      const result = await DatabaseService.query(
+        'SELECT * FROM "digitalProducts" ORDER BY "createdAt" DESC'
+      )
+      return result.map(this.convertDbDigitalProduct)
     } catch (error) {
       console.error('Error fetching digital products:', error)
       return []
@@ -70,11 +39,11 @@ export class DigitalProductDatabaseService {
 
   static async getDigitalProductsByProductId(productId: string): Promise<DigitalProduct[]> {
     try {
-      const products = await prisma.digitalProduct.findMany({
-        where: { productId },
-        orderBy: { createdAt: 'desc' }
-      })
-      return products.map(this.convertPrismaDigitalProduct)
+      const result = await DatabaseService.query(
+        'SELECT * FROM "digitalProducts" WHERE "productId" = $1 ORDER BY "createdAt" DESC',
+        [productId]
+      )
+      return result.map(this.convertDbDigitalProduct)
     } catch (error) {
       console.error('Error fetching digital products by product ID:', error)
       return []
@@ -83,10 +52,11 @@ export class DigitalProductDatabaseService {
 
   static async getDigitalProduct(digitalProductId: string): Promise<DigitalProduct | null> {
     try {
-      const product = await prisma.digitalProduct.findUnique({
-        where: { id: digitalProductId }
-      })
-      return product ? this.convertPrismaDigitalProduct(product) : null
+      const result = await DatabaseService.query(
+        'SELECT * FROM "digitalProducts" WHERE id = $1',
+        [digitalProductId]
+      )
+      return result.length > 0 ? this.convertDbDigitalProduct(result[0]) : null
     } catch (error) {
       console.error('Error fetching digital product:', error)
       return null
@@ -95,18 +65,21 @@ export class DigitalProductDatabaseService {
 
   static async addDigitalProduct(product: Omit<DigitalProduct, 'id' | 'createdAt' | 'updatedAt'>): Promise<DigitalProduct> {
     try {
-      const newProduct = await prisma.digitalProduct.create({
-        data: {
-          productId: product.productId,
-          fileName: product.fileName,
-          filePath: product.fileUrl, // Use fileUrl as filePath
-          fileSize: product.fileSize,
-          mimeType: product.fileType.toUpperCase(),
-          downloadLimit: product.downloadLimit,
-          expiresAt: product.expiresAt ? new Date(product.expiresAt) : null,
-        }
-      })
-      return this.convertPrismaDigitalProduct(newProduct)
+      const id = `digital-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const result = await DatabaseService.query(
+        'INSERT INTO "digitalProducts" (id, "productId", "fileName", "filePath", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *',
+        [
+          id,
+          product.productId,
+          product.fileName,
+          product.fileUrl,
+          product.fileSize,
+          product.fileType.toUpperCase(),
+          product.downloadLimit,
+          product.expiresAt ? new Date(product.expiresAt) : null
+        ]
+      )
+      return this.convertDbDigitalProduct(result[0])
     } catch (error) {
       console.error('Error adding digital product:', error)
       throw error
@@ -115,18 +88,48 @@ export class DigitalProductDatabaseService {
 
   static async updateDigitalProduct(digitalProductId: string, updates: Partial<DigitalProduct>): Promise<DigitalProduct | null> {
     try {
-      const updatedProduct = await prisma.digitalProduct.update({
-        where: { id: digitalProductId },
-        data: {
-          fileName: updates.fileName,
-          filePath: updates.fileUrl, // Use fileUrl as filePath
-          fileSize: updates.fileSize,
-          mimeType: updates.fileType?.toUpperCase(),
-          downloadLimit: updates.downloadLimit,
-          expiresAt: updates.expiresAt ? new Date(updates.expiresAt) : undefined,
-        }
-      })
-      return this.convertPrismaDigitalProduct(updatedProduct)
+      const updateFields: string[] = []
+      const updateValues: any[] = []
+      let paramIndex = 1
+
+      if (updates.fileName !== undefined) {
+        updateFields.push(`"fileName" = $${paramIndex++}`)
+        updateValues.push(updates.fileName)
+      }
+      if (updates.fileUrl !== undefined) {
+        updateFields.push(`"filePath" = $${paramIndex++}`)
+        updateValues.push(updates.fileUrl)
+      }
+      if (updates.fileSize !== undefined) {
+        updateFields.push(`"fileSize" = $${paramIndex++}`)
+        updateValues.push(updates.fileSize)
+      }
+      if (updates.fileType !== undefined) {
+        updateFields.push(`"mimeType" = $${paramIndex++}`)
+        updateValues.push(updates.fileType.toUpperCase())
+      }
+      if (updates.downloadLimit !== undefined) {
+        updateFields.push(`"downloadLimit" = $${paramIndex++}`)
+        updateValues.push(updates.downloadLimit)
+      }
+      if (updates.expiresAt !== undefined) {
+        updateFields.push(`"expiresAt" = $${paramIndex++}`)
+        updateValues.push(updates.expiresAt ? new Date(updates.expiresAt) : null)
+      }
+
+      if (updateFields.length === 0) {
+        return this.getDigitalProduct(digitalProductId)
+      }
+
+      updateFields.push(`"updatedAt" = NOW()`)
+      updateValues.push(digitalProductId)
+
+      const result = await DatabaseService.query(
+        `UPDATE "digitalProducts" SET ${updateFields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+        updateValues
+      )
+
+      return result.length > 0 ? this.convertDbDigitalProduct(result[0]) : null
     } catch (error) {
       console.error('Error updating digital product:', error)
       return null
@@ -135,9 +138,10 @@ export class DigitalProductDatabaseService {
 
   static async deleteDigitalProduct(digitalProductId: string): Promise<boolean> {
     try {
-      await prisma.digitalProduct.delete({
-        where: { id: digitalProductId }
-      })
+      await DatabaseService.query(
+        'DELETE FROM "digitalProducts" WHERE id = $1',
+        [digitalProductId]
+      )
       return true
     } catch (error) {
       console.error('Error deleting digital product:', error)
@@ -147,11 +151,11 @@ export class DigitalProductDatabaseService {
 
   static async getUserDownloads(userId: string): Promise<UserDownload[]> {
     try {
-      const downloads = await prisma.userDownload.findMany({
-        where: { userId },
-        orderBy: { lastDownloadedAt: 'desc' }
-      })
-      return downloads.map(this.convertPrismaUserDownload)
+      const result = await DatabaseService.query(
+        'SELECT * FROM "userDownloads" WHERE "userId" = $1 ORDER BY "lastDownloadedAt" DESC',
+        [userId]
+      )
+      return result.map(this.convertDbUserDownload)
     } catch (error) {
       console.error('Error fetching user downloads:', error)
       return []
@@ -160,13 +164,11 @@ export class DigitalProductDatabaseService {
 
   static async getUserDownload(userId: string, digitalProductId: string): Promise<UserDownload | null> {
     try {
-      const download = await prisma.userDownload.findFirst({
-        where: {
-          userId,
-          digitalProductId
-        }
-      })
-      return download ? this.convertPrismaUserDownload(download) : null
+      const result = await DatabaseService.query(
+        'SELECT * FROM "userDownloads" WHERE "userId" = $1 AND "digitalProductId" = $2 LIMIT 1',
+        [userId, digitalProductId]
+      )
+      return result.length > 0 ? this.convertDbUserDownload(result[0]) : null
     } catch (error) {
       console.error('Error fetching user download:', error)
       return null
@@ -175,35 +177,21 @@ export class DigitalProductDatabaseService {
 
   static async trackDownload(userId: string, digitalProductId: string): Promise<UserDownload> {
     try {
-      // Check if download record exists
-      const existingDownload = await prisma.userDownload.findFirst({
-        where: {
-          userId,
-          digitalProductId
-        }
-      })
+      const existing = await this.getUserDownload(userId, digitalProductId)
 
-      if (existingDownload) {
-        // Update existing download
-        const updatedDownload = await prisma.userDownload.update({
-          where: { id: existingDownload.id },
-          data: {
-            downloadCount: existingDownload.downloadCount + 1,
-            lastDownloadedAt: new Date()
-          }
-        })
-        return this.convertPrismaUserDownload(updatedDownload)
+      if (existing) {
+        const result = await DatabaseService.query(
+          'UPDATE "userDownloads" SET "downloadCount" = "downloadCount" + 1, "lastDownloadedAt" = NOW(), "updatedAt" = NOW() WHERE id = $1 RETURNING *',
+          [existing.id]
+        )
+        return this.convertDbUserDownload(result[0])
       } else {
-        // Create new download record
-        const newDownload = await prisma.userDownload.create({
-          data: {
-            userId,
-            digitalProductId,
-            downloadCount: 1,
-            lastDownloadedAt: new Date()
-          }
-        })
-        return this.convertPrismaUserDownload(newDownload)
+        const id = `download-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        const result = await DatabaseService.query(
+          'INSERT INTO "userDownloads" (id, "userId", "digitalProductId", "downloadCount", "lastDownloadedAt", "createdAt", "updatedAt") VALUES ($1, $2, $3, 1, NOW(), NOW(), NOW()) RETURNING *',
+          [id, userId, digitalProductId]
+        )
+        return this.convertDbUserDownload(result[0])
       }
     } catch (error) {
       console.error('Error tracking download:', error)
@@ -214,29 +202,15 @@ export class DigitalProductDatabaseService {
   static async canUserDownload(userId: string, digitalProductId: string): Promise<boolean> {
     try {
       // Check if user has purchased the product
-      const digitalProduct = await prisma.digitalProduct.findUnique({
-        where: { id: digitalProductId },
-        include: {
-          product: {
-            include: {
-              orderItems: {
-                include: {
-                  order: true
-                }
-              }
-            }
-          }
-        }
-      })
-
-      if (!digitalProduct) return false
-
-      // Check if user has purchased the product
-      const hasPurchased = digitalProduct.product.orderItems.some(item => 
-        item.order.userId === userId && item.order.status === 'PAID'
+      const productResult = await DatabaseService.query(
+        'SELECT dp.*, o."userId", o.status FROM "digitalProducts" dp JOIN "orderItems" oi ON dp."productId" = oi."productId" JOIN orders o ON oi."orderId" = o.id WHERE dp.id = $1 AND o."userId" = $2 AND o.status = $3 LIMIT 1',
+        [digitalProductId, userId, 'PAID']
       )
 
-      if (!hasPurchased) return false
+      if (productResult.length === 0) return false
+
+      const digitalProduct = await this.getDigitalProduct(digitalProductId)
+      if (!digitalProduct) return false
 
       // Check download limit
       const userDownload = await this.getUserDownload(userId, digitalProductId)
@@ -258,17 +232,44 @@ export class DigitalProductDatabaseService {
 
   static async getDownloadStats(digitalProductId: string): Promise<{ totalDownloads: number, uniqueUsers: number }> {
     try {
-      const downloads = await prisma.userDownload.findMany({
-        where: { digitalProductId }
-      })
-
-      const totalDownloads = downloads.reduce((sum, download) => sum + download.downloadCount, 0)
-      const uniqueUsers = new Set(downloads.map(download => download.userId)).size
-
-      return { totalDownloads, uniqueUsers }
+      const result = await DatabaseService.query(
+        'SELECT SUM("downloadCount") as "totalDownloads", COUNT(DISTINCT "userId") as "uniqueUsers" FROM "userDownloads" WHERE "digitalProductId" = $1',
+        [digitalProductId]
+      )
+      return {
+        totalDownloads: parseInt(result[0].totalDownloads || '0', 10),
+        uniqueUsers: parseInt(result[0].uniqueUsers || '0', 10)
+      }
     } catch (error) {
       console.error('Error getting download stats:', error)
       return { totalDownloads: 0, uniqueUsers: 0 }
+    }
+  }
+
+  private static convertDbDigitalProduct(dbProduct: any): DigitalProduct {
+    return {
+      id: dbProduct.id,
+      productId: dbProduct.productId,
+      fileName: dbProduct.fileName,
+      fileType: dbProduct.mimeType?.toLowerCase() as 'pdf' | 'video' | 'audio' | 'zip' | 'doc' | 'docx',
+      fileSize: parseInt(dbProduct.fileSize || '0', 10),
+      fileUrl: dbProduct.filePath,
+      secureUrl: dbProduct.filePath,
+      downloadLimit: dbProduct.downloadLimit,
+      expiresAt: dbProduct.expiresAt ? new Date(dbProduct.expiresAt).toISOString() : undefined,
+      createdAt: dbProduct.createdAt ? new Date(dbProduct.createdAt).toISOString() : new Date().toISOString(),
+      updatedAt: dbProduct.updatedAt ? new Date(dbProduct.updatedAt).toISOString() : new Date().toISOString()
+    }
+  }
+
+  private static convertDbUserDownload(dbDownload: any): UserDownload {
+    return {
+      id: dbDownload.id,
+      userId: dbDownload.userId,
+      digitalProductId: dbDownload.digitalProductId,
+      downloadCount: parseInt(dbDownload.downloadCount || '0', 10),
+      lastDownloadedAt: dbDownload.lastDownloadedAt ? new Date(dbDownload.lastDownloadedAt).toISOString() : new Date().toISOString(),
+      createdAt: dbDownload.createdAt ? new Date(dbDownload.createdAt).toISOString() : new Date().toISOString()
     }
   }
 }

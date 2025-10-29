@@ -17,8 +17,12 @@ function getPool() {
 
 export class DatabaseService {
   static async query(text: string, params?: any[]) {
+    if (typeof window !== 'undefined') {
+      throw new Error('DatabaseService can only be used server-side')
+    }
     const pool = getPool()
-    return await pool.query(text, params)
+    const result = await pool.query(text, params)
+    return result.rows
   }
 
   static async getUserCount() {

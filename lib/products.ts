@@ -1,7 +1,6 @@
 // lib/products.ts - Centralized Product Management
 import ProductStorage from './product-storage'
 import { DatabaseProductService } from './products-database'
-import { prisma } from './prisma' // Added Prisma import
 
 export interface Product {
   id: string
@@ -415,34 +414,11 @@ export class ProductService {
     }
     
     try {
-      await prisma.product.deleteMany()
-      await prisma.product.createMany({
-        data: Object.values(DEFAULT_PRODUCTS).map(product => ({
-          id: product.id,
-          name: product.name,
-          description: product.description,
-          shortDescription: product.shortDescription,
-          price: product.price,
-          type: product.type.toUpperCase() as any,
-          category: product.category?.toUpperCase() as any,
-          isActive: product.isActive,
-          featured: product.featured,
-          comingSoon: product.comingSoon || false,
-          sales: product.sales,
-          duration: product.duration,
-          level: product.level,
-          students: product.students,
-          lessons: product.lessons,
-          imageId: product.imageId,
-          imageUrl: product.imageUrl,
-          imagePublicId: product.imagePublicId,
-          externalUrl: product.externalUrl,
-          createdAt: new Date(product.createdAt),
-          updatedAt: new Date(product.updatedAt)
-        }))
-      })
+      // Products are managed via DatabaseProductService now
+      // This function is deprecated
+      throw new Error('resetToDefaults is deprecated - use DatabaseProductService instead')
     } catch (error) {
-      console.error('Error resetting products to defaults:', error)
+      console.error('Error resetting to defaults:', error)
       throw error
     }
   }

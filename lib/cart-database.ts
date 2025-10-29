@@ -55,6 +55,34 @@ export class DatabaseCartService {
     }
   }
 
+  static async updateCartItemQuantity(userId: string, productId: string, quantity: number): Promise<CartItem | null> {
+    try {
+      const existing = await DatabaseService.query(
+        'SELECT * FROM "cartItems" WHERE "userId" = $1 AND "productId" = $2',
+        [userId, productId]
+      )
+
+      if (existing.length === 0) {
+        return null
+      }
+
+      if (quantity <= 0) {
+        await this.removeFromCart(existing[0].id)
+        return null
+      }
+
+      const result = await DatabaseService.query(
+        'UPDATE "cartItems" SET quantity = $1, "updatedAt" = NOW() WHERE "userId" = $2 AND "productId" = $3 RETURNING *',
+        [quantity, userId, productId]
+      )
+
+      return result.length > 0 ? this.convertDbCartItem(result[0]) : null
+    } catch (error) {
+      console.error('Error updating cart item quantity:', error)
+      return null
+    }
+  }
+
   static async updateCartItem(itemId: string, quantity: number): Promise<CartItem | null> {
     try {
       if (quantity <= 0) {
@@ -70,6 +98,19 @@ export class DatabaseCartService {
     } catch (error) {
       console.error('Error updating cart item:', error)
       return null
+    }
+  }
+
+  static async removeFromCart(userId: string, productId: string): Promise<boolean> {
+    try {
+      await DatabaseService.query(
+        'DELETE FROM "cartItems" WHERE "userId" = $1 AND "productId" = $2',
+        [userId, productId]
+      )
+      return true
+    } catch (error) {
+      console.error('Error removing from cart:', error)
+      return false
     }
   }
 
@@ -139,3 +180,6 @@ export class DatabaseCartService {
     }
   }
 }
+
+// Alias for backward compatibility
+export const CartService = DatabaseCartService

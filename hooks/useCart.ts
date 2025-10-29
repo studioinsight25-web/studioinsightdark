@@ -103,10 +103,13 @@ export function useCart(userId: string) {
     }
   }
 
-  const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => {
-      return total + (item.product.price * item.quantity)
-    }, 0)
+  const getTotalPrice = async () => {
+    try {
+      return await CartService.getCartTotal(userId)
+    } catch (err) {
+      console.error('Error getting cart total:', err)
+      return 0
+    }
   }
 
   const getItemCount = () => {
