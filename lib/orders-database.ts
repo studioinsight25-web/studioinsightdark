@@ -1,19 +1,17 @@
-// lib/orders-database.ts - Database Orders Service
-import { PrismaClient, OrderStatus } from '@prisma/client'
-import { Product } from './products'
+// lib/orders-database.ts - Database Order Service (without Prisma)
+import { DatabaseService } from '@/lib/database-direct'
 
-const prisma = new PrismaClient()
+export type OrderStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
 
 export interface Order {
   id: string
   userId: string
-  items: Product[]
+  status: OrderStatus
   totalAmount: number
-  currency: string
-  status: 'pending' | 'paid' | 'failed' | 'refunded'
-  paymentId?: string
   createdAt: string
+  updatedAt: string
   paidAt?: string
+  items: OrderItem[]
 }
 
 export interface OrderItem {
@@ -24,136 +22,111 @@ export interface OrderItem {
   price: number
 }
 
-export class OrderDatabaseService {
-  // Convert Prisma Order to our Order interface
-  private static convertPrismaOrder(prismaOrder: any): Order {
-    return {
-      id: prismaOrder.id,
-      userId: prismaOrder.userId,
-      items: prismaOrder.items.map((item: any) => ({
-        ...item.product,
-        // Ensure price is number and other fields are correctly typed
-        price: item.price,
-        type: item.product.type.toLowerCase() as 'course' | 'ebook' | 'review',
-        category: item.product.category?.toLowerCase() as 'microfoon' | 'webcam' | 'accessoires' | undefined,
-        createdAt: item.product.createdAt.toISOString(),
-        updatedAt: item.product.updatedAt.toISOString(),
-      })),
-      totalAmount: prismaOrder.totalAmount,
-      currency: prismaOrder.currency,
-      status: prismaOrder.status.toLowerCase() as 'pending' | 'paid' | 'failed' | 'refunded',
-      paymentId: prismaOrder.paymentId,
-      createdAt: prismaOrder.createdAt.toISOString(),
-      paidAt: prismaOrder.paidAt?.toISOString(),
-    }
-  }
-
-  static async createOrder(userId: string, items: Product[]): Promise<Order> {
+export class DatabaseOrderService {
+  static async createOrder(orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt' | 'items'>): Promise<Order | null> {
     try {
-      const totalAmount = items.reduce((sum, item) => sum + item.price, 0)
-      
-      const order = await prisma.order.create({
-        data: {
-          userId,
-          totalAmount,
-          currency: 'EUR',
-          status: 'PENDING',
-          items: {
-            create: items.map(item => ({
-              productId: item.id,
-              quantity: 1, // Default quantity
-              price: item.price,
-            }))
-          }
-        },
-        include: {
-          items: {
-            include: {
-              product: true
-            }
-          }
-        }
-      })
+      const id = `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const result = await DatabaseService.query(
+        'INSERT INTO orders (id, "userId", status, "totalAmount", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING *',
+        [id, orderData.userId, orderData.status, orderData.totalAmount]
+      )
 
-      return this.convertPrismaOrder(order)
+      if (result.length === 0) {
+        return null
+      }
+
+      return this.convertDbOrder(result[0])
     } catch (error) {
       console.error('Error creating order:', error)
-      throw error
+      return null
     }
   }
 
   static async getOrder(orderId: string): Promise<Order | null> {
     try {
-      const order = await prisma.order.findUnique({
-        where: { id: orderId },
-        include: {
-          items: {
-            include: {
-              product: true
-            }
-          }
-        }
-      })
+      const result = await DatabaseService.query(
+        'SELECT * FROM orders WHERE id = $1',
+        [orderId]
+      )
 
-      return order ? this.convertPrismaOrder(order) : null
+      if (result.length === 0) {
+        return null
+      }
+
+      const order = result[0]
+      const items = await this.getOrderItems(orderId)
+      
+      return {
+        ...this.convertDbOrder(order),
+        items
+      }
     } catch (error) {
       console.error('Error fetching order:', error)
       return null
     }
   }
 
-  static async getUserOrders(userId: string): Promise<Order[]> {
+  static async getOrdersByUser(userId: string): Promise<Order[]> {
     try {
-      const orders = await prisma.order.findMany({
-        where: { userId },
-        include: {
-          items: {
-            include: {
-              product: true
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' }
-      })
+      const result = await DatabaseService.query(
+        'SELECT * FROM orders WHERE "userId" = $1 ORDER BY "createdAt" DESC',
+        [userId]
+      )
 
-      return orders.map(this.convertPrismaOrder)
+      const orders = await Promise.all(result.map(async (order) => {
+        const items = await this.getOrderItems(order.id)
+        return {
+          ...this.convertDbOrder(order),
+          items
+        }
+      }))
+
+      return orders
     } catch (error) {
       console.error('Error fetching user orders:', error)
       return []
     }
   }
 
-  static async updateOrderStatus(orderId: string, status: Order['status'], paymentId?: string): Promise<boolean> {
+  static async updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order | null> {
     try {
-      const updateData: any = {
-        status: status.toUpperCase(),
+      let updateQuery = 'UPDATE orders SET status = $1, "updatedAt" = NOW()'
+      const updateParams: any[] = [status]
+
+      if (status === 'PAID') {
+        updateQuery = 'UPDATE orders SET status = $1, "paidAt" = NOW(), "updatedAt" = NOW()'
       }
 
-      if (status === 'paid') {
-        updateData.paidAt = new Date()
+      updateParams.push(orderId)
+
+      const result = await DatabaseService.query(
+        `${updateQuery} WHERE id = $2 RETURNING *`,
+        updateParams
+      )
+
+      if (result.length === 0) {
+        return null
       }
 
-      if (paymentId) {
-        updateData.paymentId = paymentId
+      const order = result[0]
+      const items = await this.getOrderItems(orderId)
+      
+      return {
+        ...this.convertDbOrder(order),
+        items
       }
-
-      await prisma.order.update({
-        where: { id: orderId },
-        data: updateData
-      })
-
-      return true
     } catch (error) {
-      console.error('Error updating order status:', error)
-      return false
+      console.error('Error updating order:', error)
+      return null
     }
   }
 
   static async deleteOrder(orderId: string): Promise<boolean> {
     try {
-      await prisma.order.delete({
-        where: { id: orderId }
-      })
+      await DatabaseService.query(
+        'DELETE FROM orders WHERE id = $1',
+        [orderId]
+      )
       return true
     } catch (error) {
       console.error('Error deleting order:', error)
@@ -161,134 +134,127 @@ export class OrderDatabaseService {
     }
   }
 
-  static async getOrderStats(): Promise<{ totalOrders: number, totalRevenue: number, averageOrderValue: number }> {
+  static async getAllOrders(): Promise<Order[]> {
     try {
-      const orders = await prisma.order.findMany({
-        where: { status: 'PAID' }
-      })
+      const result = await DatabaseService.query(
+        'SELECT * FROM orders ORDER BY "createdAt" DESC'
+      )
 
-      const totalOrders = orders.length
-      const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0)
-      const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
+      const orders = await Promise.all(result.map(async (order) => {
+        const items = await this.getOrderItems(order.id)
+        return {
+          ...this.convertDbOrder(order),
+          items
+        }
+      }))
 
-      return {
-        totalOrders,
-        totalRevenue,
-        averageOrderValue
-      }
+      return orders
     } catch (error) {
-      console.error('Error getting order stats:', error)
-      return { totalOrders: 0, totalRevenue: 0, averageOrderValue: 0 }
+      console.error('Error fetching all orders:', error)
+      return []
     }
   }
 
-  static async getOrdersByStatus(status: Order['status']): Promise<Order[]> {
+  static async getOrdersByStatus(status: OrderStatus): Promise<Order[]> {
     try {
-      const orders = await prisma.order.findMany({
-        where: { status: status.toUpperCase() as OrderStatus },
-        include: {
-          items: {
-            include: {
-              product: true
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' }
-      })
+      const result = await DatabaseService.query(
+        'SELECT * FROM orders WHERE status = $1 ORDER BY "createdAt" DESC',
+        [status]
+      )
 
-      return orders.map(this.convertPrismaOrder)
+      const orders = await Promise.all(result.map(async (order) => {
+        const items = await this.getOrderItems(order.id)
+        return {
+          ...this.convertDbOrder(order),
+          items
+        }
+      }))
+
+      return orders
     } catch (error) {
       console.error('Error fetching orders by status:', error)
       return []
     }
   }
 
-  static async getRecentOrders(limit: number = 10): Promise<Order[]> {
+  static async getOrdersByDateRange(startDate: string, endDate: string): Promise<Order[]> {
     try {
-      const orders = await prisma.order.findMany({
-        include: {
-          items: {
-            include: {
-              product: true
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' },
-        take: limit
-      })
+      const result = await DatabaseService.query(
+        'SELECT * FROM orders WHERE "createdAt" >= $1 AND "createdAt" <= $2 ORDER BY "createdAt" DESC',
+        [startDate, endDate]
+      )
 
-      return orders.map(this.convertPrismaOrder)
-    } catch (error) {
-      console.error('Error fetching recent orders:', error)
-      return []
-    }
-  }
+      const orders = await Promise.all(result.map(async (order) => {
+        const items = await this.getOrderItems(order.id)
+        return {
+          ...this.convertDbOrder(order),
+          items
+        }
+      }))
 
-  static async getOrdersByDateRange(startDate: Date, endDate: Date): Promise<Order[]> {
-    try {
-      const orders = await prisma.order.findMany({
-        where: {
-          createdAt: {
-            gte: startDate,
-            lte: endDate
-          }
-        },
-        include: {
-          items: {
-            include: {
-              product: true
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' }
-      })
-
-      return orders.map(this.convertPrismaOrder)
+      return orders
     } catch (error) {
       console.error('Error fetching orders by date range:', error)
       return []
     }
   }
 
-  static async getTopProducts(limit: number = 10): Promise<{ productId: string, productName: string, totalSold: number, totalRevenue: number }[]> {
+  static async getTopProducts(limit: number = 10): Promise<Array<{ productId: string; totalSold: number; totalRevenue: number }>> {
     try {
-      const topProducts = await prisma.orderItem.groupBy({
-        by: ['productId'],
-        where: {
-          order: {
-            status: 'PAID'
-          }
-        },
-        _sum: {
-          quantity: true,
-          price: true
-        },
-        orderBy: {
-          _sum: {
-            quantity: 'desc'
-          }
-        },
-        take: limit
-      })
+      const result = await DatabaseService.query(
+        `SELECT 
+          "productId", 
+          SUM(quantity) as "totalSold", 
+          SUM(quantity * price) as "totalRevenue"
+        FROM "orderItems" 
+        JOIN orders ON "orderItems"."orderId" = orders.id 
+        WHERE orders.status = 'PAID'
+        GROUP BY "productId" 
+        ORDER BY "totalSold" DESC 
+        LIMIT $1`,
+        [limit]
+      )
 
-      // Get product names
-      const productIds = topProducts.map(item => item.productId)
-      const products = await prisma.product.findMany({
-        where: { id: { in: productIds } },
-        select: { id: true, name: true }
-      })
-
-      const productMap = new Map(products.map(p => [p.id, p.name]))
-
-      return topProducts.map(item => ({
-        productId: item.productId,
-        productName: productMap.get(item.productId) || 'Unknown Product',
-        totalSold: item._sum.quantity || 0,
-        totalRevenue: item._sum.price || 0
+      return result.map(row => ({
+        productId: row.productId,
+        totalSold: parseInt(row.totalSold || '0', 10),
+        totalRevenue: parseFloat(row.totalRevenue || '0')
       }))
     } catch (error) {
-      console.error('Error getting top products:', error)
+      console.error('Error fetching top products:', error)
       return []
+    }
+  }
+
+  private static async getOrderItems(orderId: string): Promise<OrderItem[]> {
+    try {
+      const result = await DatabaseService.query(
+        'SELECT * FROM "orderItems" WHERE "orderId" = $1',
+        [orderId]
+      )
+
+      return result.map(item => ({
+        id: item.id,
+        orderId: item.orderId,
+        productId: item.productId,
+        quantity: parseInt(item.quantity || '0', 10),
+        price: parseFloat(item.price || '0')
+      }))
+    } catch (error) {
+      console.error('Error fetching order items:', error)
+      return []
+    }
+  }
+
+  private static convertDbOrder(dbOrder: any): Omit<Order, 'items'> {
+    return {
+      id: dbOrder.id,
+      userId: dbOrder.userId,
+      status: dbOrder.status as OrderStatus,
+      totalAmount: parseFloat(dbOrder.totalAmount || '0'),
+      createdAt: dbOrder.createdAt ? new Date(dbOrder.createdAt).toISOString() : new Date().toISOString(),
+      updatedAt: dbOrder.updatedAt ? new Date(dbOrder.updatedAt).toISOString() : new Date().toISOString(),
+      paidAt: dbOrder.paidAt ? new Date(dbOrder.paidAt).toISOString() : undefined
     }
   }
 }

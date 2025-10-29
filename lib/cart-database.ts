@@ -1,48 +1,24 @@
-// lib/cart-database.ts - Database Cart Service
-import { PrismaClient } from '@prisma/client'
-import { Product } from './products'
-
-const prisma = new PrismaClient()
+// lib/cart-database.ts - Database Cart Service (without Prisma)
+import { DatabaseService } from '@/lib/database-direct'
 
 export interface CartItem {
   id: string
   userId: string
   productId: string
-  product: Product
   quantity: number
   createdAt: string
   updatedAt: string
 }
 
-export class CartService {
-  // Convert Prisma CartItem to our CartItem interface
-  private static convertPrismaCartItem(prismaItem: any): CartItem {
-    return {
-      id: prismaItem.id,
-      userId: prismaItem.userId,
-      productId: prismaItem.productId,
-      product: prismaItem.product,
-      quantity: prismaItem.quantity,
-      createdAt: prismaItem.createdAt.toISOString(),
-      updatedAt: prismaItem.updatedAt.toISOString(),
-    }
-  }
-
+export class DatabaseCartService {
   static async getCartItems(userId: string): Promise<CartItem[]> {
-    // Don't run Prisma in browser
-    if (typeof window !== 'undefined') {
-      return []
-    }
-    
     try {
-      const items = await prisma.cartItem.findMany({
-        where: { userId },
-        include: {
-          product: true
-        },
-        orderBy: { createdAt: 'desc' }
-      })
-      return items.map(this.convertPrismaCartItem)
+      const result = await DatabaseService.query(
+        'SELECT * FROM "cartItems" WHERE "userId" = $1 ORDER BY "createdAt" DESC',
+        [userId]
+      )
+
+      return result.map(this.convertDbCartItem)
     } catch (error) {
       console.error('Error fetching cart items:', error)
       return []
@@ -52,39 +28,26 @@ export class CartService {
   static async addToCart(userId: string, productId: string, quantity: number = 1): Promise<CartItem | null> {
     try {
       // Check if item already exists
-      const existingItem = await prisma.cartItem.findFirst({
-        where: {
-          userId,
-          productId
-        }
-      })
+      const existing = await DatabaseService.query(
+        'SELECT * FROM "cartItems" WHERE "userId" = $1 AND "productId" = $2',
+        [userId, productId]
+      )
 
-      if (existingItem) {
-        // Update quantity
-        const updatedItem = await prisma.cartItem.update({
-          where: { id: existingItem.id },
-          data: { 
-            quantity: existingItem.quantity + quantity,
-            updatedAt: new Date()
-          },
-          include: {
-            product: true
-          }
-        })
-        return this.convertPrismaCartItem(updatedItem)
+      if (existing.length > 0) {
+        // Update existing item
+        const result = await DatabaseService.query(
+          'UPDATE "cartItems" SET quantity = quantity + $1, "updatedAt" = NOW() WHERE "userId" = $2 AND "productId" = $3 RETURNING *',
+          [quantity, userId, productId]
+        )
+        return result.length > 0 ? this.convertDbCartItem(result[0]) : null
       } else {
         // Create new item
-        const newItem = await prisma.cartItem.create({
-          data: {
-            userId,
-            productId,
-            quantity
-          },
-          include: {
-            product: true
-          }
-        })
-        return this.convertPrismaCartItem(newItem)
+        const id = `cart-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        const result = await DatabaseService.query(
+          'INSERT INTO "cartItems" (id, "userId", "productId", quantity, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING *',
+          [id, userId, productId, quantity]
+        )
+        return result.length > 0 ? this.convertDbCartItem(result[0]) : null
       }
     } catch (error) {
       console.error('Error adding to cart:', error)
@@ -92,51 +55,30 @@ export class CartService {
     }
   }
 
-  static async updateCartItemQuantity(userId: string, productId: string, quantity: number): Promise<CartItem | null> {
+  static async updateCartItem(itemId: string, quantity: number): Promise<CartItem | null> {
     try {
       if (quantity <= 0) {
-        await this.removeFromCart(userId, productId)
-        return null
+        return this.removeFromCart(itemId)
       }
 
-      const updatedItem = await prisma.cartItem.updateMany({
-        where: {
-          userId,
-          productId
-        },
-        data: {
-          quantity,
-          updatedAt: new Date()
-        }
-      })
+      const result = await DatabaseService.query(
+        'UPDATE "cartItems" SET quantity = $1, "updatedAt" = NOW() WHERE id = $2 RETURNING *',
+        [quantity, itemId]
+      )
 
-      if (updatedItem.count > 0) {
-        const item = await prisma.cartItem.findFirst({
-          where: {
-            userId,
-            productId
-          },
-          include: {
-            product: true
-          }
-        })
-        return item ? this.convertPrismaCartItem(item) : null
-      }
-      return null
+      return result.length > 0 ? this.convertDbCartItem(result[0]) : null
     } catch (error) {
       console.error('Error updating cart item:', error)
       return null
     }
   }
 
-  static async removeFromCart(userId: string, productId: string): Promise<boolean> {
+  static async removeFromCart(itemId: string): Promise<boolean> {
     try {
-      await prisma.cartItem.deleteMany({
-        where: {
-          userId,
-          productId
-        }
-      })
+      await DatabaseService.query(
+        'DELETE FROM "cartItems" WHERE id = $1',
+        [itemId]
+      )
       return true
     } catch (error) {
       console.error('Error removing from cart:', error)
@@ -146,9 +88,10 @@ export class CartService {
 
   static async clearCart(userId: string): Promise<boolean> {
     try {
-      await prisma.cartItem.deleteMany({
-        where: { userId }
-      })
+      await DatabaseService.query(
+        'DELETE FROM "cartItems" WHERE "userId" = $1',
+        [userId]
+      )
       return true
     } catch (error) {
       console.error('Error clearing cart:', error)
@@ -157,34 +100,42 @@ export class CartService {
   }
 
   static async getCartItemCount(userId: string): Promise<number> {
-    // Don't run Prisma in browser
-    if (typeof window !== 'undefined') {
-      return 0
-    }
-    
     try {
-      const result = await prisma.cartItem.aggregate({
-        where: { userId },
-        _sum: {
-          quantity: true
-        }
-      })
-      return result._sum.quantity || 0
+      const result = await DatabaseService.query(
+        'SELECT COUNT(*) as count FROM "cartItems" WHERE "userId" = $1',
+        [userId]
+      )
+      return parseInt(result[0].count || '0', 10)
     } catch (error) {
-      console.error('Error getting cart count:', error)
+      console.error('Error getting cart item count:', error)
       return 0
     }
   }
 
   static async getCartTotal(userId: string): Promise<number> {
     try {
-      const items = await this.getCartItems(userId)
-      return items.reduce((total, item) => {
-        return total + (item.product.price * item.quantity)
-      }, 0)
+      const result = await DatabaseService.query(
+        `SELECT SUM(ci.quantity * p.price) as total
+         FROM "cartItems" ci
+         JOIN products p ON ci."productId" = p.id
+         WHERE ci."userId" = $1`,
+        [userId]
+      )
+      return parseFloat(result[0].total || '0')
     } catch (error) {
-      console.error('Error calculating cart total:', error)
+      console.error('Error getting cart total:', error)
       return 0
+    }
+  }
+
+  private static convertDbCartItem(dbItem: any): CartItem {
+    return {
+      id: dbItem.id,
+      userId: dbItem.userId,
+      productId: dbItem.productId,
+      quantity: parseInt(dbItem.quantity || '0', 10),
+      createdAt: dbItem.createdAt ? new Date(dbItem.createdAt).toISOString() : new Date().toISOString(),
+      updatedAt: dbItem.updatedAt ? new Date(dbItem.updatedAt).toISOString() : new Date().toISOString()
     }
   }
 }
