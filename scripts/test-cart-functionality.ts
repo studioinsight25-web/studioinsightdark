@@ -96,7 +96,8 @@ async function testCartFunctionality() {
     console.log('\n🎉 All cart functionalities tested successfully!')
     
   } catch (error) {
-    console.error('❌ Cart test failed:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('❌ Cart test failed:', errorMessage)
   } finally {
     // Cleanup
     console.log('\n🧹 Cleaning up test data...')
