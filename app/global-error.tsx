@@ -40,7 +40,7 @@ export default function GlobalError({
               <div className="mb-8 p-4 bg-red-900/20 border border-red-500/30 rounded-lg text-left">
                 <h3 className="font-semibold text-red-400 mb-2">Error Details:</h3>
                 <pre className="text-sm text-red-300 overflow-auto">
-                  {error.message}
+                  {error?.message || 'Unknown error'}
                 </pre>
                 {error.digest && (
                   <p className="text-xs text-red-400 mt-2">
@@ -86,5 +86,6 @@ export default function GlobalError({
     </html>
   )
 }
+
 
 
