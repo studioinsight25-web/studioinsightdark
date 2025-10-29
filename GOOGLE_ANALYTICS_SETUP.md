@@ -40,3 +40,4 @@
 - De Google Analytics code is al geïntegreerd in je website
 - Alle e-commerce events (purchases, add to cart, etc.) zijn al geconfigureerd
 - De admin analytics pagina is klaar voor live data zodra je GA ID instelt
+

@@ -22,3 +22,4 @@ async function deleteWrongCourse() {
 }
 
 deleteWrongCourse()
+

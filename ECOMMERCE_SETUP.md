@@ -146,3 +146,4 @@ JWT_SECRET=your-super-secret-jwt-key-here
 4. Toegang te krijgen tot gekochte content
 
 
+
