@@ -18,3 +18,4 @@ console.log('🔄 Please refresh the page to load products from database')
 // Force reload
 window.location.reload()
 
+

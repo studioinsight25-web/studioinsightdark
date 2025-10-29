@@ -181,6 +181,6 @@ export class DatabaseCartService {
   }
 }
 
-// Export both names for compatibility
-export { DatabaseCartService as CartService }
+// Export both names for compatibility  
+export const CartService = DatabaseCartService
 export { DatabaseCartService }

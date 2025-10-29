@@ -74,3 +74,4 @@ export async function GET() {
     email: 'admin@studio-insight.nl'
   })
 }
+

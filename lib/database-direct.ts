@@ -1,10 +1,16 @@
 // lib/database-direct.ts - Direct PostgreSQL database service
-import { Pool } from 'pg'
+// This file should ONLY be imported server-side
 
-let pool: Pool | null = null
+let pool: any = null
 
-function getPool() {
+async function getPool() {
+  if (typeof window !== 'undefined') {
+    throw new Error('DatabaseService can only be used server-side')
+  }
+  
   if (!pool) {
+    // Dynamic import to prevent client-side bundling
+    const { Pool } = await import('pg')
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
       ssl: {
@@ -20,7 +26,7 @@ export class DatabaseService {
     if (typeof window !== 'undefined') {
       throw new Error('DatabaseService can only be used server-side')
     }
-    const pool = getPool()
+    const pool = await getPool()
     const result = await pool.query(text, params)
     return result.rows
   }

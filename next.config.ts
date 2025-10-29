@@ -83,7 +83,7 @@ const nextConfig: NextConfig = {
   },
 
       // External packages for server components
-      serverExternalPackages: [],
+      serverExternalPackages: ['pg', 'pg-connection-string'],
 };
 
 export default nextConfig;
