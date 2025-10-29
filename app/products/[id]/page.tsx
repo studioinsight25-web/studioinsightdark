@@ -20,7 +20,7 @@ import {
 import { Product, formatPrice } from '@/lib/products'
 import { ProductService } from '@/lib/products'
 import { trackViewItem, trackCourseEnrollment, trackEbookDownload, trackReviewView, trackAddToCart } from '@/lib/analytics'
-import { CartService } from '@/lib/cart-database'
+// Removed direct database import - using API routes instead
 import SessionManager from '@/lib/session'
 
 export default function ProductDetailPage() {
@@ -66,8 +66,18 @@ export default function ProductDetailPage() {
     }
 
     try {
-      const success = await CartService.addToCart(userId, product.id, 1)
-      if (success) {
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          quantity: 1
+        })
+      })
+
+      if (response.ok) {
         trackAddToCart(product)
         window.dispatchEvent(new CustomEvent('cartUpdated'))
         alert(`${product.name} is toegevoegd aan je winkelwagen!`)

@@ -259,6 +259,6 @@ export class DatabaseOrderService {
   }
 }
 
-// Export both names for compatibility
-export const OrderDatabaseService = DatabaseOrderService
+// Export with both names for compatibility
 export { DatabaseOrderService }
+export { DatabaseOrderService as OrderDatabaseService }

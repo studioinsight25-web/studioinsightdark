@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { Menu, X, User, LogOut, LayoutDashboard, ShoppingCart } from 'lucide-react'
-import { CartService } from '@/lib/cart-database'
+// Removed direct database import - using API routes instead
 import SessionManager from '@/lib/session'
 
 interface User {
@@ -43,8 +43,12 @@ export default function Header() {
       const userId = SessionManager.getCurrentUserId()
       if (userId) {
         try {
-          const count = await CartService.getCartItemCount(userId)
-          setCartItemCount(count)
+          const response = await fetch('/api/cart')
+          if (response.ok) {
+            const data = await response.json()
+            const count = data.cartItems.length
+            setCartItemCount(count)
+          }
         } catch (error) {
           console.error('Error loading cart count:', error)
         }

@@ -2,14 +2,34 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Server-side only packages
+  serverExternalPackages: ['pg', 'pg-connection-string', 'pg-pool', 'pgpass'],
+  
   // Disable Turbopack for production builds (Vercel compatibility)
   experimental: {
-    // Disable Turbopack to avoid WASM binding issues on Vercel
   },
 
   // Silence multi-lockfile root inference warnings by pinning root
   turbopack: {
     root: '.'
+  },
+  
+  // Webpack configuration to exclude pg from client bundles
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Don't resolve pg on the client side
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        dns: false,
+        pg: false,
+        'pg-connection-string': false,
+        'pg-pool': false,
+      };
+    }
+    return config;
   },
   
   images: {
@@ -81,9 +101,6 @@ const nextConfig: NextConfig = {
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
-
-      // External packages for server components
-      serverExternalPackages: ['pg', 'pg-connection-string'],
 };
 
 export default nextConfig;

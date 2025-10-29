@@ -1,8 +1,16 @@
 'use client'
 
-// hooks/useCart.ts - Custom hook for cart management
+// hooks/useCart.ts - Custom hook for cart management using API routes
 import { useState, useEffect } from 'react'
-import { CartService, CartItem } from '@/lib/cart-database'
+
+export interface CartItem {
+  id: string
+  userId: string
+  productId: string
+  quantity: number
+  createdAt: string
+  updatedAt: string
+}
 
 export function useCart(userId: string) {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
@@ -13,9 +21,14 @@ export function useCart(userId: string) {
     const loadCartItems = async () => {
       try {
         setLoading(true)
-        const items = await CartService.getCartItems(userId)
-        setCartItems(items)
-        setError(null)
+        const response = await fetch('/api/cart')
+        if (response.ok) {
+          const data = await response.json()
+          setCartItems(data.cartItems || [])
+          setError(null)
+        } else {
+          setError('Failed to load cart items')
+        }
       } catch (err) {
         console.error('Error loading cart items:', err)
         setError('Failed to load cart items')
@@ -31,21 +44,30 @@ export function useCart(userId: string) {
 
   const addToCart = async (productId: string, quantity: number = 1) => {
     try {
-      const newItem = await CartService.addToCart(userId, productId, quantity)
-      if (newItem) {
-        // Update local state
-        const existingItemIndex = cartItems.findIndex(item => item.productId === productId)
-        if (existingItemIndex >= 0) {
-          setCartItems(prev => prev.map((item, index) => 
-            index === existingItemIndex ? newItem : item
-          ))
-        } else {
-          setCartItems(prev => [...prev, newItem])
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId,
+          quantity
+        })
+      })
+
+      if (response.ok) {
+        // Reload cart items
+        const cartResponse = await fetch('/api/cart')
+        if (cartResponse.ok) {
+          const data = await cartResponse.json()
+          setCartItems(data.cartItems || [])
         }
         setError(null)
         return true
+      } else {
+        setError('Failed to add item to cart')
+        return false
       }
-      return false
     } catch (err) {
       console.error('Error adding to cart:', err)
       setError('Failed to add item to cart')
@@ -55,15 +77,36 @@ export function useCart(userId: string) {
 
   const updateQuantity = async (productId: string, quantity: number) => {
     try {
-      const updatedItem = await CartService.updateCartItemQuantity(userId, productId, quantity)
-      if (updatedItem) {
-        setCartItems(prev => prev.map(item => 
-          item.productId === productId ? updatedItem : item
-        ))
+      // For now, remove and re-add with new quantity
+      // In a real app, you'd have a PUT endpoint for this
+      if (quantity <= 0) {
+        return await removeFromCart(productId)
+      }
+
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId,
+          quantity
+        })
+      })
+
+      if (response.ok) {
+        // Reload cart items
+        const cartResponse = await fetch('/api/cart')
+        if (cartResponse.ok) {
+          const data = await cartResponse.json()
+          setCartItems(data.cartItems || [])
+        }
         setError(null)
         return true
+      } else {
+        setError('Failed to update quantity')
+        return false
       }
-      return false
     } catch (err) {
       console.error('Error updating quantity:', err)
       setError('Failed to update quantity')
@@ -73,13 +116,18 @@ export function useCart(userId: string) {
 
   const removeFromCart = async (productId: string) => {
     try {
-      const success = await CartService.removeFromCart(userId, productId)
-      if (success) {
+      const response = await fetch(`/api/cart?productId=${productId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
         setCartItems(prev => prev.filter(item => item.productId !== productId))
         setError(null)
         return true
+      } else {
+        setError('Failed to remove item from cart')
+        return false
       }
-      return false
     } catch (err) {
       console.error('Error removing from cart:', err)
       setError('Failed to remove item from cart')
@@ -89,13 +137,13 @@ export function useCart(userId: string) {
 
   const clearCart = async () => {
     try {
-      const success = await CartService.clearCart(userId)
-      if (success) {
-        setCartItems([])
-        setError(null)
-        return true
+      // Remove all items one by one
+      for (const item of cartItems) {
+        await removeFromCart(item.productId)
       }
-      return false
+      setCartItems([])
+      setError(null)
+      return true
     } catch (err) {
       console.error('Error clearing cart:', err)
       setError('Failed to clear cart')
@@ -105,7 +153,12 @@ export function useCart(userId: string) {
 
   const getTotalPrice = async () => {
     try {
-      return await CartService.getCartTotal(userId)
+      const response = await fetch('/api/cart/total')
+      if (response.ok) {
+        const data = await response.json()
+        return data.total || 0
+      }
+      return 0
     } catch (err) {
       console.error('Error getting cart total:', err)
       return 0
@@ -128,4 +181,3 @@ export function useCart(userId: string) {
     getItemCount,
   }
 }
-
