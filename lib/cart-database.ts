@@ -214,6 +214,5 @@ export class DatabaseCartService {
   }
 }
 
-// Export with both names for compatibility
-export { DatabaseCartService }
+// Export with alias for compatibility
 export { DatabaseCartService as CartService }
