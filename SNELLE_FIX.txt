@@ -1,0 +1,41 @@
+SNELLE FIX VOOR CLOUDINARY PROBLEEM
+===================================
+
+Het probleem: Je hebt 2 upload presets met de naam "studio-insight"
+- Oude versie: Signed mode (werkt niet)
+- Nieuwe versie: Waarschijnlijk niet juist aangemaakt
+
+DE SNELSTE OPLOSSING:
+---------------------
+
+1. GA NAAR: https://console.cloudinary.com
+2. Ga naar: Settings > Upload > Upload presets
+3. VERWIJDER de oude "studio-insight" preset
+4. Klik op: "+ Add Upload Preset"
+5. Vul in:
+   - Preset name: studio-insight-unsigned
+   - Signing mode: Unsigned (BELANGRIJK!)
+   - ✓ Use filename
+   - ✓ Unique filename
+   - Folder: studio-insight/products
+   - Resource type: Image
+6. SAVE
+
+7. GA NAAR VERCEL:
+   - Settings > Environment Variables
+   - Edit CLOUDINARY_UPLOAD_PRESET
+   - Verander waarde van "studio-insight" naar "studio-insight-unsigned"
+   - SAVE
+
+8. REDEPLOY op Vercel
+
+OF...
+
+Gebruik een TIJDELIJK werkende oplossing:
+
+1. In Vercel, edit CLOUDINARY_UPLOAD_PRESET
+2. Verander naar: ml_default (de preset die WEL werkt)
+3. SAVE en REDEPLOY
+
+Dan kun je weer uploaden! Later kun je de juiste preset maken.
+
