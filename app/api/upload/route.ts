@@ -4,6 +4,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File;
+    const folder = formData.get("folder") as string || "studio-insight/products";
 
     if (!file) {
       return NextResponse.json(
@@ -48,9 +49,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
-    // ✅ Always use a safe folder path (no Windows-style local paths)
-    const folder = "studio-insight/products";
 
     // ✅ Sanitize filename
     const safeFileName = file.name.split(/[/\\]/).pop() || "upload.jpg";
