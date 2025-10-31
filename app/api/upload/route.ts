@@ -5,6 +5,13 @@ import { join } from 'path'
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
+    
+    // Debug: log all form data entries
+    console.log('All form data entries:')
+    for (const [key, value] of formData.entries()) {
+      console.log(`  ${key}:`, typeof value === 'string' ? value : `File: ${(value as File).name}`)
+    }
+    
     const file = formData.get('file') as File
     const folder = formData.get('folder') as string || 'studio-insight/products'
     
@@ -44,15 +51,23 @@ export async function POST(request: NextRequest) {
         console.log('File name:', file.name)
         console.log('File type:', file.type)
         console.log('File size:', file.size)
+        console.log('Folder from form:', folder)
         
         // Create a new File object with just the filename (not the full path)
         const sanitizedFileName = file.name.split(/[/\\]/).pop() || 'image.jpg'
         const sanitizedFile = new File([file], sanitizedFileName, { type: file.type })
         
+        console.log('Sanitized file name:', sanitizedFileName)
+        
         const cloudinaryFormData = new FormData()
         cloudinaryFormData.append('file', sanitizedFile)
         cloudinaryFormData.append('upload_preset', cloudinaryUploadPreset)
         cloudinaryFormData.append('folder', folder)
+        
+        // Debug: log what we're sending
+        console.log('Cloudinary cloud name:', cloudinaryCloudName)
+        console.log('Cloudinary upload preset:', cloudinaryUploadPreset)
+        console.log('Cloudinary folder:', folder)
 
         const response = await fetch(
           `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`,
