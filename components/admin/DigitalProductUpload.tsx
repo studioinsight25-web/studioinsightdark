@@ -3,7 +3,20 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Upload, File, X, Download, Trash2, AlertCircle } from 'lucide-react'
-import DigitalProductService, { DigitalProduct } from '@/lib/digital-products'
+
+export interface DigitalProduct {
+  id: string
+  productId: string
+  fileName: string
+  fileType: 'pdf' | 'video' | 'audio' | 'zip' | 'doc' | 'docx'
+  fileSize: number
+  fileUrl: string
+  secureUrl?: string
+  downloadLimit?: number
+  expiresAt?: string
+  createdAt: string
+  updatedAt: string
+}
 
 interface DigitalProductUploadProps {
   productId: string
@@ -28,17 +41,21 @@ export default function DigitalProductUpload({
       console.log('Loading digital products for productId:', productId)
       
       try {
-        const existingProducts = await DigitalProductService.getDigitalProductsByProductId(productId)
-        console.log('Found existing digital products:', existingProducts)
-        setDigitalProducts(existingProducts)
-        onDigitalProductsChange(existingProducts)
+        const response = await fetch(`/api/digital-products/${productId}`)
+        if (response.ok) {
+          const existingProducts = await response.json()
+          console.log('Found existing digital products:', existingProducts)
+          setDigitalProducts(existingProducts)
+          onDigitalProductsChange(existingProducts)
+        } else {
+          console.error('Failed to load digital products:', response.statusText)
+          setDigitalProducts([])
+          onDigitalProductsChange([])
+        }
       } catch (error) {
         console.error('Error loading digital products:', error)
-        // Fallback to sync method
-        DigitalProductService.initializeWithDefaults()
-        const existingProducts = DigitalProductService.getDigitalProductsByProductIdSync(productId)
-        setDigitalProducts(existingProducts)
-        onDigitalProductsChange(existingProducts)
+        setDigitalProducts([])
+        onDigitalProductsChange([])
       }
     }
 
@@ -98,20 +115,27 @@ export default function DigitalProductUpload({
 
       console.log('File validation passed, creating digital product...')
 
-      // Initialize the service
-      DigitalProductService.initializeWithDefaults()
-
-      // Create digital product
-      const digitalProduct = await DigitalProductService.addDigitalProduct({
-        productId,
-        fileName: file.name,
-        fileType: getFileType(file.type),
-        fileSize: file.size,
-        fileUrl: URL.createObjectURL(file), // Temporary URL for demo
-        downloadLimit: 5, // Default download limit
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+      // Create digital product via API
+      const response = await fetch(`/api/digital-products/${productId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: getFileType(file.type),
+          fileSize: file.size,
+          fileUrl: URL.createObjectURL(file), // Temporary URL for demo
+          downloadLimit: 5, // Default download limit
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+        })
       })
 
+      if (!response.ok) {
+        throw new Error('Failed to create digital product')
+      }
+
+      const digitalProduct = await response.json()
       console.log('Digital product created:', digitalProduct)
 
       // Update state
@@ -142,7 +166,14 @@ export default function DigitalProductUpload({
       console.log('Deleting digital product:', id)
       
       try {
-        await DigitalProductService.deleteDigitalProduct(id)
+        const response = await fetch(`/api/digital-products/${productId}?id=${id}`, {
+          method: 'DELETE'
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to delete digital product')
+        }
+        
         const updatedProducts = digitalProducts.filter(dp => dp.id !== id)
         setDigitalProducts(updatedProducts)
         onDigitalProductsChange(updatedProducts)
@@ -150,12 +181,7 @@ export default function DigitalProductUpload({
         console.log('Digital product deleted, updated list:', updatedProducts)
       } catch (error) {
         console.error('Error deleting digital product:', error)
-        // Fallback to sync method
-        DigitalProductService.initializeWithDefaults()
-        DigitalProductService.deleteDigitalProductSync(id)
-        const updatedProducts = digitalProducts.filter(dp => dp.id !== id)
-        setDigitalProducts(updatedProducts)
-        onDigitalProductsChange(updatedProducts)
+        setError('Kon digitale product niet verwijderen')
       }
     }
   }
