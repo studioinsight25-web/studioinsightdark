@@ -76,7 +76,7 @@ export class DatabaseOrderService {
         [userId]
       )
 
-      const orders = await Promise.all(result.map(async (order) => {
+      const orders = await Promise.all(result.map(async (order: any) => {
         const items = await this.getOrderItems(order.id)
         return {
           ...this.convertDbOrder(order),
