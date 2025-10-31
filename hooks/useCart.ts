@@ -2,15 +2,7 @@
 
 // hooks/useCart.ts - Custom hook for cart management using API routes
 import { useState, useEffect } from 'react'
-
-export interface CartItem {
-  id: string
-  userId: string
-  productId: string
-  quantity: number
-  createdAt: string
-  updatedAt: string
-}
+import { CartItem } from '@/lib/cart-database'
 
 export function useCart(userId: string) {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
