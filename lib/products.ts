@@ -239,8 +239,17 @@ export class ProductService {
       }
     }
     
-    // Client-side fallback to localStorage
+    // Client-side: use API to fetch from database
     if (typeof window !== 'undefined') {
+      try {
+        const response = await fetch(`/api/products/${productId}`)
+        if (response.ok) {
+          return await response.json()
+        }
+      } catch (error) {
+        console.error('Error fetching product from API:', error)
+      }
+      // Fallback to localStorage
       ProductStorage.initializeWithDefaults(Object.values(DEFAULT_PRODUCTS))
       return ProductStorage.getProduct(productId)
     }
