@@ -236,7 +236,7 @@ export class DatabaseOrderService {
         [orderId]
       )
 
-      return result.map(item => ({
+      return result.map((item: any) => ({
         id: item.id,
         orderId: item.orderId,
         productId: item.productId,
