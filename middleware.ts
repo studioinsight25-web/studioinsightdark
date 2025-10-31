@@ -8,6 +8,11 @@ export function middleware(request: NextRequest) {
       return NextResponse.next()
     }
 
+    // TEMPORARILY BYPASS AUTH FOR DEVELOPMENT/TESTING
+    // Allow access to all admin routes without authentication
+    return NextResponse.next()
+
+    /* Original auth check code (commented out for now)
     // Check for session cookie or authorization header
     const sessionCookie = request.cookies.get('studio-insight-session')
     
@@ -35,6 +40,7 @@ export function middleware(request: NextRequest) {
       // Invalid session
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
+    */
   }
 
   return NextResponse.next()
