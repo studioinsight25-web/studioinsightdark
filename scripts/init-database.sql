@@ -82,6 +82,19 @@ CREATE TABLE "digitalProducts" (
   "updatedAt" TIMESTAMP DEFAULT NOW()
 );
 
+-- Create newsletter_subscriptions table
+CREATE TABLE "newsletterSubscriptions" (
+  id VARCHAR(255) PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  name VARCHAR(255),
+  consent BOOLEAN DEFAULT true,
+  status VARCHAR(50) DEFAULT 'pending',
+  "confirmationToken" VARCHAR(255) UNIQUE,
+  "confirmedAt" TIMESTAMP,
+  "createdAt" TIMESTAMP DEFAULT NOW(),
+  "updatedAt" TIMESTAMP DEFAULT NOW()
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_products_type ON products(type);
