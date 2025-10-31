@@ -1,0 +1,41 @@
+PROBLEEM GEVONDEN!
+==================
+
+De `CLOUDINARY_UPLOAD_PRESET` variabele is NIET geladen in Vercel!
+
+VOLG DEZE STAPPEN:
+
+1. GA NAAR: https://vercel.com/dashboard
+2. Selecteer: studioinsightdark project
+3. Ga naar: Settings > Environment Variables
+
+4. CHECK of deze variabele bestaat:
+   Name: CLOUDINARY_UPLOAD_PRESET
+   Value: studio-insight
+   
+5. ALS ZE NIET BESTAAT:
+   - Klik "Add New"
+   - Name: CLOUDINARY_UPLOAD_PRESET
+   - Value: studio-insight
+   - Vink aan: Production, Preview, Development
+   - SAVE
+
+6. ALS ZE WEL BESTAAT MAAR NIET WERKT:
+   - Delete de variabele
+   - Voeg opnieuw toe (zie stap 5)
+
+7. REDEPLOY:
+   - Ga naar: Deployments tab
+   - Klik ⋯ naast laatste deployment
+   - Klik "Redeploy"
+
+8. TEST:
+   https://studioinsightdark.vercel.app/api/test-cloudinary
+   
+   Je moet nu zien:
+   "hasUploadPreset": true
+   "uploadPreset": "studio-insight"
+   "isConfigured": true
+
+SUCCES! 🎉
+
