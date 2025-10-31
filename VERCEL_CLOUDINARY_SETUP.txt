@@ -1,0 +1,69 @@
+VERCEL CLOUDINARY SETUP INSTRUCTIES
+=====================================
+
+Volg deze stappen om Cloudinary te configureren op Vercel:
+
+STAP 1: GA NAAR VERCEL DASHBOARD
+1. Open https://vercel.com en log in
+2. Selecteer je project: studioinsightdark
+
+STAP 2: ENVIRONMENT VARIABLES TOEVOEGEN
+1. Ga naar: Settings (bovenaan) > Environment Variables
+2. Klik op "Add New"
+
+3. Voeg deze 4 variabelen toe (één voor één):
+
+   Variabele 1:
+   Name: CLOUDINARY_CLOUD_NAME
+   Value: dtwjo4vti
+   Vink aan: Development, Preview, Production
+   Klik op "Save"
+
+   Variabele 2:
+   Name: CLOUDINARY_API_KEY
+   Value: 124393122489413
+   Vink aan: Development, Preview, Production
+   Klik op "Save"
+
+   Variabele 3:
+   Name: CLOUDINARY_API_SECRET
+   Value: IACDW07IOIWATI-mlwGTtKZWu3U
+   Vink aan: Development, Preview, Production
+   Klik op "Save"
+
+   Variabele 4:
+   Name: CLOUDINARY_UPLOAD_PRESET
+   Value: studio-insight
+   Vink aan: Development, Preview, Production
+   Klik op "Save"
+
+STAP 3: REDEPLOY
+1. Ga naar: Deployments tab
+2. Klik op de 3 dots (⋯) naast de laatste deployment
+3. Klik op "Redeploy"
+4. Wacht tot deployment klaar is
+
+STAP 4: CLOUDINARY UPLOAD PRESET AANMAKEN
+1. Ga naar: https://console.cloudinary.com
+2. Log in met je account
+3. Ga naar: Settings (tandwiel icoon) > Upload > Upload presets
+4. Klik op: "Add upload preset"
+5. Configureer:
+   - Preset name: studio-insight
+   - Signing mode: Unsigned
+   - Vink aan: "Use filename"
+   - Vink aan: "Unique filename"
+   - Folder: studio-insight/products
+   - Resource type: Image
+6. Klik op: "Save"
+
+STAP 5: TEST
+1. Ga naar je deployed website op Vercel
+2. Ga naar: /admin/products/new
+3. Upload een test afbeelding
+4. Check console voor "Uploading to Cloudinary..." log
+5. Afbeelding zou nu moeten werken!
+
+Lokaal is alles al geconfigureerd in .env.local
+Production in Vercel moet je handmatig instellen zoals hierboven.
+
