@@ -6,7 +6,7 @@ export async function requireAdmin() {
   // Temporarily bypass auth for development/testing
   return {
     id: 'admin-bypass',
-    email: 'admin@studioinsight.nl',
+    email: 'admin@studio-insight.nl',
     name: 'Admin User',
     role: 'admin' as const,
     purchasedCourses: []
@@ -22,7 +22,7 @@ export async function requireAdmin() {
   
   // In een echte app zou je hier de admin role checken
   // Voor nu accepteren we alle ingelogde gebruikers als admin
-  if (user.email !== 'admin@studioinsight.nl' && user.email !== 'demo@studioinsight.nl') {
+  if (user.email !== 'admin@studio-insight.nl' && user.email !== 'demo@studioinsight.nl') {
     // In productie: redirect naar unauthorized page
     console.warn('Non-admin user attempted to access admin panel:', user.email)
   }
@@ -35,7 +35,7 @@ export async function requireAdminAPI() {
   // Temporarily bypass auth for development/testing
   return {
     id: 'admin-bypass',
-    email: 'admin@studioinsight.nl',
+    email: 'admin@studio-insight.nl',
     name: 'Admin User',
     role: 'admin' as const,
     purchasedCourses: []
@@ -49,7 +49,7 @@ export async function requireAdminAPI() {
     throw new Error('Authentication required')
   }
   
-  if (user.email !== 'admin@studioinsight.nl' && user.email !== 'demo@studioinsight.nl') {
+  if (user.email !== 'admin@studio-insight.nl' && user.email !== 'demo@studioinsight.nl') {
     throw new Error('Admin access required')
   }
   

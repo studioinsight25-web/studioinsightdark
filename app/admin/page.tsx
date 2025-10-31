@@ -30,7 +30,7 @@ export default function AdminDashboard() {
     // Temporarily bypass auth for development/testing
     setUser({
       id: 'admin-bypass',
-      email: 'admin@studioinsight.nl',
+      email: 'admin@studio-insight.nl',
       name: 'Admin User',
       role: 'ADMIN'
     })
