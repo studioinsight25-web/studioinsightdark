@@ -259,6 +259,5 @@ export class DatabaseOrderService {
   }
 }
 
-// Export with both names for compatibility
-export { DatabaseOrderService }
+// Export with alias for compatibility
 export { DatabaseOrderService as OrderDatabaseService }
