@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { CreditCard, Lock, ArrowLeft, Check, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { trackPurchase } from '@/lib/analytics'
-import { OrderService } from '@/lib/orders'
 import SessionManager from '@/lib/session'
 
 interface CheckoutItem {
@@ -56,39 +55,13 @@ export default function CheckoutPage() {
         return
       }
 
-      // Create order in database
-      const order = await OrderService.createOrder(userId, items.map(item => ({
-        id: item.id,
-        name: item.name,
-        description: '',
-        price: item.price,
-        type: item.type,
-        isActive: true,
-        featured: false,
-        sales: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      })))
-
-      // Track purchase event
-      trackPurchase({
-        id: order.id,
-        total: getTotalPrice(),
-        items: items.map(item => ({
-          id: item.id,
-          name: item.name,
-          type: item.type,
-          price: item.price
-        }))
-      })
-
+      // Create payment via API (which creates the order)
       const response = await fetch('/api/checkout/create-payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          orderId: order.id,
           items: items.map(item => ({
             id: item.id,
             name: item.name,
@@ -101,6 +74,17 @@ export default function CheckoutPage() {
       const result = await response.json()
 
       if (response.ok && result.checkoutUrl) {
+        // Track purchase event with estimated order ID
+        trackPurchase({
+          id: result.orderId || 'temp-id',
+          total: getTotalPrice(),
+          items: items.map(item => ({
+            id: item.id,
+            name: item.name,
+            type: item.type,
+            price: item.price
+          }))
+        })
         // Clear checkout data
         sessionStorage.removeItem('checkout-items')
         // Redirect to Mollie checkout
