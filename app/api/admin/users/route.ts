@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
       'SELECT id, email, name, role, "createdAt", "updatedAt" FROM users ORDER BY "createdAt" DESC'
     )
 
-    return NextResponse.json(users.map(user => ({
+    return NextResponse.json(users.map((user: any) => ({
       id: user.id,
       email: user.email,
       name: user.name,
