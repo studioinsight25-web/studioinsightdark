@@ -41,8 +41,16 @@ export async function POST(request: NextRequest) {
     if (cloudinaryCloudName && cloudinaryUploadPreset) {
       try {
         console.log('Uploading to Cloudinary...')
+        console.log('File name:', file.name)
+        console.log('File type:', file.type)
+        console.log('File size:', file.size)
+        
+        // Create a new File object with just the filename (not the full path)
+        const sanitizedFileName = file.name.split(/[/\\]/).pop() || 'image.jpg'
+        const sanitizedFile = new File([file], sanitizedFileName, { type: file.type })
+        
         const cloudinaryFormData = new FormData()
-        cloudinaryFormData.append('file', file)
+        cloudinaryFormData.append('file', sanitizedFile)
         cloudinaryFormData.append('upload_preset', cloudinaryUploadPreset)
         cloudinaryFormData.append('folder', folder)
 
