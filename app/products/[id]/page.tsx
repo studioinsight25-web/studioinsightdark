@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { Product, formatPrice } from '@/lib/products'
 import { ProductService } from '@/lib/products'
-import { trackViewItem, trackCourseEnrollment, trackEbookDownload, trackReviewView, trackAddToCart } from '@/lib/analytics'
+import { trackViewItem, trackEbookDownload, trackReviewView, trackAddToCart } from '@/lib/analytics'
 // Removed direct database import - using API routes instead
 import SessionManager from '@/lib/session'
 
@@ -89,13 +89,6 @@ export default function ProductDetailPage() {
       console.error('Error adding to cart:', error)
       alert('Er is een fout opgetreden bij het toevoegen aan je winkelwagen.')
     }
-  }
-
-  const handleCourseEnrollment = () => {
-    if (!product) return
-    trackCourseEnrollment(product.id, product.name)
-    // Redirect to course content or dashboard
-    router.push('/dashboard')
   }
 
   const handleEbookDownload = () => {
@@ -300,18 +293,6 @@ export default function ProductDetailPage() {
                   </div>
                 )}
 
-                {/* Course Actions */}
-                {product.type === 'course' && !product.comingSoon && (
-                  <div className="space-y-3">
-                    <button
-                      onClick={handleCourseEnrollment}
-                      className="w-full bg-primary text-black py-3 px-6 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-300 flex items-center justify-center gap-2"
-                    >
-                      <Play className="w-5 h-5" />
-                      Start Cursus
-                    </button>
-                  </div>
-                )}
 
                 {/* E-book Actions */}
                 {product.type === 'ebook' && !product.comingSoon && (
