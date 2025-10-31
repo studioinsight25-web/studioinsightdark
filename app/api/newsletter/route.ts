@@ -60,7 +60,11 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
   } catch (error) {
     console.error('Error subscribing to newsletter:', error)
-    return NextResponse.json({ error: 'Kon je inschrijving niet verwerken' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    return NextResponse.json({ 
+      error: 'Kon je inschrijving niet verwerken',
+      details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+    }, { status: 500 })
   }
 }
 
