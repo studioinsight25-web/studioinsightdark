@@ -101,6 +101,7 @@ export default function NewProductPage() {
       window.location.href = `/admin/products/${newProduct.id}`
     } catch (error) {
       console.error('Error creating product:', error)
+      alert(`Fout bij aanmaken product: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsSubmitting(false)
     }
