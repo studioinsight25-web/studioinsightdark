@@ -35,7 +35,10 @@ export class DatabaseOrderService {
         return null
       }
 
-      return this.convertDbOrder(result[0])
+      return {
+        ...this.convertDbOrder(result[0]),
+        items: []
+      }
     } catch (error) {
       console.error('Error creating order:', error)
       return null
