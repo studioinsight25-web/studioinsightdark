@@ -143,7 +143,7 @@ export class DatabaseOrderService {
         'SELECT * FROM orders ORDER BY "createdAt" DESC'
       )
 
-      const orders = await Promise.all(result.map(async (order) => {
+      const orders = await Promise.all(result.map(async (order: any) => {
         const items = await this.getOrderItems(order.id)
         return {
           ...this.convertDbOrder(order),
@@ -165,7 +165,7 @@ export class DatabaseOrderService {
         [status]
       )
 
-      const orders = await Promise.all(result.map(async (order) => {
+      const orders = await Promise.all(result.map(async (order: any) => {
         const items = await this.getOrderItems(order.id)
         return {
           ...this.convertDbOrder(order),
@@ -187,7 +187,7 @@ export class DatabaseOrderService {
         [startDate, endDate]
       )
 
-      const orders = await Promise.all(result.map(async (order) => {
+      const orders = await Promise.all(result.map(async (order: any) => {
         const items = await this.getOrderItems(order.id)
         return {
           ...this.convertDbOrder(order),
