@@ -85,7 +85,7 @@ export class DatabaseCartService {
       }
 
       if (quantity <= 0) {
-        await this.removeFromCart(existing[0].id)
+        await this.removeCartItemById(existing[0].id)
         return null
       }
 
@@ -104,7 +104,8 @@ export class DatabaseCartService {
   static async updateCartItem(itemId: string, quantity: number): Promise<CartItem | null> {
     try {
       if (quantity <= 0) {
-        return this.removeFromCart(itemId)
+        await this.removeCartItemById(itemId)
+        return null
       }
 
       const result = await DatabaseService.query(
@@ -132,7 +133,7 @@ export class DatabaseCartService {
     }
   }
 
-  static async removeFromCart(itemId: string): Promise<boolean> {
+  static async removeCartItemById(itemId: string): Promise<boolean> {
     try {
       await DatabaseService.query(
         'DELETE FROM "cartItems" WHERE id = $1',
