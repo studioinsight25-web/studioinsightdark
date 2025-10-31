@@ -1,6 +1,6 @@
 // app/api/download/[productId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import DigitalProductService from '@/lib/digital-products'
+import { DigitalProductDatabaseService } from '@/lib/digital-products-database'
 
 export async function GET(
   request: NextRequest,
@@ -48,7 +48,7 @@ export async function GET(
     }
 
     // Get digital product
-    const digitalProduct = await DigitalProductService.getDigitalProduct(productId)
+    const digitalProduct = await DigitalProductDatabaseService.getDigitalProduct(productId)
     if (!digitalProduct) {
       return NextResponse.json(
         { error: 'Digital product not found' },
@@ -56,16 +56,19 @@ export async function GET(
       )
     }
 
-    // Check if user can download
-    if (!DigitalProductService.canUserDownload(userId, productId)) {
+    // Check if user can download (simplified for API route)
+    const downloadRecord = await DigitalProductDatabaseService.getUserDownload(userId, productId)
+    const downloadCount = downloadRecord ? downloadRecord.downloadCount : 0
+    
+    if (digitalProduct.downloadLimit && downloadCount >= digitalProduct.downloadLimit) {
       return NextResponse.json(
-        { error: 'Download limit exceeded or product expired' },
+        { error: 'Download limit exceeded' },
         { status: 403 }
       )
     }
 
     // Track download
-    DigitalProductService.trackDownload(userId, productId)
+    await DigitalProductDatabaseService.trackDownload(userId, productId)
 
     // In production, you would:
     // 1. Generate a signed URL from your cloud storage (AWS S3, Cloudinary, etc.)
@@ -110,7 +113,7 @@ export async function POST(
     // In production, verify user has purchased the product
     
     // Get digital product to generate download URL
-    const digitalProduct = await DigitalProductService.getDigitalProduct(productId)
+    const digitalProduct = await DigitalProductDatabaseService.getDigitalProduct(productId)
     
     if (!digitalProduct) {
       return NextResponse.json(
