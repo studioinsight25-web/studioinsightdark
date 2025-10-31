@@ -6,6 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File
+    const folder = formData.get('folder') as string || 'studio-insight/products'
     
     if (!file) {
       return NextResponse.json(
@@ -32,7 +33,52 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Convert file to buffer
+    // Try Cloudinary first if configured
+    const cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME
+    const cloudinaryUploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET
+
+    if (cloudinaryCloudName && cloudinaryUploadPreset) {
+      try {
+        console.log('Uploading to Cloudinary...')
+        const cloudinaryFormData = new FormData()
+        cloudinaryFormData.append('file', file)
+        cloudinaryFormData.append('upload_preset', cloudinaryUploadPreset)
+        cloudinaryFormData.append('folder', folder)
+
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`,
+          {
+            method: 'POST',
+            body: cloudinaryFormData,
+          }
+        )
+
+        if (!response.ok) {
+          throw new Error(`Cloudinary upload failed: ${response.statusText}`)
+        }
+
+        const result = await response.json()
+        console.log('Cloudinary upload successful')
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            public_id: result.public_id,
+            secure_url: result.secure_url,
+            width: result.width,
+            height: result.height,
+            format: result.format,
+            bytes: result.bytes,
+          },
+        })
+      } catch (cloudinaryError) {
+        console.error('Cloudinary upload failed, falling back to local:', cloudinaryError)
+        // Fall through to local upload
+      }
+    }
+
+    // Fallback to local upload
+    console.log('Uploading locally...')
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
