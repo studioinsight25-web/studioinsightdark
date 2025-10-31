@@ -245,6 +245,10 @@ export class ProductService {
         const response = await fetch(`/api/products/${productId}`)
         if (response.ok) {
           return await response.json()
+        } else {
+          console.error('API returned error:', response.status, response.statusText)
+          const errorData = await response.json().catch(() => ({}))
+          console.error('Error data:', errorData)
         }
       } catch (error) {
         console.error('Error fetching product from API:', error)
