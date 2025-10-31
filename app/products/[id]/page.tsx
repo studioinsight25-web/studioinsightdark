@@ -221,7 +221,9 @@ export default function ProductDetailPage() {
                   </div>
 
                   <h2 className="text-2xl font-bold text-white mb-4">{product.name}</h2>
-                  <p className="text-text-secondary mb-6">{product.description}</p>
+                  <div className="text-text-secondary mb-6 whitespace-pre-wrap leading-relaxed">
+                    {product.description}
+                  </div>
 
                   {/* Course Stats */}
                   {product.type === 'course' && (
