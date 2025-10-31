@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
     // Try Cloudinary first if configured
     const cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME
     const cloudinaryUploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET
+    const isVercel = !!process.env.VERCEL
 
     if (cloudinaryCloudName && cloudinaryUploadPreset) {
       try {
@@ -54,7 +55,9 @@ export async function POST(request: NextRequest) {
         )
 
         if (!response.ok) {
-          throw new Error(`Cloudinary upload failed: ${response.statusText}`)
+          const errorText = await response.text()
+          console.error('Cloudinary upload failed:', errorText)
+          throw new Error(`Cloudinary upload failed: ${response.statusText} - ${errorText}`)
         }
 
         const result = await response.json()
@@ -72,13 +75,34 @@ export async function POST(request: NextRequest) {
           },
         })
       } catch (cloudinaryError) {
-        console.error('Cloudinary upload failed, falling back to local:', cloudinaryError)
-        // Fall through to local upload
+        console.error('Cloudinary upload failed:', cloudinaryError)
+        // On Vercel, don't fall back to local - that won't work
+        if (isVercel) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: 'Cloudinary upload failed. Please configure Cloudinary environment variables on Vercel.' 
+            },
+            { status: 500 }
+          )
+        }
+        // Fall through to local upload only in development
       }
     }
 
-    // Fallback to local upload
+    // Fallback to local upload (only in development)
     console.log('Uploading locally...')
+    
+    // On Vercel without Cloudinary configured, return error
+    if (isVercel) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET environment variables.' 
+        },
+        { status: 500 }
+      )
+    }
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
