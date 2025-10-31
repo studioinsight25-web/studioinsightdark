@@ -83,8 +83,18 @@ API Routes:
 
 ### 🛠️ **Setup Instructies:**
 
-1. **Environment Variables**:
+1. **Database Setup (VERPLICHT)**:
+   - Ga naar je Neon database console op Vercel
+   - Open SQL Editor
+   - Kopieer en voer uit: `scripts/init-database.sql`
+   - Dit maakt alle tabellen aan: users, products, orders, order_items, digital_products
+   - Er wordt een standaard admin user aangemaakt (email: admin@studioinsight.nl, password: admin123)
+
+2. **Environment Variables**:
 ```bash
+# Database URL (automatisch ingesteld door Vercel Neon)
+DATABASE_URL=postgresql://...
+
 # Mollie API Key (test mode)
 MOLLIE_API_KEY=test_dHar4XY7LxsDOtmnkVtjNVWXLSlXsM
 
@@ -93,14 +103,20 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3000
 
 # JWT Secret
 JWT_SECRET=your-super-secret-jwt-key-here
+
+# Cloudinary (voor product afbeeldingen)
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+CLOUDINARY_UPLOAD_PRESET=studio-insight
 ```
 
-2. **Mollie Account Setup**:
+3. **Mollie Account Setup**:
    - Maak account aan op mollie.com
    - Genereer API key (test mode voor development)
    - Configureer webhook URL: `https://your-domain.com/api/payment/webhook`
 
-3. **Test Payments**:
+4. **Test Payments**:
    - Gebruik Mollie test mode
    - Test met test creditcard nummers
    - Verificeer webhook functionaliteit
