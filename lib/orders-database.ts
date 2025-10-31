@@ -218,7 +218,7 @@ export class DatabaseOrderService {
         [limit]
       )
 
-      return result.map(row => ({
+      return result.map((row: any) => ({
         productId: row.productId,
         totalSold: parseInt(row.totalSold || '0', 10),
         totalRevenue: parseFloat(row.totalRevenue || '0')
