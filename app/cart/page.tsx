@@ -40,18 +40,21 @@ export default function CartPage() {
   const handleCheckout = () => {
     if (cartItems.length === 0) return
     
-    // Track begin checkout event
-    trackBeginCheckout(cartItems.map(item => item.product))
+    // Track begin checkout event (filter out undefined products)
+    const products = cartItems.map(item => item.product).filter((p): p is NonNullable<typeof p> => p !== undefined)
+    trackBeginCheckout(products)
     
     // Store checkout data
     const checkoutData = {
-      items: cartItems.map(item => ({
-        id: item.product.id,
-        name: item.product.name,
-        price: item.product.price,
-        quantity: item.quantity,
-        type: item.product.type
-      })),
+      items: cartItems
+        .filter(item => item.product !== undefined)
+        .map(item => ({
+          id: item.product!.id,
+          name: item.product!.name,
+          price: item.product!.price,
+          quantity: item.quantity,
+          type: item.product!.type
+        })),
       total: getTotalPrice()
     }
     
@@ -157,66 +160,68 @@ export default function CartPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-4 bg-dark-section rounded-lg">
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-dark-card rounded-lg overflow-hidden">
-                          {item.product.imageUrl ? (
-                            <Image
-                              src={item.product.imageUrl}
-                              alt={item.product.name}
-                              width={64}
-                              height={64}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-dark-border flex items-center justify-center">
-                              <ShoppingCart className="w-6 h-6 text-text-secondary" />
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-white">{item.product.name}</h3>
-                          <p className="text-sm text-text-secondary">
-                            {item.product.type === 'course' ? 'Cursus' : 
-                             item.product.type === 'ebook' ? 'E-book' : 'Review'}
-                          </p>
-                          <p className="text-primary font-semibold">
-                            {formatPrice(item.product.price)}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        {/* Quantity Controls */}
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleQuantityChange(item.productId, item.quantity - 1)}
-                            className="w-8 h-8 bg-dark-section border border-dark-border rounded-lg flex items-center justify-center hover:border-primary transition-colors"
-                          >
-                            <Minus className="w-4 h-4 text-white" />
-                          </button>
-                          <span className="w-8 text-center text-white font-semibold">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() => handleQuantityChange(item.productId, item.quantity + 1)}
-                            className="w-8 h-8 bg-dark-section border border-dark-border rounded-lg flex items-center justify-center hover:border-primary transition-colors"
-                          >
-                            <Plus className="w-4 h-4 text-white" />
-                          </button>
+                  {cartItems
+                    .filter(item => item.product !== undefined)
+                    .map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-4 bg-dark-section rounded-lg">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 bg-dark-card rounded-lg overflow-hidden">
+                            {item.product!.imageUrl ? (
+                              <Image
+                                src={item.product!.imageUrl}
+                                alt={item.product!.name}
+                                width={64}
+                                height={64}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-dark-border flex items-center justify-center">
+                                <ShoppingCart className="w-6 h-6 text-text-secondary" />
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-white">{item.product!.name}</h3>
+                            <p className="text-sm text-text-secondary">
+                              {item.product!.type === 'course' ? 'Cursus' : 
+                               item.product!.type === 'ebook' ? 'E-book' : 'Review'}
+                            </p>
+                            <p className="text-primary font-semibold">
+                              {formatPrice(item.product!.price)}
+                            </p>
+                          </div>
                         </div>
                         
-                        {/* Remove Button */}
-                        <button 
-                          onClick={() => removeFromCart(item.productId)}
-                          className="text-red-400 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-3">
+                          {/* Quantity Controls */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleQuantityChange(item.productId, item.quantity - 1)}
+                              className="w-8 h-8 bg-dark-section border border-dark-border rounded-lg flex items-center justify-center hover:border-primary transition-colors"
+                            >
+                              <Minus className="w-4 h-4 text-white" />
+                            </button>
+                            <span className="w-8 text-center text-white font-semibold">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() => handleQuantityChange(item.productId, item.quantity + 1)}
+                              className="w-8 h-8 bg-dark-section border border-dark-border rounded-lg flex items-center justify-center hover:border-primary transition-colors"
+                            >
+                              <Plus className="w-4 h-4 text-white" />
+                            </button>
+                          </div>
+                          
+                          {/* Remove Button */}
+                          <button 
+                            onClick={() => removeFromCart(item.productId)}
+                            className="text-red-400 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
             </div>
