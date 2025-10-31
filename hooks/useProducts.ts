@@ -54,7 +54,9 @@ export function useProducts() {
         setProducts(prev => [...prev, newProduct])
         return newProduct
       } else {
-        throw new Error('Failed to create product')
+        const errorData = await response.json()
+        console.error('useProducts: Failed to create product:', errorData)
+        throw new Error(errorData.error || 'Failed to create product')
       }
     } catch (error) {
       console.error('Error adding product:', error)
