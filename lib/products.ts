@@ -1,6 +1,5 @@
 // lib/products.ts - Centralized Product Management
 import ProductStorage from './product-storage'
-import { DatabaseProductService } from './products-database'
 
 export interface Product {
   id: string
@@ -213,6 +212,7 @@ export class ProductService {
     // Only use database on server-side
     if (typeof window === 'undefined') {
       try {
+        const { DatabaseProductService } = await import('./products-database')
         return await DatabaseProductService.getAllProducts()
       } catch (error) {
         console.error('Error fetching products from database:', error)
@@ -232,6 +232,7 @@ export class ProductService {
     // Only use database on server-side
     if (typeof window === 'undefined') {
       try {
+        const { DatabaseProductService } = await import('./products-database')
         return await DatabaseProductService.getProduct(productId)
       } catch (error) {
         console.error('Error fetching product from database:', error)
@@ -251,6 +252,7 @@ export class ProductService {
     // Only use database on server-side
     if (typeof window === 'undefined') {
       try {
+        const { DatabaseProductService } = await import('./products-database')
         return await DatabaseProductService.getProductsByType(type)
       } catch (error) {
         console.error('Error fetching products by type from database:', error)
@@ -270,6 +272,7 @@ export class ProductService {
     // Only use database on server-side
     if (typeof window === 'undefined') {
       try {
+        const { DatabaseProductService } = await import('./products-database')
         return await DatabaseProductService.getActiveProducts()
       } catch (error) {
         console.error('Error fetching active products from database:', error)
@@ -289,6 +292,7 @@ export class ProductService {
     // Only use database on server-side
     if (typeof window === 'undefined') {
       try {
+        const { DatabaseProductService } = await import('./products-database')
         return await DatabaseProductService.getFeaturedProducts()
       } catch (error) {
         console.error('Error fetching featured products from database:', error)
@@ -308,6 +312,7 @@ export class ProductService {
     // Only use database on server-side
     if (typeof window === 'undefined') {
       try {
+        const { DatabaseProductService } = await import('./products-database')
         return await DatabaseProductService.getProductsByCategory(category)
       } catch (error) {
         console.error('Error fetching products by category from database:', error)
@@ -327,6 +332,7 @@ export class ProductService {
     // Only use database on server-side
     if (typeof window === 'undefined') {
       try {
+        const { DatabaseProductService } = await import('./products-database')
         return await DatabaseProductService.searchProducts(query)
       } catch (error) {
         console.error('Error searching products from database:', error)
@@ -354,6 +360,7 @@ export class ProductService {
     // Only use database on server-side
     if (typeof window === 'undefined') {
       try {
+        const { DatabaseProductService } = await import('./products-database')
         return await DatabaseProductService.updateProduct(productId, updates)
       } catch (error) {
         console.error('Error updating product in database:', error)
@@ -373,6 +380,7 @@ export class ProductService {
     // Only use database on server-side
     if (typeof window === 'undefined') {
       try {
+        const { DatabaseProductService } = await import('./products-database')
         return await DatabaseProductService.deleteProduct(productId)
       } catch (error) {
         console.error('Error deleting product from database:', error)
@@ -392,6 +400,7 @@ export class ProductService {
     // Only use database on server-side
     if (typeof window === 'undefined') {
       try {
+        const { DatabaseProductService } = await import('./products-database')
         return await DatabaseProductService.createProduct(product)
       } catch (error) {
         console.error('Error creating product in database:', error)

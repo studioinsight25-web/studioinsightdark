@@ -1,8 +1,6 @@
 // lib/digital-products.ts
 'use client'
 
-import { DigitalProductDatabaseService } from './digital-products-database'
-
 export interface DigitalProduct {
   id: string
   productId: string
@@ -54,6 +52,7 @@ class DigitalProductService {
   // Database methods
   static async getAllDigitalProducts(): Promise<DigitalProduct[]> {
     try {
+      const { DigitalProductDatabaseService } = await import('./digital-products-database')
       return await DigitalProductDatabaseService.getAllDigitalProducts()
     } catch (error) {
       console.error('Error fetching digital products:', error)
@@ -68,6 +67,7 @@ class DigitalProductService {
 
   static async getDigitalProductsByProductId(productId: string): Promise<DigitalProduct[]> {
     try {
+      const { DigitalProductDatabaseService } = await import('./digital-products-database')
       return await DigitalProductDatabaseService.getDigitalProductsByProductId(productId)
     } catch (error) {
       console.error('Error fetching digital products by product ID:', error)
@@ -82,6 +82,7 @@ class DigitalProductService {
 
   static async getDigitalProduct(digitalProductId: string): Promise<DigitalProduct | null> {
     try {
+      const { DigitalProductDatabaseService } = await import('./digital-products-database')
       return await DigitalProductDatabaseService.getDigitalProduct(digitalProductId)
     } catch (error) {
       console.error('Error fetching digital product:', error)
@@ -96,6 +97,7 @@ class DigitalProductService {
 
   static async addDigitalProduct(product: Omit<DigitalProduct, 'id' | 'createdAt' | 'updatedAt'>): Promise<DigitalProduct> {
     try {
+      const { DigitalProductDatabaseService } = await import('./digital-products-database')
       return await DigitalProductDatabaseService.addDigitalProduct(product)
     } catch (error) {
       console.error('Error adding digital product:', error)
@@ -118,6 +120,7 @@ class DigitalProductService {
 
   static async updateDigitalProduct(digitalProductId: string, updates: Partial<DigitalProduct>): Promise<DigitalProduct | null> {
     try {
+      const { DigitalProductDatabaseService } = await import('./digital-products-database')
       return await DigitalProductDatabaseService.updateDigitalProduct(digitalProductId, updates)
     } catch (error) {
       console.error('Error updating digital product:', error)
@@ -137,6 +140,7 @@ class DigitalProductService {
 
   static async deleteDigitalProduct(digitalProductId: string): Promise<boolean> {
     try {
+      const { DigitalProductDatabaseService } = await import('./digital-products-database')
       return await DigitalProductDatabaseService.deleteDigitalProduct(digitalProductId)
     } catch (error) {
       console.error('Error deleting digital product:', error)
@@ -154,6 +158,7 @@ class DigitalProductService {
 
   static async trackDownload(userId: string, digitalProductId: string): Promise<UserDownload> {
     try {
+      const { DigitalProductDatabaseService } = await import('./digital-products-database')
       return await DigitalProductDatabaseService.trackDownload(userId, digitalProductId)
     } catch (error) {
       console.error('Error tracking download:', error)
@@ -184,6 +189,7 @@ class DigitalProductService {
 
   static async canUserDownload(userId: string, digitalProductId: string): Promise<boolean> {
     try {
+      const { DigitalProductDatabaseService } = await import('./digital-products-database')
       return await DigitalProductDatabaseService.canUserDownload(userId, digitalProductId)
     } catch (error) {
       console.error('Error checking download access:', error)
@@ -201,6 +207,7 @@ class DigitalProductService {
 
   static async getUserDownloads(userId: string): Promise<UserDownload[]> {
     try {
+      const { DigitalProductDatabaseService } = await import('./digital-products-database')
       return await DigitalProductDatabaseService.getUserDownloads(userId)
     } catch (error) {
       console.error('Error fetching user downloads:', error)
@@ -215,6 +222,7 @@ class DigitalProductService {
 
   static async getDownloadStats(digitalProductId: string): Promise<{ totalDownloads: number, uniqueUsers: number }> {
     try {
+      const { DigitalProductDatabaseService } = await import('./digital-products-database')
       return await DigitalProductDatabaseService.getDownloadStats(digitalProductId)
     } catch (error) {
       console.error('Error getting download stats:', error)

@@ -1,7 +1,6 @@
 // lib/orders.ts - Order Management System
 import { v4 as uuidv4 } from 'uuid'
 import { Product, ProductService } from './products'
-import { DatabaseOrderService } from './orders-database'
 
 export interface Order {
   id: string
@@ -23,6 +22,7 @@ export class OrderService {
   static async createOrder(userId: string, items: Product[]): Promise<Order> {
     try {
       const totalAmount = items.reduce((sum, item) => sum + item.price, 0)
+      const { DatabaseOrderService } = await import('./orders-database')
       const dbOrder = await DatabaseOrderService.createOrder({
         userId,
         status: 'PENDING',
@@ -75,6 +75,7 @@ export class OrderService {
 
   static async getOrder(orderId: string): Promise<Order | null> {
     try {
+      const { DatabaseOrderService } = await import('./orders-database')
       const dbOrder = await DatabaseOrderService.getOrder(orderId)
       if (!dbOrder) return null
 
@@ -106,6 +107,7 @@ export class OrderService {
 
   static async getUserOrders(userId: string): Promise<Order[]> {
     try {
+      const { DatabaseOrderService } = await import('./orders-database')
       const dbOrders = await DatabaseOrderService.getOrdersByUser(userId)
       
       const orders: Order[] = []
@@ -140,6 +142,7 @@ export class OrderService {
 
   static async updateOrderStatus(orderId: string, status: Order['status'], paymentId?: string): Promise<boolean> {
     try {
+      const { DatabaseOrderService } = await import('./orders-database')
       const dbOrder = await DatabaseOrderService.updateOrderStatus(orderId, status.toUpperCase() as any)
       return dbOrder !== null
     } catch (error) {
@@ -162,6 +165,7 @@ export class OrderService {
 
   static async deleteOrder(orderId: string): Promise<boolean> {
     try {
+      const { DatabaseOrderService } = await import('./orders-database')
       return await DatabaseOrderService.deleteOrder(orderId)
     } catch (error) {
       console.error('Error deleting order:', error)
@@ -176,6 +180,7 @@ export class OrderService {
 
   static async getOrderStats(): Promise<{ totalOrders: number, totalRevenue: number, averageOrderValue: number }> {
     try {
+      const { DatabaseOrderService } = await import('./orders-database')
       const paidOrders = await DatabaseOrderService.getOrdersByStatus('PAID')
       const totalOrders = paidOrders.length
       const totalRevenue = paidOrders.reduce((sum, order) => sum + order.totalAmount, 0)
@@ -196,6 +201,7 @@ export class OrderService {
 
   static async getOrdersByStatus(status: Order['status']): Promise<Order[]> {
     try {
+      const { DatabaseOrderService } = await import('./orders-database')
       const dbOrders = await DatabaseOrderService.getOrdersByStatus(status.toUpperCase() as any)
       
       const orders: Order[] = []
@@ -230,6 +236,7 @@ export class OrderService {
 
   static async getRecentOrders(limit: number = 10): Promise<Order[]> {
     try {
+      const { DatabaseOrderService } = await import('./orders-database')
       const dbOrders = await DatabaseOrderService.getAllOrders()
       
       const orders: Order[] = []
@@ -266,6 +273,7 @@ export class OrderService {
 
   static async getOrdersByDateRange(startDate: Date, endDate: Date): Promise<Order[]> {
     try {
+      const { DatabaseOrderService } = await import('./orders-database')
       const dbOrders = await DatabaseOrderService.getOrdersByDateRange(startDate.toISOString(), endDate.toISOString())
       
       const orders: Order[] = []
@@ -303,6 +311,7 @@ export class OrderService {
 
   static async getTopProducts(limit: number = 10): Promise<{ productId: string, productName: string, totalSold: number, totalRevenue: number }[]> {
     try {
+      const { DatabaseOrderService } = await import('./orders-database')
       const topProducts = await DatabaseOrderService.getTopProducts(limit)
       
       const result = []
