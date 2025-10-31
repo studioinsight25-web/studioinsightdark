@@ -30,8 +30,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newProduct, { status: 201 })
   } catch (error) {
     console.error('Error creating product:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
-      { error: 'Failed to create product' },
+      { error: `Failed to create product: ${errorMessage}` },
       { status: 500 }
     )
   }
