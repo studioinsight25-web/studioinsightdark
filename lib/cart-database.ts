@@ -1,10 +1,12 @@
 // lib/cart-database.ts - Database Cart Service (without Prisma)
 import { DatabaseService } from '@/lib/database-direct'
+import { Product } from './products'
 
 export interface CartItem {
   id: string
   userId: string
   productId: string
+  product?: Product
   quantity: number
   createdAt: string
   updatedAt: string
@@ -14,7 +16,23 @@ export class DatabaseCartService {
   static async getCartItems(userId: string): Promise<CartItem[]> {
     try {
       const result = await DatabaseService.query(
-        'SELECT * FROM "cartItems" WHERE "userId" = $1 ORDER BY "createdAt" DESC',
+        `SELECT 
+          ci.*,
+          p.id as product_id,
+          p.name as product_name,
+          p.description as product_description,
+          p.price as product_price,
+          p.type as product_type,
+          p.category as product_category,
+          p."imageUrl" as product_imageUrl,
+          p."shortDescription" as product_shortDescription,
+          p."isActive" as product_isActive,
+          p.featured as product_featured,
+          p.sales as product_sales
+         FROM "cartItems" ci
+         JOIN products p ON ci."productId" = p.id
+         WHERE ci."userId" = $1 
+         ORDER BY ci."createdAt" DESC`,
         [userId]
       )
 
@@ -176,7 +194,22 @@ export class DatabaseCartService {
       productId: dbItem.productId,
       quantity: parseInt(dbItem.quantity || '0', 10),
       createdAt: dbItem.createdAt ? new Date(dbItem.createdAt).toISOString() : new Date().toISOString(),
-      updatedAt: dbItem.updatedAt ? new Date(dbItem.updatedAt).toISOString() : new Date().toISOString()
+      updatedAt: dbItem.updatedAt ? new Date(dbItem.updatedAt).toISOString() : new Date().toISOString(),
+      product: dbItem.product_id ? {
+        id: dbItem.product_id,
+        name: dbItem.product_name,
+        description: dbItem.product_description,
+        price: parseFloat(dbItem.product_price || '0'),
+        type: dbItem.product_type,
+        category: dbItem.product_category,
+        imageUrl: dbItem.product_imageUrl,
+        shortDescription: dbItem.product_shortDescription,
+        isActive: dbItem.product_isActive,
+        featured: dbItem.product_featured,
+        sales: parseInt(dbItem.product_sales || '0', 10),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      } : undefined
     }
   }
 }
