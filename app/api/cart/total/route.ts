@@ -10,10 +10,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const total = await CartService.getCartTotal(session.id)
+    const total = await CartService.getCartTotal(session.userId)
     return NextResponse.json({ total })
   } catch (error) {
     console.error('Error fetching cart total:', error)
     return NextResponse.json({ error: 'Failed to fetch cart total' }, { status: 500 })
   }
 }
+
+
+

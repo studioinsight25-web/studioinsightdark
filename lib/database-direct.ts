@@ -33,27 +33,27 @@ export class DatabaseService {
 
   static async getUserCount() {
     const result = await this.query('SELECT COUNT(*) as count FROM users')
-    return parseInt(result.rows[0].count)
+    return parseInt(result[0].count)
   }
 
   static async getProductCount() {
     const result = await this.query('SELECT COUNT(*) as count FROM products')
-    return parseInt(result.rows[0].count)
+    return parseInt(result[0].count)
   }
 
   static async getOrderCount() {
     const result = await this.query('SELECT COUNT(*) as count FROM orders')
-    return parseInt(result.rows[0].count)
+    return parseInt(result[0].count)
   }
 
   static async getAllUsers() {
     const result = await this.query('SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC')
-    return result.rows
+    return result
   }
 
   static async getProducts() {
     const result = await this.query('SELECT id, name, description, price, type, category, is_active FROM products ORDER BY created_at DESC')
-    return result.rows
+    return result
   }
 
   static async createUser(email: string, name: string, password: string) {
@@ -61,7 +61,7 @@ export class DatabaseService {
       'INSERT INTO users (id, email, name, password, role, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING id, email, name, role',
       [crypto.randomUUID(), email, name, password, 'USER']
     )
-    return result.rows[0]
+    return result[0]
   }
 
   static async close() {

@@ -41,9 +41,9 @@ export async function POST() {
       success: true,
       message: 'Admin account created successfully',
       data: {
-        email: result.rows[0].email,
-        name: result.rows[0].name,
-        role: result.rows[0].role,
+        email: result[0].email,
+        name: result[0].name,
+        role: result[0].role,
         password: 'admin123'
       }
     })
@@ -58,4 +58,7 @@ export async function POST() {
     }, { status: 500 })
   }
 }
+
+
+
 

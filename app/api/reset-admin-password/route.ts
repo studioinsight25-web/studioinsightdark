@@ -20,14 +20,14 @@ export async function POST(request: NextRequest) {
       [hashedPassword, email]
     )
     
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return NextResponse.json({
         success: false,
         error: 'User not found'
       }, { status: 404 })
     }
     
-    const user = result.rows[0]
+    const user = result[0]
     console.log('✅ Password reset successful')
     
     return NextResponse.json({
@@ -64,4 +64,7 @@ export async function GET() {
     email: 'admin@studio-insight.nl'
   })
 }
+
+
+
 

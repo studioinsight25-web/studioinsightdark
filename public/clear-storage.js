@@ -19,3 +19,6 @@ console.log('🔄 Please refresh the page to load products from database')
 window.location.reload()
 
 
+
+
+

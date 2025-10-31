@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       [email, name, hashedPassword, role]
     )
     
-    const user = result.rows[0]
+    const user = result[0]
     console.log('✅ Admin user created successfully!')
     
     return NextResponse.json({
@@ -76,4 +76,7 @@ export async function GET() {
     }
   })
 }
+
+
+
 

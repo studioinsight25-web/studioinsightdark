@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       [email]
     )
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       console.log('❌ User not found:', email)
       return NextResponse.json({
         success: false,
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const user = result.rows[0]
+    const user = result[0]
     console.log('✅ User found:', user.email, 'Role:', user.role)
 
     // Verify password
@@ -77,4 +77,7 @@ export async function GET() {
     ]
   })
 }
+
+
+
 

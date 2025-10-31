@@ -11,25 +11,25 @@ export async function GET() {
       'SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC'
     )
     
-    const users = result.rows
+    const users = result
     console.log('📊 Found users:', users.length)
     
     // Check for admin users
-    const adminUsers = users.filter(user => user.role === 'ADMIN')
+    const adminUsers = users.filter((user: any) => user.role === 'ADMIN')
     console.log('👑 Admin users:', adminUsers.length)
     
     return NextResponse.json({
       success: true,
       totalUsers: users.length,
-      adminUsers: adminUsers.length,
-      users: users.map(user => ({
+      adminUserCount: adminUsers.length,
+      users: users.map((user: any) => ({
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
         createdAt: user.created_at
       })),
-      adminUsers: adminUsers.map(user => ({
+      adminUsers: adminUsers.map((user: any) => ({
         id: user.id,
         email: user.email,
         name: user.name,
@@ -50,4 +50,7 @@ export async function GET() {
     )
   }
 }
+
+
+
 
