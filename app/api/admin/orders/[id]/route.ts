@@ -70,7 +70,7 @@ export async function PUT(
         email: userResult[0].email,
         name: userResult[0].name
       } : null,
-      items: itemsResult.map(item => ({
+      items: itemsResult.map((item: any) => ({
         id: item.id,
         orderId: item.orderId,
         productId: item.productId,
