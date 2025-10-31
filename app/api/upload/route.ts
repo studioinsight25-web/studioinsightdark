@@ -76,12 +76,14 @@ export async function POST(request: NextRequest) {
         })
       } catch (cloudinaryError) {
         console.error('Cloudinary upload failed:', cloudinaryError)
+        const errorMsg = cloudinaryError instanceof Error ? cloudinaryError.message : String(cloudinaryError)
+        
         // On Vercel, don't fall back to local - that won't work
         if (isVercel) {
           return NextResponse.json(
             { 
               success: false, 
-              error: 'Cloudinary upload failed. Please configure Cloudinary environment variables on Vercel.' 
+              error: `Cloudinary upload failed: ${errorMsg}` 
             },
             { status: 500 }
           )
