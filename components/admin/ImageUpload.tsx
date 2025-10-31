@@ -31,6 +31,8 @@ export default function ImageUpload({ onImageChange, currentImage, className = '
       
       const result = await response.json()
       
+      console.log('Upload response:', result)
+      
       if (result.success) {
         const imageUrl = result.data.secure_url
         setUploadedImageUrl(imageUrl)
@@ -39,11 +41,12 @@ export default function ImageUpload({ onImageChange, currentImage, className = '
         // Create preview from uploaded image
         setPreview(imageUrl)
       } else {
+        console.error('Upload failed:', result)
         alert(`Upload fout: ${result.error}`)
       }
     } catch (error) {
       console.error('Upload error:', error)
-      alert('Er is een fout opgetreden bij het uploaden')
+      alert(`Er is een fout opgetreden bij het uploaden: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setUploading(false)
     }
