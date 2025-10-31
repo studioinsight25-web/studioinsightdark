@@ -69,15 +69,17 @@ CREATE TABLE order_items (
 );
 
 -- Create digital_products table
-CREATE TABLE digital_products (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id VARCHAR(255) REFERENCES products(id) ON DELETE CASCADE,
-  file_name VARCHAR(255) NOT NULL,
-  file_url TEXT NOT NULL,
-  file_size INTEGER,
-  mime_type VARCHAR(255),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+CREATE TABLE "digitalProducts" (
+  id VARCHAR(255) PRIMARY KEY,
+  "productId" VARCHAR(255) REFERENCES products(id) ON DELETE CASCADE,
+  "fileName" VARCHAR(255) NOT NULL,
+  "filePath" TEXT NOT NULL,
+  "fileSize" INTEGER,
+  "mimeType" VARCHAR(255),
+  "downloadLimit" INTEGER DEFAULT 5,
+  "expiresAt" TIMESTAMP,
+  "createdAt" TIMESTAMP DEFAULT NOW(),
+  "updatedAt" TIMESTAMP DEFAULT NOW()
 );
 
 -- Create indexes for better performance
@@ -88,7 +90,7 @@ CREATE INDEX idx_products_isActive ON products("isActive");
 CREATE INDEX idx_orders_user_id ON orders(user_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
-CREATE INDEX idx_digital_products_product_id ON digital_products(product_id);
+CREATE INDEX idx_digital_products_product_id ON "digitalProducts"("productId");
 
 -- Insert a default admin user (password: admin123)
 INSERT INTO users (id, email, name, password, role, created_at, updated_at)
