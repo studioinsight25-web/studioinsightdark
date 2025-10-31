@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     )
 
     // Get order items for each order
-    const ordersWithItems = await Promise.all(orders.map(async (order) => {
+    const ordersWithItems = await Promise.all(orders.map(async (order: any) => {
       const items = await DatabaseService.query(
         `SELECT 
           oi.id, oi."orderId", oi."productId", oi.quantity, oi.price,
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
           email: order.user_email,
           name: order.user_name
         },
-        items: items.map(item => ({
+        items: items.map((item: any) => ({
           id: item.id,
           orderId: item.orderId,
           productId: item.productId,
