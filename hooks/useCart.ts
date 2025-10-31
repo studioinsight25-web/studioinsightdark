@@ -143,18 +143,13 @@ export function useCart(userId: string) {
     }
   }
 
-  const getTotalPrice = async () => {
-    try {
-      const response = await fetch('/api/cart/total')
-      if (response.ok) {
-        const data = await response.json()
-        return data.total || 0
+  const getTotalPrice = () => {
+    return cartItems.reduce((total, item) => {
+      if (item.product) {
+        return total + (item.product.price * item.quantity)
       }
-      return 0
-    } catch (err) {
-      console.error('Error getting cart total:', err)
-      return 0
-    }
+      return total
+    }, 0)
   }
 
   const getItemCount = () => {
