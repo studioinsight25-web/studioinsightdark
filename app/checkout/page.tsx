@@ -166,6 +166,11 @@ export default function CheckoutPage() {
                       <p className="font-semibold text-primary">
                         {item.price === 0 ? 'Gratis' : `€${formatPrice(item.price * (item.quantity || 1))}`}
                       </p>
+                      {item.quantity && item.quantity > 1 && (
+                        <p className="text-xs text-text-secondary mt-1">
+                          €{formatPrice(item.price)} per stuk
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
