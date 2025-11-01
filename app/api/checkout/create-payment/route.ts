@@ -54,10 +54,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calculate total amount (including VAT)
-    const subtotal = validatedData.items.reduce((sum, item) => sum + item.price, 0)
-    const vat = Math.round(subtotal * 0.21) // 21% VAT
-    const totalAmount = subtotal + vat
+    // Calculate total amount
+    // Prices sent from frontend are in cents and already include VAT
+    // So we just sum them up
+    const totalAmount = validatedData.items.reduce((sum, item) => sum + item.price, 0)
 
     // Create order
     const orderItems: OrderItem[] = validatedData.items.map(item => ({
