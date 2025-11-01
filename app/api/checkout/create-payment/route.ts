@@ -42,6 +42,9 @@ export async function POST(request: NextRequest) {
     let user = null
     let queryError = null
     
+    // Also try a direct database query as fallback
+    const { DatabaseService } = await import('@/lib/database-direct')
+    
     if (session.email) {
       console.log('Checkout: Trying to find user by email first:', session.email)
       try {
@@ -50,6 +53,25 @@ export async function POST(request: NextRequest) {
           console.log('Checkout: User found by email, id:', user.id, 'email:', user.email)
         } else {
           console.warn('Checkout: User not found by email:', session.email)
+          // Try direct database query as fallback
+          try {
+            console.log('Checkout: Trying direct DB query by email')
+            const directResult = await DatabaseService.query(
+              'SELECT id, email, name, role FROM users WHERE LOWER(email) = LOWER($1)',
+              [session.email]
+            )
+            if (directResult.length > 0) {
+              console.log('Checkout: Direct DB query found user:', directResult[0])
+              user = {
+                id: directResult[0].id,
+                email: directResult[0].email,
+                name: directResult[0].name,
+                role: directResult[0].role
+              }
+            }
+          } catch (directError) {
+            console.error('Checkout: Direct DB query error:', directError)
+          }
         }
       } catch (error) {
         queryError = error
@@ -66,6 +88,37 @@ export async function POST(request: NextRequest) {
           console.log('Checkout: User found by userId, id:', user.id, 'email:', user.email)
         } else {
           console.warn('Checkout: User not found by userId:', session.userId)
+          // Try direct database query as fallback
+          try {
+            console.log('Checkout: Trying direct DB query by userId')
+            // Try UUID first
+            let directResult = await DatabaseService.query(
+              'SELECT id, email, name, role FROM users WHERE id = $1::uuid',
+              [session.userId]
+            )
+            // If no result, try as text
+            if (directResult.length === 0) {
+              directResult = await DatabaseService.query(
+                'SELECT id, email, name, role FROM users WHERE id::text = $1',
+                [session.userId.toString()]
+              )
+            }
+            if (directResult.length > 0) {
+              console.log('Checkout: Direct DB query found user:', directResult[0])
+              user = {
+                id: directResult[0].id,
+                email: directResult[0].email,
+                name: directResult[0].name,
+                role: directResult[0].role
+              }
+            } else {
+              // List all users to debug
+              const allUsers = await DatabaseService.query('SELECT id, email FROM users LIMIT 10')
+              console.log('Checkout: No user found. Sample users in DB:', allUsers.map((u: any) => ({ id: u.id, email: u.email })))
+            }
+          } catch (directError) {
+            console.error('Checkout: Direct DB query error:', directError)
+          }
         }
       } catch (error) {
         queryError = error

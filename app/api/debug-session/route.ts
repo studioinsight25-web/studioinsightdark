@@ -10,6 +10,16 @@ export async function GET(request: NextRequest) {
     
     let userFromId = null
     let userFromEmail = null
+    let directQueryResult = null
+    let allUsers = null
+    
+    // Try to get all users for debugging
+    try {
+      const { DatabaseService } = await import('@/lib/database-direct')
+      allUsers = await DatabaseService.query('SELECT id, email, name, role FROM users LIMIT 10')
+    } catch (e) {
+      console.error('Error fetching all users:', e)
+    }
     
     if (session?.userId) {
       try {
@@ -27,6 +37,22 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // Try direct database query
+    if (session?.email || session?.userId) {
+      try {
+        const { DatabaseService } = await import('@/lib/database-direct')
+        if (session.email) {
+          const result = await DatabaseService.query(
+            'SELECT id, email, name, role FROM users WHERE LOWER(email) = LOWER($1)',
+            [session.email]
+          )
+          directQueryResult = result.length > 0 ? result[0] : null
+        }
+      } catch (e) {
+        console.error('Error with direct query:', e)
+      }
+    }
+    
     return NextResponse.json({
       debug: {
         hasCookieHeader: !!cookieHeader,
@@ -39,12 +65,18 @@ export async function GET(request: NextRequest) {
         } : null,
         userFromId: userFromId ? {
           id: userFromId.id,
-          email: userFromId.email
+          email: userFromId.email,
+          name: userFromId.name,
+          role: userFromId.role
         } : null,
         userFromEmail: userFromEmail ? {
           id: userFromEmail.id,
-          email: userFromEmail.email
-        } : null
+          email: userFromEmail.email,
+          name: userFromEmail.name,
+          role: userFromEmail.role
+        } : null,
+        directQueryResult: directQueryResult,
+        allUsersInDatabase: allUsers || []
       }
     })
   } catch (error) {
