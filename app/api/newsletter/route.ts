@@ -59,14 +59,16 @@ export async function POST(request: NextRequest) {
       message: 'Bevestigingsmail verzonden. Check je inbox!' 
     }, { status: 201 })
   } catch (error) {
-    console.error('Error subscribing to newsletter:', error)
+    console.error('❌ Error subscribing to newsletter:', error)
     const errorMessage = error instanceof Error ? error.message : String(error)
     const errorStack = error instanceof Error ? error.stack : undefined
     console.error('Error details:', { errorMessage, errorStack })
+    
+    // Always return error details for debugging
     return NextResponse.json({ 
       error: 'Kon je inschrijving niet verwerken',
       details: errorMessage,
-      stack: errorStack
+      ...(process.env.NODE_ENV === 'development' && { stack: errorStack })
     }, { status: 500 })
   }
 }
