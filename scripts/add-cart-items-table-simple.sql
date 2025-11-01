@@ -1,8 +1,6 @@
--- Add cartItems table if it doesn't exist
--- Run this in your Neon database console if you get "relation cartItems does not exist" errors
--- Remove the EXPLAIN statement if present - just run the CREATE TABLE directly
+-- Simple SQL to create cartItems table
+-- Copy and paste ONLY this part into Neon SQL Editor (without EXPLAIN)
 
--- Create cartItems table (if it doesn't exist)
 CREATE TABLE IF NOT EXISTS "cartItems" (
   id VARCHAR(255) PRIMARY KEY,
   "userId" UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -12,7 +10,6 @@ CREATE TABLE IF NOT EXISTS "cartItems" (
   "updatedAt" TIMESTAMP DEFAULT NOW()
 );
 
--- Create indexes for better performance (if they don't exist)
 CREATE INDEX IF NOT EXISTS idx_cart_items_user_id ON "cartItems"("userId");
 CREATE INDEX IF NOT EXISTS idx_cart_items_product_id ON "cartItems"("productId");
 
