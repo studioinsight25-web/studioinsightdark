@@ -11,7 +11,8 @@ import {
   LogOut,
   Settings,
   Plus,
-  Eye
+  Eye,
+  Mail
 } from 'lucide-react'
 import Link from 'next/link'
 import SessionManager from '@/lib/session'
@@ -23,7 +24,8 @@ export default function AdminDashboard() {
     totalUsers: 0,
     totalProducts: 0,
     totalOrders: 0,
-    totalRevenue: 0
+    totalRevenue: 0,
+    totalNewsletter: 0
   })
 
   useEffect(() => {
@@ -62,25 +64,39 @@ export default function AdminDashboard() {
     const loadStats = async () => {
       try {
         const response = await fetch('/api/admin/stats')
+        const statsData = {
+          totalUsers: 0,
+          totalProducts: 0,
+          totalOrders: 0,
+          totalRevenue: 0,
+          totalNewsletter: 0
+        }
+        
         if (response.ok) {
           const data = await response.json()
-          setStats(data)
-        } else {
-          // Fallback to 0 if API fails
-          setStats({
-            totalUsers: 0,
-            totalProducts: 0,
-            totalOrders: 0,
-            totalRevenue: 0
-          })
+          Object.assign(statsData, data)
         }
+        
+        // Load newsletter count separately
+        try {
+          const newsletterResponse = await fetch('/api/newsletter')
+          if (newsletterResponse.ok) {
+            const newsletterData = await newsletterResponse.json()
+            statsData.totalNewsletter = newsletterData.count || 0
+          }
+        } catch (e) {
+          console.log('Could not load newsletter count')
+        }
+        
+        setStats(statsData)
       } catch (error) {
         console.error('Error loading stats:', error)
         setStats({
           totalUsers: 0,
           totalProducts: 0,
           totalOrders: 0,
-          totalRevenue: 0
+          totalRevenue: 0,
+          totalNewsletter: 0
         })
       }
     }
@@ -180,6 +196,18 @@ export default function AdminDashboard() {
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Link
+              href="/admin/newsletter"
+              className="bg-dark-card p-6 rounded-lg border border-dark-border hover:border-primary transition-colors group"
+            >
+              <div className="flex items-center gap-4">
+                <Mail className="w-8 h-8 text-primary group-hover:scale-110 transition-transform" />
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Nieuwsbrief</h3>
+                  <p className="text-text-secondary text-sm">Beheer nieuwsbrief subscribers</p>
+                </div>
+              </div>
+            </Link>
             <Link
               href="/admin/products"
               className="bg-dark-card p-6 rounded-lg border border-dark-border hover:border-primary transition-colors group"
