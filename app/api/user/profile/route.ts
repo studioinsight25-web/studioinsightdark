@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import SessionManager from '@/lib/session'
+import { getSessionFromRequest } from '@/lib/session-server'
 import { UserService } from '@/lib/user-database'
 
 export async function GET(request: NextRequest) {
   try {
     // Get user from session
-    const session = SessionManager.getSession()
+    const session = getSessionFromRequest(request)
     if (!session || !session.userId) {
       return NextResponse.json(
         { error: 'Not authenticated' },
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Get user from session
-    const session = SessionManager.getSession()
+    const session = getSessionFromRequest(request)
     if (!session || !session.userId) {
       return NextResponse.json(
         { error: 'Not authenticated' },

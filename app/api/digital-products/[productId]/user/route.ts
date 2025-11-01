@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { DigitalProductDatabaseService } from '@/lib/digital-products-database'
 import { OrderService } from '@/lib/orders'
-import SessionManager from '@/lib/session'
+import { getSessionFromRequest } from '@/lib/session-server'
 
 export async function GET(
   request: NextRequest,
@@ -10,7 +10,7 @@ export async function GET(
 ) {
   try {
     // Check authentication
-    const session = SessionManager.getSession()
+    const session = getSessionFromRequest(request)
     if (!session || !session.userId) {
       return NextResponse.json(
         { error: 'Not authenticated' },

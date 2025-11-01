@@ -1,11 +1,11 @@
 // app/api/cart/total/route.ts - Get cart total
 import { NextRequest, NextResponse } from 'next/server'
 import { CartService } from '@/lib/cart-database'
-import SessionManager from '@/lib/session'
+import { getSessionFromRequest } from '@/lib/session-server'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = SessionManager.getSession()
+    const session = getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

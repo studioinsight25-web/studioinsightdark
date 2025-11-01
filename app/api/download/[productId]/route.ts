@@ -1,7 +1,7 @@
 // app/api/download/[productId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { DigitalProductDatabaseService } from '@/lib/digital-products-database'
-import SessionManager from '@/lib/session'
+import { getSessionFromRequest } from '@/lib/session-server'
 
 export async function GET(
   request: NextRequest,
@@ -49,7 +49,7 @@ export async function GET(
     }
 
     // CRITICAL: Verify userId from session matches request (prevent user impersonation)
-    const session = SessionManager.getSession()
+    const session = getSessionFromRequest(request)
     if (!session || session.userId !== userId) {
       return NextResponse.json(
         { error: 'Unauthorized access attempt' },
@@ -116,7 +116,7 @@ export async function POST(
     const { userId } = await request.json()
 
     // Check authentication via session
-    const session = SessionManager.getSession()
+    const session = getSessionFromRequest(request)
     if (!session || !session.userId) {
       return NextResponse.json(
         { error: 'Not authenticated' },

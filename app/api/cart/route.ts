@@ -1,12 +1,12 @@
 // app/api/cart/route.ts - Cart API endpoints
 import { NextRequest, NextResponse } from 'next/server'
 import { CartService } from '@/lib/cart-database'
-import SessionManager from '@/lib/session'
+import { getSessionFromRequest } from '@/lib/session-server'
 
 // GET /api/cart - Get user's cart
 export async function GET(request: NextRequest) {
   try {
-    const session = SessionManager.getSession()
+    const session = getSessionFromRequest(request)
     if (!session || !session.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 // POST /api/cart - Add item to cart
 export async function POST(request: NextRequest) {
   try {
-    const session = SessionManager.getSession()
+    const session = getSessionFromRequest(request)
     if (!session || !session.userId) {
       console.error('Cart API: No session or userId')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 // DELETE /api/cart - Remove item from cart
 export async function DELETE(request: NextRequest) {
   try {
-    const session = SessionManager.getSession()
+    const session = getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
