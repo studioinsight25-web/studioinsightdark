@@ -128,7 +128,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <Link
-                href="/account"
+                href="/dashboard/profiel"
                 className="text-primary hover:text-primary/80 transition-colors text-sm font-medium"
               >
                 Profiel bewerken →
@@ -162,11 +162,11 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-white">Mijn Cursussen</h3>
-                  <p className="text-text-secondary text-sm">Bekijk je cursussen</p>
+                  <p className="text-text-secondary text-sm">Je gekochte cursussen</p>
                 </div>
               </div>
               <Link
-                href="/cursussen"
+                href="/dashboard/cursussen"
                 className="text-primary hover:text-primary/80 transition-colors text-sm font-medium"
               >
                 Cursussen bekijken →
@@ -181,11 +181,11 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-white">Mijn E-books</h3>
-                  <p className="text-text-secondary text-sm">Bekijk je e-books</p>
+                  <p className="text-text-secondary text-sm">Je gekochte e-books</p>
                 </div>
               </div>
               <Link
-                href="/ebooks"
+                href="/dashboard/ebooks"
                 className="text-primary hover:text-primary/80 transition-colors text-sm font-medium"
               >
                 E-books bekijken →
@@ -208,25 +208,6 @@ export default function DashboardPage() {
                 className="text-primary hover:text-primary/80 transition-colors text-sm font-medium"
               >
                 Orders bekijken →
-              </Link>
-            </div>
-
-            {/* Reviews Card */}
-            <div className="bg-dark-card p-6 rounded-lg border border-dark-border">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
-                  <Star className="w-6 h-6 text-black" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Mijn Reviews</h3>
-                  <p className="text-text-secondary text-sm">Bekijk je reviews</p>
-                </div>
-              </div>
-              <Link
-                href="/reviews"
-                className="text-primary hover:text-primary/80 transition-colors text-sm font-medium"
-              >
-                Reviews bekijken →
               </Link>
             </div>
 
