@@ -28,19 +28,38 @@ export async function POST(request: NextRequest) {
     // Check if user is logged in (using session cookie)
     const session = getSessionFromRequest(request)
     if (!session || !session.userId) {
+      console.error('Checkout: No session or userId found')
       return NextResponse.json(
         { error: 'Je moet ingelogd zijn om te betalen' },
         { status: 401 }
       )
     }
     
+    console.log('Checkout: Session found, userId:', session.userId, 'type:', typeof session.userId)
+    
     // Get full user details from database
-    const user = await UserService.getUserById(session.userId)
+    let user = await UserService.getUserById(session.userId)
     if (!user) {
-      return NextResponse.json(
-        { error: 'Gebruiker niet gevonden' },
-        { status: 404 }
-      )
+      console.error('Checkout: User not found in database for userId:', session.userId)
+      // Try to find user by email as fallback (in case userId format is different)
+      if (session.email) {
+        const userByEmail = await UserService.getUserByEmail(session.email)
+        if (userByEmail) {
+          console.log('Checkout: User found by email instead, using that user')
+          user = userByEmail
+        } else {
+          console.error('Checkout: User also not found by email:', session.email)
+          return NextResponse.json(
+            { error: 'Gebruiker niet gevonden in database. Probeer opnieuw in te loggen.' },
+            { status: 404 }
+          )
+        }
+      } else {
+        return NextResponse.json(
+          { error: 'Gebruiker niet gevonden in database. Probeer opnieuw in te loggen.' },
+          { status: 404 }
+        )
+      }
     }
 
     // Validate request body
