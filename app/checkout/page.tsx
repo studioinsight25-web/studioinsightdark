@@ -33,15 +33,16 @@ export default function CheckoutPage() {
     }
   }, [router])
 
-  // Prices are stored in euros (not cents), so we need to work with euros
+  // Prices from cart are stored in CENTS (as per Product interface)
   const getTotalPrice = () => {
-    // Prices are in euros, so we sum them directly
-    return items.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0)
+    // Prices are in cents, so sum them and divide by 100 for display
+    return items.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0) / 100
   }
 
-  // Format price in euros (not cents)
-  const formatPrice = (priceInEuros: number) => {
-    if (priceInEuros === 0) return '0,00'
+  // Format price - convert from cents to euros for display
+  const formatPrice = (priceInCents: number) => {
+    if (priceInCents === 0) return '0,00'
+    const priceInEuros = priceInCents / 100
     return priceInEuros.toFixed(2).replace('.', ',')
   }
 
@@ -164,11 +165,11 @@ export default function CheckoutPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-primary">
-                        {item.price === 0 ? 'Gratis' : `€${formatPrice(item.price * (item.quantity || 1))}`}
+                        {item.price === 0 ? 'Gratis' : `€${formatPrice((item.price * (item.quantity || 1)) / 100)}`}
                       </p>
                       {item.quantity && item.quantity > 1 && (
                         <p className="text-xs text-text-secondary mt-1">
-                          €{formatPrice(item.price)} per stuk
+                          €{formatPrice(item.price / 100)} per stuk
                         </p>
                       )}
                     </div>

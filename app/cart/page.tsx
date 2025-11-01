@@ -63,9 +63,11 @@ export default function CartPage() {
     router.push('/checkout')
   }
 
-  // Helper to format price in euros (database stores prices as euros)
-  const formatPriceInEuros = (priceInEuros: number): string => {
-    if (priceInEuros === 0) return 'Gratis'
+  // Helper to format price - prices from database are in CENTS (like formatPrice expects)
+  const formatPriceInEuros = (priceInCents: number): string => {
+    if (priceInCents === 0) return 'Gratis'
+    // Prices are stored in cents in the Product interface, so divide by 100
+    const priceInEuros = priceInCents / 100
     return `€${priceInEuros.toFixed(2).replace('.', ',')}`
   }
 
