@@ -9,6 +9,14 @@ export interface User {
   email: string
   name?: string
   role: UserRole
+  address?: string | null
+  city?: string | null
+  postcode?: string | null
+  country?: string | null
+  phone?: string | null
+  company_name?: string | null
+  industry?: string | null
+  website?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -93,7 +101,7 @@ export class UserService {
     }
   }
 
-  static async getUserById(id: string): Promise<User | null> {
+  static async getUserById(id: string): Promise<any> {
     try {
       const result = await DatabaseService.query(
         'SELECT id, email, name, role, address, city, postcode, country, phone, company_name, industry, website, created_at, updated_at FROM users WHERE id = $1',
@@ -111,7 +119,7 @@ export class UserService {
     }
   }
 
-  static async getUserByEmail(email: string): Promise<User | null> {
+  static async getUserByEmail(email: string): Promise<any> {
     try {
       const result = await DatabaseService.query(
         'SELECT id, email, name, role, address, city, postcode, country, phone, company_name, industry, website, created_at, updated_at FROM users WHERE email = $1',
