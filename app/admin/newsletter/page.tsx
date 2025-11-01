@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
+import { useToast } from '@/hooks/useToast'
 import { 
   Mail, 
   Search, 
@@ -28,6 +29,7 @@ interface NewsletterSubscriber {
 }
 
 export default function AdminNewsletter() {
+  const { showToast } = useToast()
   const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -98,11 +100,11 @@ export default function AdminNewsletter() {
         setAddStatus('confirmed')
       } else {
         const error = await response.json()
-        alert(error.error || 'Failed to add subscriber')
+        showToast(error.error || 'Fout bij toevoegen subscriber', 'error')
       }
     } catch (error) {
       console.error('Error adding subscriber:', error)
-      alert('Failed to add subscriber')
+      showToast('Fout bij toevoegen subscriber', 'error')
     } finally {
       setAdding(false)
     }

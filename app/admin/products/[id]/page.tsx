@@ -6,9 +6,10 @@ import ImageUpload from '@/components/admin/ImageUpload'
 import DigitalProductUpload from '@/components/admin/DigitalProductUpload'
 import { ArrowLeft, Save, Eye, Upload, X, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useProducts } from '@/hooks/useProducts'
 import { DigitalProduct } from '@/lib/digital-products'
+import { useToast } from '@/hooks/useToast'
 
 interface ProductFormData {
   name: string
@@ -33,9 +34,11 @@ interface ProductFormData {
 
 export default function EditProductPage() {
   const params = useParams()
+  const router = useRouter()
   const productId = params.id as string
   const { products, loading, updateProduct, deleteProduct } = useProducts()
   const [digitalProducts, setDigitalProducts] = useState<DigitalProduct[]>([])
+  const { showToast } = useToast()
   
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -168,16 +171,18 @@ export default function EditProductPage() {
       if (updatedProduct) {
         console.log('Product updated successfully:', updatedProduct)
         // Show success message and redirect
-        alert('Product succesvol bijgewerkt!')
-        window.location.href = '/admin/products'
+        showToast('Product succesvol bijgewerkt!', 'success')
+        setTimeout(() => {
+          router.push('/admin/products')
+        }, 1000)
       } else {
         console.error('Failed to update product - no product returned')
-        alert('Fout: Product kon niet worden bijgewerkt. Controleer de console voor details.')
+        showToast('Fout: Product kon niet worden bijgewerkt. Controleer de console voor details.', 'error')
       }
     } catch (error) {
       console.error('Error updating product:', error)
       const errorMessage = error instanceof Error ? error.message : 'Onbekende fout'
-      alert(`Fout bij bijwerken product: ${errorMessage}`)
+      showToast(`Fout bij bijwerken product: ${errorMessage}`, 'error')
     } finally {
       setIsSubmitting(false)
     }

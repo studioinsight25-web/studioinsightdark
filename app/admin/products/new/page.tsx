@@ -9,7 +9,9 @@ import { useProducts } from '@/hooks/useProducts'
 import { useDigitalProducts } from '@/hooks/useDigitalProducts'
 import { ArrowLeft, Save, Eye, Upload, X } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { DigitalProduct } from '@/lib/digital-products'
+import { useToast } from '@/hooks/useToast'
 
 interface ProductFormData {
   name: string
@@ -33,8 +35,10 @@ interface ProductFormData {
 }
 
 export default function NewProductPage() {
+  const router = useRouter()
   const { addProduct } = useProducts()
   const [digitalProducts, setDigitalProducts] = useState<DigitalProduct[]>([])
+  const { showToast } = useToast()
   
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -103,11 +107,14 @@ export default function NewProductPage() {
       console.log('Image URL saved:', imageUrl)
       console.log('Product imageUrl:', newProduct.imageUrl)
       
-      // Redirect to edit page to add digital products
-      window.location.href = `/admin/products/${newProduct.id}`
+      // Show success and redirect to edit page to add digital products
+      showToast('Product succesvol aangemaakt!', 'success')
+      setTimeout(() => {
+        router.push(`/admin/products/${newProduct.id}`)
+      }, 1000)
     } catch (error) {
       console.error('Error creating product:', error)
-      alert(`Fout bij aanmaken product: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      showToast(`Fout bij aanmaken product: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error')
     } finally {
       setIsSubmitting(false)
     }
