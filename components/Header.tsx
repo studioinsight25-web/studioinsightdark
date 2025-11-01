@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Menu, X, User, LogOut, LayoutDashboard, ShoppingCart } from 'lucide-react'
 // Removed direct database import - using API routes instead
 import SessionManager from '@/lib/session'
@@ -16,28 +16,163 @@ interface User {
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [user, setUser] = useState<User | null>(null)
+  const userRef = useRef<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [cartItemCount, setCartItemCount] = useState(0)
-
-  // Load user and cart data
+  const [, forceUpdate] = useState(0)
+  
+  // Keep ref in sync with state
   useEffect(() => {
-    const loadUserData = () => {
-      const session = SessionManager.getSession()
-      console.log('Header - Session loaded:', session)
+    userRef.current = user
+  }, [user])
+  
+  // Direct function to get current session (reads directly from localStorage)
+  const getCurrentSession = () => {
+    if (typeof window === 'undefined') return null
+    try {
+      const sessionData = localStorage.getItem('studio-insight-session')
+      if (!sessionData) return null
+      const session = JSON.parse(sessionData)
+      if (session.expiresAt && new Date(session.expiresAt) < new Date()) {
+        return null
+      }
+      return session
+    } catch {
+      return null
+    }
+  }
+  
+  // Get current session directly - this runs on every render to always get latest
+  const currentSession = typeof window !== 'undefined' ? getCurrentSession() : null
+  
+  // Debug: Log session on every render (even if null)
+  if (typeof window !== 'undefined') {
+    const rawStorage = localStorage.getItem('studio-insight-session')
+    console.log('[Header Render] Session check:', { 
+      currentSession: currentSession ? { userId: currentSession.userId, role: currentSession.role } : null,
+      rawStorageExists: !!rawStorage,
+      rawStorageLength: rawStorage?.length || 0,
+      userState: user ? { id: user.id, role: user.role } : null,
+      isAdmin: currentSession?.role === 'ADMIN' || user?.role === 'ADMIN'
+    })
+  }
+  
+  // Update user state based on current session - ALWAYS check on mount and when session might change
+  useEffect(() => {
+    const checkAndUpdate = () => {
+      const session = getCurrentSession()
+      console.log('[Header useEffect] Checking session:', session ? { userId: session.userId, role: session.role } : 'null')
+      
       if (session) {
-        setUser({
+        const newUser = {
           id: session.userId,
           email: session.email,
-          name: session.name || '',
+          name: session.name || session.email.split('@')[0] || 'User',
           role: session.role
-        })
-        console.log('Header - isAdmin():', SessionManager.isAdmin())
+        }
+        
+        if (!user || user.id !== newUser.id || user.role !== newUser.role) {
+          console.log('[Header] Updating user from session:', newUser)
+          setUser(newUser)
+        }
+      } else if (user) {
+        console.log('[Header] Clearing user (no session found)')
+        setUser(null)
       }
       setIsLoading(false)
     }
+    
+    // Check immediately
+    checkAndUpdate()
+    
+    // Check again after a short delay (for page reloads)
+    const timeout1 = setTimeout(checkAndUpdate, 100)
+    const timeout2 = setTimeout(checkAndUpdate, 500)
+    
+    return () => {
+      clearTimeout(timeout1)
+      clearTimeout(timeout2)
+    }
+  }, []) // Only run on mount - polling will handle updates
 
-    loadUserData()
-  }, [])
+  // Force re-render on session updates + aggressive polling
+  useEffect(() => {
+    const handleSessionUpdate = () => {
+      console.log('[Header] Session update event received - checking session...')
+      const session = getCurrentSession()
+      console.log('[Header] Session after update event:', session ? { userId: session.userId, role: session.role } : 'null')
+      
+      if (session) {
+        const newUser = {
+          id: session.userId,
+          email: session.email,
+          name: session.name || session.email.split('@')[0] || 'User',
+          role: session.role
+        }
+        console.log('[Header] Setting user from session update:', newUser)
+        setUser(newUser)
+        forceUpdate(prev => prev + 1)
+      } else {
+        console.log('[Header] No session found after update event')
+        setUser(null)
+      }
+    }
+
+    window.addEventListener('sessionUpdated', handleSessionUpdate)
+    window.addEventListener('storage', handleSessionUpdate)
+    
+    // Aggressive polling - every 500ms for first 10 seconds, then every 2 seconds
+    let pollCount = 0
+    const pollInterval = setInterval(() => {
+      pollCount++
+      const session = getCurrentSession()
+      
+      // Always update if session changed (use ref to avoid closure issues)
+      const currentUser = userRef.current
+      if (session) {
+        const needsUpdate = !currentUser || currentUser.id !== session.userId || currentUser.role !== session.role
+        if (needsUpdate) {
+          console.log('[Header Poll] Session found, updating user:', { userId: session.userId, role: session.role })
+          setUser({
+            id: session.userId,
+            email: session.email,
+            name: session.name || session.email.split('@')[0] || 'User',
+            role: session.role
+          })
+        }
+      } else if (currentUser) {
+        console.log('[Header Poll] No session found, clearing user')
+        setUser(null)
+      }
+      
+      // After 20 polls (10 seconds), slow down to every 2 seconds
+      if (pollCount > 20) {
+        clearInterval(pollInterval)
+        const slowPoll = setInterval(() => {
+          const session = getCurrentSession()
+          const currentUser = userRef.current
+          if (session && (!currentUser || currentUser.role !== session.role)) {
+            setUser({
+              id: session.userId,
+              email: session.email,
+              name: session.name || session.email.split('@')[0] || 'User',
+              role: session.role
+            })
+          } else if (!session && currentUser) {
+            setUser(null)
+          }
+        }, 2000)
+        
+        return () => clearInterval(slowPoll)
+      }
+    }, 500)
+
+    return () => {
+      window.removeEventListener('sessionUpdated', handleSessionUpdate)
+      window.removeEventListener('storage', handleSessionUpdate)
+      clearInterval(pollInterval)
+    }
+  }, []) // Run once on mount - don't depend on user
 
   // Load cart item count
   useEffect(() => {
@@ -75,6 +210,11 @@ export default function Header() {
     try {
       // Clear session
       SessionManager.clearSession()
+      
+      // Dispatch event to notify of session change
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('sessionUpdated'))
+      }
       
       // Clear user state
       setUser(null)
@@ -138,54 +278,83 @@ export default function Header() {
               )}
             </Link>
             
-            {isLoading ? (
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            ) : user ? (
-              <div className="flex items-center gap-3">
-                {/* User Avatar */}
-                <div className="flex items-center gap-3 px-3 py-2 bg-dark-card/50 rounded-lg border border-dark-border/50">
-                  <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-black" />
+            {(() => {
+              // ALWAYS check session directly - don't rely on state
+              const session = getCurrentSession() || SessionManager.getSession()
+              const displayUser = session ? {
+                id: session.userId,
+                email: session.email,
+                name: session.name || session.email.split('@')[0] || 'User',
+                role: session.role
+              } : user
+              
+              if (isLoading && !session && !user) {
+                return <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              }
+              
+              if (displayUser || session) {
+                const isAdmin = (displayUser?.role === 'ADMIN') || (session?.role === 'ADMIN')
+                
+                console.log('[Header Render] Displaying user:', {
+                  displayUser,
+                  session,
+                  isAdmin,
+                  userState: user
+                })
+                
+                return (
+                  <div className="flex items-center gap-3">
+                    {/* User Avatar */}
+                    <div className="flex items-center gap-3 px-3 py-2 bg-dark-card/50 rounded-lg border border-dark-border/50">
+                      <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
+                        <User className="w-4 h-4 text-black" />
+                      </div>
+                      <span className="text-sm font-medium text-white">
+                        {displayUser?.name || session?.email?.split('@')[0] || 'User'}
+                      </span>
+                    </div>
+                    
+                    {/* Admin Link - Always show if session is admin */}
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        className="flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-300 rounded-lg border border-primary/20"
+                      >
+                        <LayoutDashboard className="w-4 h-4" />
+                        <span className="hidden xl:inline text-sm font-medium">Admin</span>
+                      </Link>
+                    )}
+                    
+                    {/* Logout Button */}
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 px-3 py-2 text-text-secondary hover:text-white hover:bg-red-500/10 transition-all duration-300 rounded-lg border border-transparent hover:border-red-500/20"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span className="hidden xl:inline text-sm">Uitloggen</span>
+                    </button>
                   </div>
-                  <span className="text-sm font-medium text-white">{user.name}</span>
-                </div>
-                
-                {/* Admin Link - Only visible for admin users */}
-                {SessionManager.isAdmin() && (
+                )
+              }
+              
+              // Not logged in
+              return (
+                <div className="flex items-center gap-3">
                   <Link
-                    href="/admin"
-                    className="flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-300 rounded-lg border border-primary/20"
+                    href="/inloggen"
+                    className="px-4 py-2 text-white hover:text-primary transition-all duration-300 font-medium text-sm rounded-lg hover:bg-dark-card/50"
                   >
-                    <LayoutDashboard className="w-4 h-4" />
-                    <span className="hidden xl:inline text-sm font-medium">Admin</span>
+                    Inloggen
                   </Link>
-                )}
-                
-                {/* Logout Button */}
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 px-3 py-2 text-text-secondary hover:text-white hover:bg-red-500/10 transition-all duration-300 rounded-lg border border-transparent hover:border-red-500/20"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span className="hidden xl:inline text-sm">Uitloggen</span>
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <Link
-                  href="/inloggen"
-                  className="px-4 py-2 text-white hover:text-primary transition-all duration-300 font-medium text-sm rounded-lg hover:bg-dark-card/50"
-                >
-                  Inloggen
-                </Link>
-                <Link
-                  href="/registreren"
-                  className="px-4 py-2 bg-gradient-to-r from-primary to-primary/90 text-black font-semibold hover:from-primary/90 hover:to-primary transition-all duration-300 rounded-lg text-sm shadow-lg hover:shadow-primary/25"
-                >
-                  Registreren
-                </Link>
-              </div>
-            )}
+                  <Link
+                    href="/registreren"
+                    className="px-4 py-2 bg-gradient-to-r from-primary to-primary/90 text-black font-semibold hover:from-primary/90 hover:to-primary transition-all duration-300 rounded-lg text-sm shadow-lg hover:shadow-primary/25"
+                  >
+                    Registreren
+                  </Link>
+                </div>
+              )
+            })()}
           </div>
 
           {/* Mobile menu button */}
@@ -228,66 +397,86 @@ export default function Header() {
                   )}
                 </Link>
                 
-                {user ? (
-                  <div className="space-y-3">
-                    {/* User Info */}
-                    <div className="flex items-center gap-3 px-4 py-3 bg-dark-card/50 rounded-lg border border-dark-border/50">
-                      <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
-                        <User className="w-5 h-5 text-black" />
+                {(() => {
+                  // ALWAYS check session directly
+                  const session = getCurrentSession() || SessionManager.getSession()
+                  const displayUser = session ? {
+                    id: session.userId,
+                    email: session.email,
+                    name: session.name || session.email.split('@')[0] || 'User',
+                    role: session.role
+                  } : user
+                  
+                  if (displayUser || session) {
+                    const isAdmin = (displayUser?.role === 'ADMIN') || (session?.role === 'ADMIN')
+                    
+                    return (
+                      <div className="space-y-3">
+                        {/* User Info */}
+                        <div className="flex items-center gap-3 px-4 py-3 bg-dark-card/50 rounded-lg border border-dark-border/50">
+                          <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
+                            <User className="w-5 h-5 text-black" />
+                          </div>
+                          <span className="font-medium text-white">
+                            {displayUser?.name || session?.email?.split('@')[0] || 'User'}
+                          </span>
+                        </div>
+                        
+                        <Link
+                          href="/account"
+                          className="flex items-center gap-3 px-4 py-3 text-white hover:text-primary hover:bg-dark-card/50 transition-all duration-300 rounded-lg"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <User className="w-5 h-5" />
+                          Account
+                        </Link>
+                        
+                        {/* Admin Link - Always show if session is admin */}
+                        {isAdmin && (
+                          <Link
+                            href="/admin"
+                            className="flex items-center gap-3 px-4 py-3 bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-300 rounded-lg border border-primary/20"
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <LayoutDashboard className="w-5 h-5" />
+                            Admin Panel
+                          </Link>
+                        )}
+                        
+                        <button
+                          onClick={() => {
+                            handleLogout()
+                            setIsMenuOpen(false)
+                          }}
+                          className="flex items-center gap-3 px-4 py-3 text-text-secondary hover:text-white hover:bg-red-500/10 transition-all duration-300 rounded-lg border border-transparent hover:border-red-500/20 w-full text-left"
+                        >
+                          <LogOut className="w-5 h-5" />
+                          Uitloggen
+                        </button>
                       </div>
-                      <span className="font-medium text-white">{user.name}</span>
-                    </div>
-                    
-                    <Link
-                      href="/account"
-                      className="flex items-center gap-3 px-4 py-3 text-white hover:text-primary hover:bg-dark-card/50 transition-all duration-300 rounded-lg"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <User className="w-5 h-5" />
-                      Account
-                    </Link>
-                    
-                    {/* Admin Link - Only visible for admin users */}
-                    {SessionManager.isAdmin() && (
+                    )
+                  }
+                  
+                  // Not logged in
+                  return (
+                    <div className="space-y-3">
                       <Link
-                        href="/admin"
-                        className="flex items-center gap-3 px-4 py-3 bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-300 rounded-lg border border-primary/20"
+                        href="/inloggen"
+                        className="block px-4 py-3 text-white hover:text-primary hover:bg-dark-card/50 transition-all duration-300 rounded-lg font-medium"
                         onClick={() => setIsMenuOpen(false)}
                       >
-                        <LayoutDashboard className="w-5 h-5" />
-                        Admin Panel
+                        Inloggen
                       </Link>
-                    )}
-                    
-                    <button
-                      onClick={() => {
-                        handleLogout()
-                        setIsMenuOpen(false)
-                      }}
-                      className="flex items-center gap-3 px-4 py-3 text-text-secondary hover:text-white hover:bg-red-500/10 transition-all duration-300 rounded-lg border border-transparent hover:border-red-500/20 w-full text-left"
-                    >
-                      <LogOut className="w-5 h-5" />
-                      Uitloggen
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <Link
-                      href="/inloggen"
-                      className="block px-4 py-3 text-white hover:text-primary hover:bg-dark-card/50 transition-all duration-300 rounded-lg font-medium"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Inloggen
-                    </Link>
-                    <Link
-                      href="/registreren"
-                      className="block px-4 py-3 bg-gradient-to-r from-primary to-primary/90 text-black hover:from-primary/90 hover:to-primary transition-all duration-300 rounded-lg text-center font-semibold shadow-lg"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Registreren
-                    </Link>
-                  </div>
-                )}
+                      <Link
+                        href="/registreren"
+                        className="block px-4 py-3 bg-gradient-to-r from-primary to-primary/90 text-black hover:from-primary/90 hover:to-primary transition-all duration-300 rounded-lg text-center font-semibold shadow-lg"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Registreren
+                      </Link>
+                    </div>
+                  )
+                })()}
               </div>
             </nav>
           </div>

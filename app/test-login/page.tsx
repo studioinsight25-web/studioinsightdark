@@ -34,6 +34,11 @@ export default function TestLoginPage() {
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
         })
 
+        // Dispatch event to notify header of session change
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('sessionUpdated'))
+        }
+
         setResult(`✅ Login successful! User: ${data.user.email}, Role: ${data.user.role}`)
         
         // Test session

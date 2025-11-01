@@ -15,6 +15,14 @@ import Link from 'next/link'
 import SessionManager from '@/lib/session'
 
 export default function DashboardPage() {
+  // Check if user is admin and redirect to admin dashboard
+  useEffect(() => {
+    const session = SessionManager.getSession()
+    if (session && session.role === 'ADMIN') {
+      console.log('[Dashboard] Admin user detected, redirecting to admin dashboard')
+      window.location.href = '/admin'
+    }
+  }, [])
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)

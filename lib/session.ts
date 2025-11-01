@@ -12,17 +12,48 @@ class SessionManager {
 
   static setSession(session: Session): void {
     if (typeof window !== 'undefined') {
-      // Add expiration if not provided
-      const sessionWithExpiry = {
-        ...session,
-        expiresAt: session.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      try {
+        // Add expiration if not provided
+        const sessionWithExpiry = {
+          ...session,
+          expiresAt: session.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        }
+        
+        // Store in localStorage for client-side access
+        const sessionJson = JSON.stringify(sessionWithExpiry)
+        localStorage.setItem(this.SESSION_KEY, sessionJson)
+        
+        // Verify it was saved
+        const saved = localStorage.getItem(this.SESSION_KEY)
+        if (!saved || saved !== sessionJson) {
+          console.error('[SessionManager] Failed to save session to localStorage')
+          return
+        }
+        
+        console.log('[SessionManager] Session saved successfully:', {
+          userId: session.userId,
+          email: session.email,
+          role: session.role
+        })
+        
+        // Also set as cookie for server-side access (middleware)
+        // Use Secure only in production (HTTPS), otherwise cookie won't work on localhost
+        const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:'
+        const secureFlag = isSecure ? '; Secure' : ''
+        document.cookie = `${this.SESSION_KEY}=${encodeURIComponent(sessionJson)}; path=/; max-age=${24 * 60 * 60}; SameSite=Lax${secureFlag}`
+        
+        // Trigger storage event for other tabs/windows
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: this.SESSION_KEY,
+          newValue: sessionJson,
+          storageArea: localStorage
+        }))
+        
+        // Also dispatch custom event
+        window.dispatchEvent(new Event('sessionUpdated'))
+      } catch (error) {
+        console.error('[SessionManager] Error setting session:', error)
       }
-      
-      // Store in localStorage for client-side access
-      localStorage.setItem(this.SESSION_KEY, JSON.stringify(sessionWithExpiry))
-      
-      // Also set as cookie for server-side access (middleware)
-      document.cookie = `${this.SESSION_KEY}=${JSON.stringify(sessionWithExpiry)}; path=/; max-age=${24 * 60 * 60}; SameSite=Strict; Secure`
     }
   }
 

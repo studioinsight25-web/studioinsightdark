@@ -40,8 +40,49 @@ export default function AdminLoginPage() {
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
         })
 
-        // Redirect to admin dashboard
-        router.push('/admin')
+        // Verify session was saved and redirect
+        if (typeof window !== 'undefined') {
+          // Multiple verification attempts
+          let attempts = 0
+          const maxAttempts = 5
+          
+          const verifyAndRedirect = () => {
+            attempts++
+            const saved = SessionManager.getSession()
+            const rawStorage = localStorage.getItem('studio-insight-session')
+            
+            console.log(`[Login] Verification attempt ${attempts}:`, {
+              session: saved,
+              rawStorage: rawStorage ? 'EXISTS' : 'MISSING',
+              storageLength: rawStorage?.length || 0
+            })
+            
+            if (saved && saved.role === 'ADMIN') {
+              console.log('[Login] ✅ Session verified! Redirecting...')
+              window.dispatchEvent(new Event('sessionUpdated'))
+              
+              // Force a complete page reload to ensure Header picks up session
+              window.location.href = '/debug-session'
+              // After 2 seconds, go to admin
+              setTimeout(() => {
+                window.location.href = '/admin'
+              }, 2000)
+            } else if (attempts < maxAttempts) {
+              // Retry after delay
+              setTimeout(verifyAndRedirect, 200)
+            } else {
+              console.error('[Login] ❌ Failed to verify session after all attempts!')
+              // Still redirect but show error
+              alert('Session kon niet worden geverifieerd. Ga naar /debug-session om te controleren.')
+              window.location.href = '/debug-session'
+            }
+          }
+          
+          // Start verification
+          setTimeout(verifyAndRedirect, 100)
+        } else {
+          router.push('/admin')
+        }
       } else {
         setError(result.error || 'Login failed')
       }

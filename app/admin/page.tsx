@@ -27,13 +27,27 @@ export default function AdminDashboard() {
   })
 
   useEffect(() => {
+    // Check session and trigger header update
+    const session = SessionManager.getSession()
+    
     // Temporarily bypass auth for development/testing
-    setUser({
-      id: 'admin-bypass',
-      email: 'admin@studio-insight.nl',
-      name: 'Admin User',
-      role: 'ADMIN'
-    })
+    // But still check session to update header
+    if (session && session.role === 'ADMIN') {
+      setUser(session)
+      
+      // Trigger header update event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('sessionUpdated'))
+      }
+    } else {
+      // Bypass for development - but use actual session if available
+      setUser({
+        id: 'admin-bypass',
+        email: 'admin@studio-insight.nl',
+        name: 'Admin User',
+        role: 'ADMIN'
+      })
+    }
     
     /* Original code below (commented out for now)
     const session = SessionManager.getSession()
