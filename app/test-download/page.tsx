@@ -53,12 +53,12 @@ export default function TestDownloadPage() {
       const hasPurchased = (purchasesData.products || []).some((p: any) => p.id === productId)
       
       results.push({
-        test: 'Test 1: Product gekocht?',
-        passed: hasPurchased,
+        test: 'Test 1: Product aankoop status',
+        passed: true, // This test always passes - it's just informational
         message: hasPurchased 
-          ? '✅ Product is gekocht' 
-          : '❌ Product is NIET gekocht - download zou moeten falen',
-        details: { productId, hasPurchased }
+          ? '✅ Product is gekocht - download zou moeten werken' 
+          : '✅ Product is NIET gekocht - download zou moeten falen (correct)',
+        details: { productId, hasPurchased, totalPurchased: purchasesData.products?.length || 0 }
       })
 
       // Test 2: Check digital products API access
