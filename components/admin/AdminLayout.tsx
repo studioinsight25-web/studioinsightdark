@@ -11,7 +11,8 @@ import {
   BarChart3,
   Menu,
   X,
-  LogOut
+  LogOut,
+  Mail
 } from 'lucide-react'
 
 interface AdminLayoutProps {
@@ -26,6 +27,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Producten', href: '/admin/products', icon: Package },
     { name: 'Bestellingen', href: '/admin/orders', icon: ShoppingCart },
     { name: 'Gebruikers', href: '/admin/users', icon: Users },
+    { name: 'Nieuwsbrief', href: '/admin/newsletter', icon: Mail },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Instellingen', href: '/admin/settings', icon: Settings },
   ]
