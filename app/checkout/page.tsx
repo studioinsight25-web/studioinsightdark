@@ -70,7 +70,7 @@ export default function CheckoutPage() {
           items: items.map(item => ({
             id: item.id,
             name: item.name,
-            price: item.price,
+            price: Math.round(item.price * 100), // Convert euros to cents for API
             type: item.type
           }))
         }),
