@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Mail, Lock, User, UserPlus, CheckCircle } from 'lucide-react'
+import SessionManager from '@/lib/session'
 
 export default function RegistrerenPage() {
   const [formData, setFormData] = useState({
@@ -48,12 +49,60 @@ export default function RegistrerenPage() {
 
       const result = await response.json()
 
-      if (response.ok) {
+      if (response.ok && result.user) {
+        // Set session (same as login)
+        SessionManager.setSession({
+          userId: result.user.id,
+          email: result.user.email,
+          name: result.user.name || '',
+          role: result.user.role,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+        })
+
         setSuccess(true)
-        // Redirect to dashboard after 2 seconds
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 2000)
+        
+        // Verify session was saved and redirect (same as login page)
+        if (typeof window !== 'undefined') {
+          let attempts = 0
+          const maxAttempts = 5
+          
+          const verifyAndRedirect = () => {
+            attempts++
+            const saved = SessionManager.getSession()
+            const rawStorage = localStorage.getItem('studio-insight-session')
+            
+            if (saved && saved.userId === result.user.id) {
+              // Dispatch events to ensure Header catches it
+              window.dispatchEvent(new Event('sessionUpdated'))
+              window.dispatchEvent(new StorageEvent('storage', {
+                key: 'studio-insight-session',
+                newValue: localStorage.getItem('studio-insight-session'),
+                storageArea: localStorage
+              }))
+              
+              // Final check
+              const finalCheck = localStorage.getItem('studio-insight-session')
+              
+              if (!finalCheck && attempts < maxAttempts) {
+                setTimeout(verifyAndRedirect, 100)
+                return
+              }
+              
+              // Redirect with full page reload to ensure Header updates
+              setTimeout(() => {
+                window.location.href = '/dashboard'
+              }, 300)
+            } else if (attempts < maxAttempts) {
+              setTimeout(verifyAndRedirect, 100)
+            } else {
+              // Fallback: redirect anyway
+              console.warn('Session verification failed, redirecting anyway')
+              window.location.href = '/dashboard'
+            }
+          }
+          
+          verifyAndRedirect()
+        }
       } else {
         setError(result.error || 'Er is een fout opgetreden')
       }
