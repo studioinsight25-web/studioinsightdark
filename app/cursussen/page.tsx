@@ -53,11 +53,28 @@ export default function CoursesPage() {
           router.push('/cart')
         }, 1000)
       } else {
-        showToast('Er is een fout opgetreden bij het toevoegen aan je winkelwagen.', 'error')
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Add to cart failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        })
+        showToast(
+          errorData.error || `Fout bij toevoegen: ${response.status} ${response.statusText}`, 
+          'error'
+        )
       }
     } catch (error) {
       console.error('Error adding to cart:', error)
-      showToast('Er is een fout opgetreden bij het toevoegen aan je winkelwagen.', 'error')
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Full error details:', {
+        message: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined
+      })
+      showToast(
+        `Fout bij toevoegen: ${errorMessage}. Check console voor details.`, 
+        'error'
+      )
     }
   }
 
