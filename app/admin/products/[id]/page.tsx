@@ -105,39 +105,72 @@ export default function EditProductPage() {
     setIsSubmitting(true)
     
     try {
-      // Prepare product data
-      const productData = {
-        name: formData.name,
-        description: formData.description,
-        shortDescription: formData.shortDescription,
+      // Prepare product data - convert empty strings to undefined
+      const productData: any = {
+        name: formData.name.trim() || undefined,
+        description: formData.description.trim() || undefined,
+        shortDescription: formData.shortDescription.trim() || undefined,
         price: formData.price,
         type: formData.type,
         isActive: formData.isActive,
         featured: formData.featured,
         comingSoon: formData.comingSoon,
-        category: formData.category || undefined,
-        // Course specific fields
-        duration: formData.duration || '',
-        level: formData.level || '',
-        students: formData.students || '',
-        lessons: formData.lessons || '',
-        imageId: imageUrl ? imageUrl.split('/').pop()?.split('?')[0] : undefined,
-        imageUrl: imageUrl || undefined,
-        externalUrl: formData.externalUrl || undefined
+        category: formData.category?.trim() || undefined,
       }
+      
+      // Course specific fields - only include if not empty
+      if (formData.duration?.trim()) {
+        productData.duration = formData.duration.trim()
+      }
+      if (formData.level?.trim()) {
+        productData.level = formData.level.trim()
+      }
+      if (formData.students?.trim()) {
+        // Convert string to number if valid
+        const studentsNum = parseInt(formData.students.trim(), 10)
+        if (!isNaN(studentsNum)) {
+          productData.students = studentsNum.toString()
+        }
+      }
+      if (formData.lessons?.trim()) {
+        // Convert string to number if valid
+        const lessonsNum = parseInt(formData.lessons.trim(), 10)
+        if (!isNaN(lessonsNum)) {
+          productData.lessons = lessonsNum.toString()
+        }
+      }
+      
+      // Image fields
+      if (imageUrl) {
+        const imageId = imageUrl.split('/').pop()?.split('?')[0]
+        if (imageId) {
+          productData.imageId = imageId
+        }
+        productData.imageUrl = imageUrl
+      }
+      
+      if (formData.externalUrl?.trim()) {
+        productData.externalUrl = formData.externalUrl.trim()
+      }
+      
+      console.log('Updating product with data:', productData)
       
       // Update product using the hook
       const updatedProduct = await updateProduct(productId, productData)
       
       if (updatedProduct) {
-        console.log('Product updated:', updatedProduct)
-        // Redirect to products list
+        console.log('Product updated successfully:', updatedProduct)
+        // Show success message and redirect
+        alert('Product succesvol bijgewerkt!')
         window.location.href = '/admin/products'
       } else {
-        console.error('Failed to update product')
+        console.error('Failed to update product - no product returned')
+        alert('Fout: Product kon niet worden bijgewerkt. Controleer de console voor details.')
       }
     } catch (error) {
       console.error('Error updating product:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Onbekende fout'
+      alert(`Fout bij bijwerken product: ${errorMessage}`)
     } finally {
       setIsSubmitting(false)
     }

@@ -66,6 +66,8 @@ export function useProducts() {
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
+      console.log(`[useProducts] Updating product ${id}:`, updates)
+      
       const response = await fetch(`/api/products/${id}`, {
         method: 'PUT',
         headers: {
@@ -74,15 +76,20 @@ export function useProducts() {
         body: JSON.stringify(updates),
       })
 
-      if (response.ok) {
-        const updatedProduct = await response.json()
-        setProducts(prev => prev.map(p => p.id === id ? updatedProduct : p))
-        return updatedProduct
-      } else {
-        throw new Error('Failed to update product')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error || errorData.message || `HTTP ${response.status}: Failed to update product`
+        console.error(`[useProducts] Update failed for ${id}:`, errorMessage)
+        throw new Error(errorMessage)
       }
+
+      const updatedProduct = await response.json()
+      console.log(`[useProducts] Product ${id} updated successfully:`, updatedProduct)
+      
+      setProducts(prev => prev.map(p => p.id === id ? updatedProduct : p))
+      return updatedProduct
     } catch (error) {
-      console.error('Error updating product:', error)
+      console.error('[useProducts] Error updating product:', error)
       throw error
     }
   }

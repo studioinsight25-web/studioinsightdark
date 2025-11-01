@@ -34,20 +34,31 @@ export async function PUT(
     const { id } = await params
     const updates = await request.json()
     
+    console.log(`[API] Updating product ${id} with data:`, updates)
+    
     const updatedProduct = await DatabaseProductService.updateProduct(id, updates)
     
     if (!updatedProduct) {
+      console.error(`[API] Product ${id} not found or update failed`)
       return NextResponse.json(
-        { error: 'Product not found' },
+        { error: 'Product not found or update failed', productId: id },
         { status: 404 }
       )
     }
 
+    console.log(`[API] Product ${id} updated successfully`)
     return NextResponse.json(updatedProduct)
   } catch (error) {
-    console.error('Error updating product:', error)
+    console.error('[API] Error updating product:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : undefined
+    
     return NextResponse.json(
-      { error: 'Failed to update product' },
+      { 
+        error: 'Failed to update product',
+        message: errorMessage,
+        ...(process.env.NODE_ENV === 'development' && { stack: errorStack })
+      },
       { status: 500 }
     )
   }
