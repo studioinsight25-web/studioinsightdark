@@ -24,19 +24,23 @@ export default function Analytics({ gaId }: AnalyticsProps) {
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
-          gtag('config', '${measurementId}', {
-            page_title: document.title,
-            page_location: window.location.href,
-            send_page_view: true
-          });
           
-          // Send initial page view
-          gtag('event', 'page_view', {
-            page_title: document.title,
-            page_location: window.location.href
-          });
-          
-          console.log('✅ Google Analytics initialized with ID: ${measurementId}');
+          // Use typeof checks to ensure window/document exist (SSR-safe)
+          if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+            gtag('config', '${measurementId}', {
+              page_title: document.title,
+              page_location: window.location.href,
+              send_page_view: true
+            });
+            
+            // Send initial page view
+            gtag('event', 'page_view', {
+              page_title: document.title,
+              page_location: window.location.href
+            });
+            
+            console.log('✅ Google Analytics initialized with ID: ${measurementId}');
+          }
         `}
       </Script>
     </>
