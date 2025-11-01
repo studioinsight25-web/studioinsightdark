@@ -221,14 +221,28 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log('Checkout: Creating Mollie payment with data:', {
+      amount: paymentData.amount,
+      description: paymentData.description,
+      redirectUrl: paymentData.redirectUrl,
+      webhookUrl: paymentData.webhookUrl,
+      hasApiKey: !!process.env.MOLLIE_API_KEY
+    })
+
     const paymentResult = await MollieService.createPayment(paymentData)
 
     if (!paymentResult.success) {
+      console.error('Checkout: Mollie payment creation failed:', paymentResult.error)
       return NextResponse.json(
         { error: paymentResult.error || 'Betaling aanmaken mislukt' },
         { status: 500 }
       )
     }
+
+    console.log('Checkout: Mollie payment created successfully:', {
+      paymentId: paymentResult.paymentId,
+      checkoutUrl: paymentResult.checkoutUrl
+    })
 
     // Update order with payment ID
     await OrderService.updateOrderStatus(order.id, 'pending', paymentResult.paymentId)

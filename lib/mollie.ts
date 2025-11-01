@@ -59,9 +59,26 @@ export class MollieService {
       }
     } catch (error) {
       console.error('Mollie payment creation error:', error)
+      let errorMessage = 'Payment creation failed'
+      if (error instanceof Error) {
+        errorMessage = error.message
+        console.error('Mollie error message:', error.message)
+        console.error('Mollie error stack:', error.stack)
+        // Check if it's a Mollie API error
+        if ((error as any).field) {
+          errorMessage = `Mollie API error: ${error.message} (field: ${(error as any).field})`
+        }
+      } else if (typeof error === 'object' && error !== null) {
+        const errorObj = error as any
+        if (errorObj.message) {
+          errorMessage = errorObj.message
+        } else if (errorObj.detail) {
+          errorMessage = errorObj.detail
+        }
+      }
       return {
         success: false,
-        error: 'Payment creation failed'
+        error: errorMessage
       }
     }
   }
