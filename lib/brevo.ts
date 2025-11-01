@@ -231,4 +231,93 @@ export async function brevoSendWelcomeEmail(email: string, name?: string) {
   return { sent: res.ok, status: res.status, details }
 }
 
+export async function brevoSendEmail(to: string, subject: string, htmlContent: string, toName?: string) {
+  const apiKey = process.env.BREVO_API_KEY
+  if (!apiKey) {
+    console.error('❌ BREVO_API_KEY not configured in environment variables')
+    return { sent: false, reason: 'missing_config', status: 0 }
+  }
+
+  const senderEmail = process.env.BREVO_SENDER_EMAIL || 'no-reply@studio-insight.nl'
+  const senderName = process.env.BREVO_SENDER_NAME || 'Studio Insight'
+
+  const payload: BrevoEmailPayload = {
+    to: [{ email: to, name: toName }],
+    subject,
+    htmlContent,
+  }
+
+  try {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': apiKey,
+        'accept': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { email: senderEmail, name: senderName },
+        ...payload,
+      }),
+    })
+
+    let details: any = undefined
+    let errorMessage = ''
+    
+    const responseText = await res.text().catch(() => '')
+    
+    try { 
+      details = JSON.parse(responseText)
+      if (!res.ok && details.message) {
+        errorMessage = details.message
+      }
+    } catch (parseError) {
+      errorMessage = responseText || 'Unknown error'
+      details = { raw: responseText }
+    }
+
+    if (!res.ok) {
+      console.error('❌ Brevo API error:', {
+        status: res.status,
+        statusText: res.statusText,
+        message: errorMessage,
+        details: details,
+      })
+      
+      return { 
+        sent: false, 
+        reason: errorMessage || `HTTP ${res.status}`, 
+        status: res.status,
+        details 
+      }
+    }
+
+    const messageId = details?.messageId
+    
+    if (!messageId && res.ok) {
+      console.error('❌ Brevo email queued but no messageId returned:', {
+        email: to,
+        details: details,
+        responseStatus: res.status
+      })
+      return {
+        sent: false,
+        reason: 'No messageId returned from Brevo - email may not be sent. Check sender email verification.',
+        status: res.status,
+        details
+      }
+    }
+
+    console.log('✅ Brevo email sent:', { to, subject, messageId })
+    return { sent: true, messageId, status: res.status, details }
+  } catch (error: any) {
+    console.error('❌ Brevo email error:', error)
+    return {
+      sent: false,
+      reason: error.message || 'Unknown error',
+      status: 0 
+    }
+  }
+}
+
 

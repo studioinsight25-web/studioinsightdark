@@ -11,9 +11,13 @@ export default function ContactPage() {
     message: ''
   })
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
+    setIsSubmitting(true)
     
     try {
       const response = await fetch('/api/contact', {
@@ -28,17 +32,30 @@ export default function ContactPage() {
 
       if (response.ok) {
         setIsSubmitted(true)
+        setError(null)
         // Reset form na 3 seconden
         setTimeout(() => {
           setIsSubmitted(false)
           setFormData({ name: '', email: '', subject: '', message: '' })
         }, 3000)
       } else {
-        alert(result.error || 'Er is een fout opgetreden')
+        // Show error message
+        const errorMessage = result.error || result.message || 'Er is een fout opgetreden'
+        setError(errorMessage)
+        
+        // If it's a validation error, show details
+        if (result.details && Array.isArray(result.details)) {
+          const detailsMessage = result.details.map((issue: any) => 
+            `${issue.path.join('.')}: ${issue.message}`
+          ).join(', ')
+          setError(`${errorMessage} (${detailsMessage})`)
+        }
       }
     } catch (error) {
       console.error('Error submitting form:', error)
-      alert('Er is een fout opgetreden. Probeer het later opnieuw.')
+      setError('Er is een fout opgetreden. Probeer het later opnieuw.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -82,6 +99,11 @@ export default function ContactPage() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {error && (
+                    <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+                      <p className="text-red-400 text-sm font-medium">{error}</p>
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-white mb-2">
@@ -155,10 +177,20 @@ export default function ContactPage() {
 
                   <button
                     type="submit"
-                    className="w-full bg-primary text-black py-3 px-6 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-300 flex items-center justify-center gap-2"
+                    disabled={isSubmitting}
+                    className="w-full bg-primary text-black py-3 px-6 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-300 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <Send className="w-4 h-4" />
-                    Verstuur bericht
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                        Verzenden...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        Verstuur bericht
+                      </>
+                    )}
                   </button>
                 </form>
               )}
