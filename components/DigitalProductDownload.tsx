@@ -3,8 +3,14 @@
 
 import { useState, useEffect } from 'react'
 import { Download, File, AlertCircle, CheckCircle, Lock, CreditCard } from 'lucide-react'
-import { useDigitalProducts } from '@/hooks/useDigitalProducts'
-import DigitalProductService from '@/lib/digital-products'
+
+interface DigitalProduct {
+  id: string
+  fileName: string
+  fileSize: number
+  fileType: string
+  downloadLimit?: number
+}
 
 interface DigitalProductDownloadProps {
   productId: string
@@ -17,28 +23,47 @@ export default function DigitalProductDownload({
   userId, 
   className = '' 
 }: DigitalProductDownloadProps) {
-  const { digitalProducts, loading, downloadFile } = useDigitalProducts(productId)
+  const [digitalProducts, setDigitalProducts] = useState<DigitalProduct[]>([])
+  const [loading, setLoading] = useState(true)
   const [downloading, setDownloading] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [hasAccess, setHasAccess] = useState(false)
 
-  // Check if user has access to this product (in production, this would check payment status)
+  // Check if user has access and load digital products
   useEffect(() => {
-    // For demo purposes, simulate access check
-    // In production, this would check:
-    // 1. User has purchased the product
-    // 2. Payment is completed
-    // 3. Product is not expired
-    const checkAccess = async () => {
-      // Simulate API call to check purchase status
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // For demo: assume user has access to products 1, 2, 3
-      const hasPurchased = ['1', '2', '3'].includes(productId)
-      setHasAccess(hasPurchased)
+    const checkAccessAndLoad = async () => {
+      try {
+        // Check if user has purchased this product
+        const purchasesResponse = await fetch('/api/user/purchases')
+        if (purchasesResponse.ok) {
+          const purchasesData = await purchasesResponse.json()
+          const purchasedProductIds = (purchasesData.products || []).map((p: any) => p.id)
+          setHasAccess(purchasedProductIds.includes(productId))
+        }
+
+        // Load digital products via API for authenticated users
+        try {
+          const response = await fetch(`/api/digital-products/${productId}/user`)
+          if (response.ok) {
+            const products = await response.json()
+            setDigitalProducts(products)
+          } else {
+            // No products or not authorized
+            setDigitalProducts([])
+          }
+        } catch (err) {
+          // API might not be available - that's OK
+          console.log('Could not load digital products:', err)
+          setDigitalProducts([])
+        }
+      } catch (error) {
+        console.error('Error checking access:', error)
+      } finally {
+        setLoading(false)
+      }
     }
     
-    checkAccess()
+    checkAccessAndLoad()
   }, [productId, userId])
 
   const handleDownload = async (digitalProductId: string, fileName: string) => {
@@ -51,33 +76,43 @@ export default function DigitalProductDownload({
     setError('')
 
     try {
-      // Check if user can download (download limits, expiration, etc.)
-      const canDownload = DigitalProductService.canUserDownload(userId, digitalProductId)
-      
-      if (!canDownload) {
-        setError('Download niet beschikbaar. Mogelijk is je download limiet bereikt of is het product verlopen.')
-        return
+      // Generate download link via API
+      const response = await fetch(`/api/download/${digitalProductId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Download link kon niet worden gegenereerd')
       }
 
-      const success = await downloadFile(digitalProductId, userId)
-      
-      if (!success) {
-        setError('Download mislukt. Probeer het opnieuw.')
+      // Use the download URL
+      if (result.downloadUrl) {
+        window.open(result.downloadUrl, '_blank')
+      } else {
+        throw new Error('Geen download URL ontvangen')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Download fout')
+      setError(err instanceof Error ? err.message : 'Download mislukt. Probeer het opnieuw.')
     } finally {
       setDownloading(null)
     }
   }
 
   const getFileIcon = (fileType: string) => {
-    switch (fileType) {
+    switch (fileType?.toLowerCase()) {
       case 'pdf':
         return <File className="w-5 h-5 text-red-400" />
       case 'video':
+      case 'mp4':
         return <File className="w-5 h-5 text-blue-400" />
       case 'audio':
+      case 'mp3':
         return <File className="w-5 h-5 text-green-400" />
       case 'zip':
         return <File className="w-5 h-5 text-yellow-400" />
@@ -90,7 +125,7 @@ export default function DigitalProductDownload({
   }
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
+    if (!bytes || bytes === 0) return '0 Bytes'
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
@@ -107,6 +142,32 @@ export default function DigitalProductDownload({
     )
   }
 
+  // Show access denied if user doesn't have access
+  if (!hasAccess) {
+    return (
+      <div className={`space-y-4 ${className}`}>
+        <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 text-center">
+          <Lock className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-red-400 mb-2">Toegang Geweigerd</h3>
+          <p className="text-red-300 mb-4">
+            Je hebt geen toegang tot de digitale bestanden van dit product. Koop het product eerst om toegang te krijgen.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button 
+              onClick={() => {
+                window.location.href = `/products/${productId}`
+              }}
+              className="bg-primary text-black px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-300 flex items-center gap-2"
+            >
+              <CreditCard className="w-4 h-4" />
+              Koop Product
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (digitalProducts.length === 0) {
     return (
       <div className={`space-y-4 ${className}`}>
@@ -116,43 +177,6 @@ export default function DigitalProductDownload({
           <p className="text-text-secondary">
             Er zijn nog geen digitale bestanden beschikbaar voor dit product.
           </p>
-        </div>
-      </div>
-    )
-  }
-
-  // Show access denied if user doesn't have access
-  if (!hasAccess) {
-    return (
-      <div className={`space-y-4 ${className}`}>
-        <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 text-center">
-          <Lock className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-red-400 mb-2">Toegang Geweigerd</h3>
-          <p className="text-red-300 mb-4">
-            Je hebt geen toegang tot de digitale bestanden van dit product.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button 
-              onClick={() => {
-                // Redirect to product page to purchase
-                window.location.href = `/products/${productId}`
-              }}
-              className="bg-primary text-black px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-300 flex items-center gap-2"
-            >
-              <CreditCard className="w-4 h-4" />
-              Koop Product
-            </button>
-            <button 
-              onClick={() => {
-                // Redirect to product page
-                window.location.href = `/products/${productId}`
-              }}
-              className="bg-transparent border border-red-500 text-red-400 px-6 py-3 rounded-lg font-semibold hover:bg-red-500 hover:text-white transition-colors duration-300 flex items-center gap-2"
-            >
-              <File className="w-4 h-4" />
-              Bekijk Product
-            </button>
-          </div>
         </div>
       </div>
     )
@@ -190,8 +214,8 @@ export default function DigitalProductDownload({
               <div>
                 <p className="font-medium text-white">{product.fileName}</p>
                 <div className="flex items-center gap-4 text-sm text-text-secondary">
-                  <span>{formatFileSize(product.fileSize)}</span>
-                  <span>{product.fileType.toUpperCase()}</span>
+                  {product.fileSize && <span>{formatFileSize(product.fileSize)}</span>}
+                  {product.fileType && <span>{product.fileType.toUpperCase()}</span>}
                   {product.downloadLimit && (
                     <span>Max {product.downloadLimit} downloads</span>
                   )}
