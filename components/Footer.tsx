@@ -60,6 +60,13 @@ export default function Footer() {
                   </a>
                 </div>
               </div>
+              <div className="flex items-start gap-3 text-text-secondary">
+                <div className="w-5 h-5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium">KVK</p>
+                  <p>59161264</p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -88,9 +95,14 @@ export default function Footer() {
         {/* Bottom Section */}
         <div className="pt-8 border-t border-dark-border">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="text-text-secondary text-sm">
-              © 2024 Studio Insight. Alle rechten voorbehouden.
-            </p>
+            <div className="flex flex-col md:flex-row items-center gap-4">
+              <p className="text-text-secondary text-sm">
+                © 2024 Studio Insight. Alle rechten voorbehouden.
+              </p>
+              <p className="text-text-secondary text-sm">
+                KVK: 59161264
+              </p>
+            </div>
             <nav className="flex gap-8 text-sm">
               {legalLinks.map((link) => (
                 <a 
