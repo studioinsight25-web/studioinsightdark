@@ -103,11 +103,19 @@ export class UserService {
 
   static async getUserById(id: string): Promise<any> {
     try {
-      // Cast id to UUID if needed, or use as string
-      const result = await DatabaseService.query(
-        'SELECT id, email, name, role, address, city, postcode, country, phone, company_name, industry, website, created_at, updated_at FROM users WHERE id::text = $1',
-        [id.toString()]
+      // Try both UUID cast and text comparison to handle different formats
+      let result = await DatabaseService.query(
+        'SELECT id, email, name, role, address, city, postcode, country, phone, company_name, industry, website, created_at, updated_at FROM users WHERE id = $1::uuid',
+        [id]
       )
+      
+      // If UUID cast fails, try as text
+      if (result.length === 0) {
+        result = await DatabaseService.query(
+          'SELECT id, email, name, role, address, city, postcode, country, phone, company_name, industry, website, created_at, updated_at FROM users WHERE id::text = $1',
+          [id.toString()]
+        )
+      }
 
       if (result.length === 0) {
         return null
