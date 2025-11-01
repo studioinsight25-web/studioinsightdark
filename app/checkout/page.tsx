@@ -81,7 +81,7 @@ export default function CheckoutPage() {
             id: item.id,
             name: item.name,
             price: Math.round(item.price), // Prices are already in cents, just round to be safe
-            type: item.type
+            type: (item.type?.toLowerCase() || 'course') as 'course' | 'ebook' | 'review' // Normalize to lowercase
           }))
         }),
       })

@@ -54,7 +54,7 @@ export default function CartPage() {
           name: item.product!.name,
           price: item.product!.price,
           quantity: item.quantity,
-          type: item.product!.type as 'course' | 'ebook' | 'review'
+          type: (item.product!.type?.toLowerCase() || 'course') as 'course' | 'ebook' | 'review' // Normalize to lowercase
         }))
     }
     
