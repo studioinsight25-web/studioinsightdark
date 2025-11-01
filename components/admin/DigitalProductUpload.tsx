@@ -113,9 +113,33 @@ export default function DigitalProductUpload({
         throw new Error('Bestand te groot. Maximum grootte is 100MB')
       }
 
-      console.log('File validation passed, creating digital product...')
+      console.log('File validation passed, uploading file...')
 
-      // Create digital product via API
+      // Step 1: Upload file to Cloudinary
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', file)
+      uploadFormData.append('folder', `studio-insight/digital-products/${productId}`)
+
+      const uploadResponse = await fetch('/api/admin/upload-digital', {
+        method: 'POST',
+        body: uploadFormData
+      })
+
+      if (!uploadResponse.ok) {
+        const uploadError = await uploadResponse.json()
+        throw new Error(uploadError.error || 'Bestand upload mislukt')
+      }
+
+      const uploadResult = await uploadResponse.json()
+      
+      if (!uploadResult.success || !uploadResult.data.secure_url) {
+        throw new Error('Upload mislukt: Geen URL ontvangen')
+      }
+
+      const fileUrl = uploadResult.data.secure_url
+      console.log('File uploaded successfully:', fileUrl)
+
+      // Step 2: Create digital product record with the uploaded file URL
       const response = await fetch(`/api/digital-products/${productId}`, {
         method: 'POST',
         headers: {
@@ -125,14 +149,15 @@ export default function DigitalProductUpload({
           fileName: file.name,
           fileType: getFileType(file.type),
           fileSize: file.size,
-          fileUrl: URL.createObjectURL(file), // Temporary URL for demo
+          fileUrl: fileUrl, // Real Cloudinary URL
           downloadLimit: 5, // Default download limit
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
         })
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create digital product')
+        const errorData = await response.json().catch(() => ({ error: 'Failed to create digital product' }))
+        throw new Error(errorData.error || 'Failed to create digital product')
       }
 
       const digitalProduct = await response.json()

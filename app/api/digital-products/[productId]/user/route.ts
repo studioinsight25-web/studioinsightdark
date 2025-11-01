@@ -1,6 +1,7 @@
 // app/api/digital-products/[productId]/user/route.ts - Get digital products for authenticated user
 import { NextRequest, NextResponse } from 'next/server'
 import { DigitalProductDatabaseService } from '@/lib/digital-products-database'
+import { OrderService } from '@/lib/orders'
 import SessionManager from '@/lib/session'
 
 export async function GET(
@@ -19,7 +20,21 @@ export async function GET(
 
     const { productId } = await params
     
-    // Get digital products for this product ID
+    // CRITICAL SECURITY CHECK: Verify user has purchased this product
+    const hasPurchased = await DigitalProductDatabaseService.hasUserPurchasedProduct(
+      session.userId, 
+      productId
+    )
+    
+    if (!hasPurchased) {
+      console.log(`Access denied: User ${session.userId} attempted to access digital products for unpurchased product ${productId}`)
+      return NextResponse.json(
+        { error: 'You have not purchased this product. Access denied.' },
+        { status: 403 }
+      )
+    }
+    
+    // Get digital products for this product ID (only if user has access)
     const products = await DigitalProductDatabaseService.getDigitalProductsByProductId(productId)
     
     return NextResponse.json(products)

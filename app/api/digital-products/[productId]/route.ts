@@ -31,6 +31,23 @@ export async function POST(
     const { productId } = await params
     const body = await request.json()
     
+    // Validate required fields
+    if (!body.fileName || !body.fileUrl) {
+      return NextResponse.json(
+        { error: 'fileName en fileUrl zijn verplicht' },
+        { status: 400 }
+      )
+    }
+    
+    // Validate fileType
+    const allowedTypes = ['pdf', 'video', 'audio', 'zip', 'doc', 'docx']
+    if (!body.fileType || !allowedTypes.includes(body.fileType.toLowerCase())) {
+      return NextResponse.json(
+        { error: 'Ongeldig bestandstype' },
+        { status: 400 }
+      )
+    }
+    
     const digitalProduct = await DigitalProductDatabaseService.addDigitalProduct({
       ...body,
       productId
@@ -39,8 +56,9 @@ export async function POST(
     return NextResponse.json(digitalProduct, { status: 201 })
   } catch (error) {
     console.error('Error creating digital product:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create digital product'
     return NextResponse.json(
-      { error: 'Failed to create digital product' },
+      { error: errorMessage },
       { status: 500 }
     )
   }

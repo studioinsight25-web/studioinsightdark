@@ -201,31 +201,70 @@ export class DigitalProductDatabaseService {
 
   static async canUserDownload(userId: string, digitalProductId: string): Promise<boolean> {
     try {
-      // Check if user has purchased the product
-      const productResult = await DatabaseService.query(
-        'SELECT dp.*, o."userId", o.status FROM "digitalProducts" dp JOIN "orderItems" oi ON dp."productId" = oi."productId" JOIN orders o ON oi."orderId" = o.id WHERE dp.id = $1 AND o."userId" = $2 AND o.status = $3 LIMIT 1',
-        [digitalProductId, userId, 'PAID']
-      )
-
-      if (productResult.length === 0) return false
-
+      // First, get the digital product to find its associated productId
       const digitalProduct = await this.getDigitalProduct(digitalProductId)
       if (!digitalProduct) return false
+
+      // Check if user has purchased the product (by checking orders)
+      const productResult = await DatabaseService.query(
+        `SELECT o.*, oi."productId" 
+         FROM orders o 
+         JOIN "orderItems" oi ON o.id = oi."orderId" 
+         WHERE oi."productId" = $1 
+           AND o."userId" = $2 
+           AND UPPER(o.status) = 'PAID'
+         LIMIT 1`,
+        [digitalProduct.productId, userId]
+      )
+
+      if (productResult.length === 0) {
+        console.log(`Access denied: User ${userId} has not purchased product ${digitalProduct.productId}`)
+        return false
+      }
 
       // Check download limit
       const userDownload = await this.getUserDownload(userId, digitalProductId)
       if (userDownload && digitalProduct.downloadLimit) {
-        return userDownload.downloadCount < digitalProduct.downloadLimit
+        if (userDownload.downloadCount >= digitalProduct.downloadLimit) {
+          console.log(`Access denied: Download limit exceeded for user ${userId}, product ${digitalProductId}`)
+          return false
+        }
       }
 
       // Check expiration
       if (digitalProduct.expiresAt) {
-        return new Date() < new Date(digitalProduct.expiresAt)
+        const expirationDate = new Date(digitalProduct.expiresAt)
+        if (new Date() >= expirationDate) {
+          console.log(`Access denied: Digital product expired for user ${userId}, product ${digitalProductId}`)
+          return false
+        }
       }
 
       return true
     } catch (error) {
       console.error('Error checking download access:', error)
+      return false
+    }
+  }
+
+  /**
+   * Check if user has purchased a product (by productId, not digitalProductId)
+   */
+  static async hasUserPurchasedProduct(userId: string, productId: string): Promise<boolean> {
+    try {
+      const result = await DatabaseService.query(
+        `SELECT o.id 
+         FROM orders o 
+         JOIN "orderItems" oi ON o.id = oi."orderId" 
+         WHERE oi."productId" = $1 
+           AND o."userId" = $2 
+           AND UPPER(o.status) = 'PAID'
+         LIMIT 1`,
+        [productId, userId]
+      )
+      return result.length > 0
+    } catch (error) {
+      console.error('Error checking product purchase:', error)
       return false
     }
   }

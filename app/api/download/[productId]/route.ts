@@ -1,6 +1,7 @@
 // app/api/download/[productId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { DigitalProductDatabaseService } from '@/lib/digital-products-database'
+import SessionManager from '@/lib/session'
 
 export async function GET(
   request: NextRequest,
@@ -47,6 +48,15 @@ export async function GET(
       )
     }
 
+    // CRITICAL: Verify userId from session matches request (prevent user impersonation)
+    const session = SessionManager.getSession()
+    if (!session || session.userId !== userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized access attempt' },
+        { status: 403 }
+      )
+    }
+
     // Get digital product
     const digitalProduct = await DigitalProductDatabaseService.getDigitalProduct(productId)
     if (!digitalProduct) {
@@ -56,16 +66,19 @@ export async function GET(
       )
     }
 
-    // Check if user can download (simplified for API route)
-    const downloadRecord = await DigitalProductDatabaseService.getUserDownload(userId, productId)
-    const downloadCount = downloadRecord ? downloadRecord.downloadCount : 0
+    // CRITICAL SECURITY CHECK: Verify user has purchased and can download
+    const canDownload = await DigitalProductDatabaseService.canUserDownload(userId, productId)
     
-    if (digitalProduct.downloadLimit && downloadCount >= digitalProduct.downloadLimit) {
+    if (!canDownload) {
       return NextResponse.json(
-        { error: 'Download limit exceeded' },
+        { error: 'You have not purchased this product or download limit exceeded. Access denied.' },
         { status: 403 }
       )
     }
+
+    // Get download record for tracking
+    const downloadRecord = await DigitalProductDatabaseService.getUserDownload(userId, productId)
+    const downloadCount = downloadRecord ? downloadRecord.downloadCount : 0
 
     // Track download
     await DigitalProductDatabaseService.trackDownload(userId, productId)
@@ -102,15 +115,32 @@ export async function POST(
     const { productId } = await params
     const { userId } = await request.json()
 
-    if (!userId) {
+    // Check authentication via session
+    const session = SessionManager.getSession()
+    if (!session || !session.userId) {
       return NextResponse.json(
-        { error: 'User ID required' },
-        { status: 400 }
+        { error: 'Not authenticated' },
+        { status: 401 }
       )
     }
 
-    // Check if user has access to the product
-    // In production, verify user has purchased the product
+    // CRITICAL: Verify userId from request matches session (prevent user impersonation)
+    if (userId !== session.userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized access attempt' },
+        { status: 403 }
+      )
+    }
+
+    // CRITICAL SECURITY CHECK: Verify user has purchased the product
+    const canDownload = await DigitalProductDatabaseService.canUserDownload(userId, productId)
+    
+    if (!canDownload) {
+      return NextResponse.json(
+        { error: 'You have not purchased this product or download limit exceeded. Access denied.' },
+        { status: 403 }
+      )
+    }
     
     // Get digital product to generate download URL
     const digitalProduct = await DigitalProductDatabaseService.getDigitalProduct(productId)
@@ -122,9 +152,10 @@ export async function POST(
       )
     }
 
-    // Generate a simple download URL with token
-    const token = btoa(`${userId}-${productId}-${Date.now() + 3600000}`) // 1 hour expiry
-    const downloadUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/download/${productId}?token=${token}&userId=${userId}`
+    // Generate a secure download URL with token
+    const expiryTime = Date.now() + 3600000 // 1 hour expiry
+    const token = btoa(`${userId}-${productId}-${expiryTime}`)
+    const downloadUrl = `${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/download/${productId}?token=${encodeURIComponent(token)}&userId=${userId}`
 
     return NextResponse.json({
       success: true,
