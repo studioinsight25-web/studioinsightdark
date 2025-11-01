@@ -2,7 +2,8 @@
 -- Run this in your Neon database console
 
 -- Drop existing tables if they exist
-DROP TABLE IF EXISTS digital_products CASCADE;
+DROP TABLE IF EXISTS "userDownloads" CASCADE;
+DROP TABLE IF EXISTS "digitalProducts" CASCADE;
 DROP TABLE IF EXISTS order_items CASCADE;
 DROP TABLE IF EXISTS orders CASCADE;
 DROP TABLE IF EXISTS products CASCADE;
@@ -82,6 +83,17 @@ CREATE TABLE "digitalProducts" (
   "updatedAt" TIMESTAMP DEFAULT NOW()
 );
 
+-- Create userDownloads table (tracks user downloads of digital products)
+CREATE TABLE "userDownloads" (
+  id VARCHAR(255) PRIMARY KEY,
+  "userId" UUID REFERENCES users(id) ON DELETE CASCADE,
+  "digitalProductId" VARCHAR(255) REFERENCES "digitalProducts"(id) ON DELETE CASCADE,
+  "downloadCount" INTEGER DEFAULT 0,
+  "lastDownloadedAt" TIMESTAMP,
+  "createdAt" TIMESTAMP DEFAULT NOW(),
+  "updatedAt" TIMESTAMP DEFAULT NOW()
+);
+
 -- Create newsletter_subscriptions table
 CREATE TABLE "newsletterSubscriptions" (
   id VARCHAR(255) PRIMARY KEY,
@@ -104,6 +116,8 @@ CREATE INDEX idx_orders_user_id ON orders(user_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX idx_digital_products_product_id ON "digitalProducts"("productId");
+CREATE INDEX idx_user_downloads_user_id ON "userDownloads"("userId");
+CREATE INDEX idx_user_downloads_digital_product_id ON "userDownloads"("digitalProductId");
 
 -- Insert a default admin user (password: admin123)
 INSERT INTO users (id, email, name, password, role, created_at, updated_at)
