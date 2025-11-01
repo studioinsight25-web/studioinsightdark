@@ -45,23 +45,22 @@ export default function Header() {
   // Get current session directly - this runs on every render to always get latest
   const currentSession = typeof window !== 'undefined' ? getCurrentSession() : null
   
-  // Debug: Log session on every render (even if null)
-  if (typeof window !== 'undefined') {
-    const rawStorage = localStorage.getItem('studio-insight-session')
-    console.log('[Header Render] Session check:', { 
-      currentSession: currentSession ? { userId: currentSession.userId, role: currentSession.role } : null,
-      rawStorageExists: !!rawStorage,
-      rawStorageLength: rawStorage?.length || 0,
-      userState: user ? { id: user.id, role: user.role } : null,
-      isAdmin: currentSession?.role === 'ADMIN' || user?.role === 'ADMIN'
-    })
-  }
+  // Optional: Debug logging (can be removed in production)
+  // Uncomment to debug session issues:
+  // if (typeof window !== 'undefined') {
+  //   const rawStorage = localStorage.getItem('studio-insight-session')
+  //   console.log('[Header Render] Session check:', { 
+  //     currentSession: currentSession ? { userId: currentSession.userId, role: currentSession.role } : null,
+  //     rawStorageExists: !!rawStorage,
+  //     userState: user ? { id: user.id, role: user.role } : null,
+  //     isAdmin: currentSession?.role === 'ADMIN' || user?.role === 'ADMIN'
+  //   })
+  // }
   
   // Update user state based on current session - ALWAYS check on mount and when session might change
   useEffect(() => {
     const checkAndUpdate = () => {
       const session = getCurrentSession()
-      console.log('[Header useEffect] Checking session:', session ? { userId: session.userId, role: session.role } : 'null')
       
       if (session) {
         const newUser = {
@@ -72,11 +71,9 @@ export default function Header() {
         }
         
         if (!user || user.id !== newUser.id || user.role !== newUser.role) {
-          console.log('[Header] Updating user from session:', newUser)
           setUser(newUser)
         }
       } else if (user) {
-        console.log('[Header] Clearing user (no session found)')
         setUser(null)
       }
       setIsLoading(false)
@@ -98,9 +95,7 @@ export default function Header() {
   // Force re-render on session updates + aggressive polling
   useEffect(() => {
     const handleSessionUpdate = () => {
-      console.log('[Header] Session update event received - checking session...')
       const session = getCurrentSession()
-      console.log('[Header] Session after update event:', session ? { userId: session.userId, role: session.role } : 'null')
       
       if (session) {
         const newUser = {
@@ -109,11 +104,9 @@ export default function Header() {
           name: session.name || session.email.split('@')[0] || 'User',
           role: session.role
         }
-        console.log('[Header] Setting user from session update:', newUser)
         setUser(newUser)
         forceUpdate(prev => prev + 1)
       } else {
-        console.log('[Header] No session found after update event')
         setUser(null)
       }
     }
@@ -132,7 +125,6 @@ export default function Header() {
       if (session) {
         const needsUpdate = !currentUser || currentUser.id !== session.userId || currentUser.role !== session.role
         if (needsUpdate) {
-          console.log('[Header Poll] Session found, updating user:', { userId: session.userId, role: session.role })
           setUser({
             id: session.userId,
             email: session.email,
@@ -141,7 +133,6 @@ export default function Header() {
           })
         }
       } else if (currentUser) {
-        console.log('[Header Poll] No session found, clearing user')
         setUser(null)
       }
       
@@ -295,12 +286,6 @@ export default function Header() {
               if (displayUser || session) {
                 const isAdmin = (displayUser?.role === 'ADMIN') || (session?.role === 'ADMIN')
                 
-                console.log('[Header Render] Displaying user:', {
-                  displayUser,
-                  session,
-                  isAdmin,
-                  userState: user
-                })
                 
                 return (
                   <div className="flex items-center gap-3">

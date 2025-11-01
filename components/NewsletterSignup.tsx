@@ -23,17 +23,41 @@ export default function NewsletterSignup() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, name, consent: true })
       })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        setError(data.error || 'Kon je inschrijving niet verwerken')
-        if (data.details) {
-          setErrorDetails(data.details)
+      
+      const data = await res.json().catch(() => ({}))
+      
+      // Check if subscription was created but email failed
+      if (res.ok || res.status === 207) {
+        if (data.emailSent === false) {
+          // Subscription created but email failed - SHOW ERROR
+          const errorMsg = data.message || 'Inschrijving geregistreerd, maar bevestigingsmail kon niet worden verzonden. Probeer het later opnieuw of neem contact op.'
+          setError(errorMsg)
+          
+          // Show error details if available
+          if (data.emailError) {
+            setErrorDetails(`Fout: ${data.emailError}`)
+          } else if (data.debug?.emailError) {
+            setErrorDetails(`Debug: ${data.debug.emailError}`)
+          }
+          
+          // Still show pending state so user knows subscription was registered
+          setPending(true)
+        } else {
+          // Everything OK - no errors
+          setError(null)
+          setErrorDetails(null)
+          setPending(true)
         }
+        setEmail('')
+        setName('')
         return
       }
-      setPending(true)
-      setEmail('')
-      setName('')
+      
+      // Request failed
+      setError(data.error || 'Kon je inschrijving niet verwerken')
+      if (data.details) {
+        setErrorDetails(data.details)
+      }
     } catch (err: any) {
       setError(err.message || 'Kon je inschrijving niet verwerken')
     } finally {

@@ -30,11 +30,7 @@ class SessionManager {
           return
         }
         
-        console.log('[SessionManager] Session saved successfully:', {
-          userId: session.userId,
-          email: session.email,
-          role: session.role
-        })
+        // Session saved successfully
         
         // Also set as cookie for server-side access (middleware)
         // Use Secure only in production (HTTPS), otherwise cookie won't work on localhost

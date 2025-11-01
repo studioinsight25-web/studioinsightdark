@@ -31,8 +31,6 @@ export default function LoginPage() {
       const result = await response.json()
 
       if (response.ok && result.user) {
-        console.log('[Login] Login successful, setting session for user:', result.user)
-        
         // Set session
         SessionManager.setSession({
           userId: result.user.id,
@@ -41,10 +39,6 @@ export default function LoginPage() {
           role: result.user.role,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
         })
-        
-        console.log('[Login] Session set, checking localStorage...')
-        const immediateCheck = localStorage.getItem('studio-insight-session')
-        console.log('[Login] Immediate localStorage check:', immediateCheck ? 'EXISTS' : 'MISSING')
 
         // Verify session was saved and redirect
         if (typeof window !== 'undefined') {
@@ -57,15 +51,7 @@ export default function LoginPage() {
             const saved = SessionManager.getSession()
             const rawStorage = localStorage.getItem('studio-insight-session')
             
-            console.log(`[Login] Verification attempt ${attempts}:`, {
-              session: saved,
-              rawStorage: rawStorage ? 'EXISTS' : 'MISSING',
-              role: saved?.role
-            })
-            
             if (saved && saved.userId === result.user.id) {
-              console.log('[Login] ✅ Session verified! Role:', saved.role)
-              
               // Multiple event dispatches to ensure Header catches it
               window.dispatchEvent(new Event('sessionUpdated'))
               window.dispatchEvent(new StorageEvent('storage', {
@@ -76,11 +62,9 @@ export default function LoginPage() {
               
               // Verify one more time that session is in localStorage
               const finalCheck = localStorage.getItem('studio-insight-session')
-              console.log('[Login] Final localStorage check:', finalCheck ? 'EXISTS' : 'MISSING')
               
               if (!finalCheck) {
-                console.error('[Login] ⚠️ Session missing in localStorage! Retrying save...')
-                // Retry saving
+                // Retry saving if missing
                 SessionManager.setSession({
                   userId: result.user.id,
                   email: result.user.email,
@@ -90,25 +74,19 @@ export default function LoginPage() {
                 })
               }
               
-              // Longer delay to ensure Header has time to process
+              // Redirect after short delay to ensure Header processes
               setTimeout(() => {
-                // Check if user is admin and redirect accordingly
                 if (result.user.role === 'ADMIN') {
-                  console.log('[Login] Admin user detected, redirecting to /admin with full page reload')
-                  // Use full page reload for admin to ensure header picks up session
                   window.location.href = '/admin'
                 } else {
-                  console.log('[Login] Regular user, redirecting to /dashboard with full page reload')
-                  // For regular users, also use full reload to ensure header updates
                   window.location.href = '/dashboard'
                 }
-              }, 500) // Increased delay to 500ms
+              }, 300)
             } else if (attempts < maxAttempts) {
               // Retry after delay
               setTimeout(verifyAndRedirect, 200)
             } else {
-              console.error('[Login] ❌ Failed to verify session after all attempts!')
-              // Still redirect with full page reload
+              // Failed to verify, but still redirect
               window.dispatchEvent(new Event('sessionUpdated'))
               if (result.user.role === 'ADMIN') {
                 window.location.href = '/admin'

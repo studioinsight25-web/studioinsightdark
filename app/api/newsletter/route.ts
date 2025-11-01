@@ -63,10 +63,29 @@ export async function POST(request: NextRequest) {
     // Send confirmation email
     const confirmationUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/newsletter/confirm?token=${confirmationToken}`
     
+    let emailSent = false
+    let emailError: any = null
     try {
-      await brevoSendConfirmationEmail(normalizedEmail, name || '', confirmationUrl)
+      const emailResult = await brevoSendConfirmationEmail(normalizedEmail, name || '', confirmationUrl)
+      emailSent = emailResult.sent === true
+      
+      if (!emailSent) {
+        emailError = emailResult.reason || `HTTP ${emailResult.status}`
+        console.error('❌ Newsletter confirmation email failed:', {
+          email: normalizedEmail,
+          reason: emailResult.reason,
+          status: emailResult.status,
+          details: emailResult.details
+        })
+      } else {
+        console.log('✅ Newsletter confirmation email sent successfully to:', normalizedEmail)
+      }
     } catch (e) {
-      console.warn('Confirmation email failed:', e)
+      emailError = e instanceof Error ? e.message : String(e)
+      console.error('❌ Newsletter confirmation email error:', {
+        email: normalizedEmail,
+        error: emailError
+      })
     }
 
     // Sync with Brevo (pending status)
@@ -76,10 +95,33 @@ export async function POST(request: NextRequest) {
       console.warn('Brevo sync failed (non-blocking):', e)
     }
 
-    return NextResponse.json({ 
-      ...subscription, 
-      message: 'Bevestigingsmail verzonden. Check je inbox!' 
-    }, { status: 201 })
+    // Return response - ALWAYS warn if email failed but subscription was created
+    const response: any = {
+      ...subscription,
+      message: emailSent 
+        ? 'Bevestigingsmail verzonden. Check je inbox!' 
+        : 'Inschrijving geregistreerd, maar bevestigingsmail kon niet worden verzonden. Controleer je spam of probeer het later opnieuw.',
+      emailSent,
+      ...(emailError && { emailError }) // Always include error if present
+    }
+    
+    if (emailError && process.env.NODE_ENV === 'development') {
+      response.debug = { emailError }
+    }
+    
+    // Log warning to server logs if email failed
+    if (!emailSent) {
+      console.warn('⚠️ WARNING: Newsletter subscription created but email NOT sent:', {
+        email: normalizedEmail,
+        error: emailError,
+        subscriptionId: subscription.id
+      })
+    }
+    
+    // Return 207 Multi-Status if email failed but subscription was created
+    const statusCode = (emailError && !emailSent) ? 207 : 201
+    
+    return NextResponse.json(response, { status: statusCode })
   } catch (error) {
     console.error('❌ Error subscribing to newsletter:', error)
     const errorMessage = error instanceof Error ? error.message : String(error)
