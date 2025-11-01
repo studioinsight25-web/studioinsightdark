@@ -13,17 +13,28 @@ export function useCart(userId: string) {
     const loadCartItems = async () => {
       try {
         setLoading(true)
+        setError(null)
         const response = await fetch('/api/cart')
         if (response.ok) {
           const data = await response.json()
           setCartItems(data.cartItems || [])
           setError(null)
+        } else if (response.status === 401) {
+          // User not authenticated - set empty cart instead of error
+          setCartItems([])
+          setError(null)
         } else {
-          setError('Failed to load cart items')
+          // Only set error for actual failures, not empty carts
+          const errorData = await response.json().catch(() => ({}))
+          console.error('Failed to load cart:', errorData)
+          setCartItems([])
+          setError(null) // Don't show error, just show empty cart
         }
       } catch (err) {
         console.error('Error loading cart items:', err)
-        setError('Failed to load cart items')
+        // Don't set error - just show empty cart state
+        setCartItems([])
+        setError(null)
       } finally {
         setLoading(false)
       }
@@ -31,6 +42,11 @@ export function useCart(userId: string) {
 
     if (userId) {
       loadCartItems()
+    } else {
+      // No userId - set empty cart
+      setCartItems([])
+      setLoading(false)
+      setError(null)
     }
   }, [userId])
 

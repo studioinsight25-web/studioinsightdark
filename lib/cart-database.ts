@@ -15,6 +15,10 @@ export interface CartItem {
 export class DatabaseCartService {
   static async getCartItems(userId: string): Promise<CartItem[]> {
     try {
+      if (!userId) {
+        return []
+      }
+
       const result = await DatabaseService.query(
         `SELECT 
           ci.*,
@@ -30,15 +34,21 @@ export class DatabaseCartService {
           p.featured as product_featured,
           p.sales as product_sales
          FROM "cartItems" ci
-         JOIN products p ON ci."productId" = p.id
+         LEFT JOIN products p ON ci."productId" = p.id
          WHERE ci."userId" = $1 
          ORDER BY ci."createdAt" DESC`,
         [userId]
       )
 
-      return result.map(this.convertDbCartItem)
+      // If no results, return empty array (cart is empty, not an error)
+      if (!result || result.length === 0) {
+        return []
+      }
+
+      return result.map(this.convertDbCartItem).filter(item => item.product !== undefined)
     } catch (error) {
       console.error('Error fetching cart items:', error)
+      // Return empty array instead of throwing error - empty cart is valid
       return []
     }
   }

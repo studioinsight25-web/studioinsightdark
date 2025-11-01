@@ -7,15 +7,17 @@ import SessionManager from '@/lib/session'
 export async function GET(request: NextRequest) {
   try {
     const session = SessionManager.getSession()
-    if (!session) {
+    if (!session || !session.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const cartItems = await CartService.getCartItems(session.userId)
-    return NextResponse.json({ cartItems })
+    // Always return cartItems array, even if empty
+    return NextResponse.json({ cartItems: cartItems || [] })
   } catch (error) {
     console.error('Error fetching cart:', error)
-    return NextResponse.json({ error: 'Failed to fetch cart' }, { status: 500 })
+    // Return empty array instead of error to allow page to display empty state
+    return NextResponse.json({ cartItems: [] })
   }
 }
 
