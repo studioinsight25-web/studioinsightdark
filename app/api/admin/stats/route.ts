@@ -8,14 +8,14 @@ export async function GET(request: NextRequest) {
       DatabaseService.query('SELECT COUNT(*) as count FROM users'),
       DatabaseService.query('SELECT COUNT(*) as count FROM products'),
       DatabaseService.query('SELECT COUNT(*) as count FROM orders'),
-      DatabaseService.query('SELECT COALESCE(SUM("totalAmount"), 0) as total FROM orders WHERE status = $1', ['PAID'])
+      DatabaseService.query('SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE status = $1', ['PAID'])
     ])
 
     const stats = {
-      totalUsers: parseInt(usersResult[0].count || '0', 10),
-      totalProducts: parseInt(productsResult[0].count || '0', 10),
-      totalOrders: parseInt(ordersResult[0].count || '0', 10),
-      totalRevenue: parseFloat(revenueResult[0].total || '0')
+      totalUsers: parseInt(usersResult[0]?.count || '0', 10),
+      totalProducts: parseInt(productsResult[0]?.count || '0', 10),
+      totalOrders: parseInt(ordersResult[0]?.count || '0', 10),
+      totalRevenue: parseFloat(revenueResult[0]?.total || '0')
     }
 
     return NextResponse.json(stats)
