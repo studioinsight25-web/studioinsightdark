@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
 
     // Get user from database
     const result = await DatabaseService.query(
-      'SELECT id, email, name, password, role, "createdAt", "updatedAt" FROM users WHERE email = $1',
+      'SELECT id, email, name, password, role FROM users WHERE email = $1',
       [email]
     )
 

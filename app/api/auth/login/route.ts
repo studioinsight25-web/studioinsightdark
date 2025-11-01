@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     // Get user from database
     const result = await DatabaseService.query(
-      'SELECT id, email, name, password, role, "createdAt", "updatedAt" FROM users WHERE email = $1',
+      'SELECT id, email, name, password, role, created_at, updated_at FROM users WHERE email = $1',
       [email]
     )
 
@@ -50,9 +50,7 @@ export async function POST(request: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt
+        role: user.role
       }
     })
 
