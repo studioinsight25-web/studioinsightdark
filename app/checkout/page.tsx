@@ -107,7 +107,14 @@ export default function CheckoutPage() {
         // Redirect to Mollie checkout
         window.location.href = result.checkoutUrl
       } else {
-        setError(result.error || 'Er is een fout opgetreden bij het aanmaken van de betaling')
+        // Show detailed error message if available
+        let errorMessage = result.error || 'Er is een fout opgetreden bij het aanmaken van de betaling'
+        if (result.details && Array.isArray(result.details) && result.details.length > 0) {
+          const detailMessages = result.details.map((d: any) => `${d.path}: ${d.message}`).join(', ')
+          errorMessage = `${errorMessage} (${detailMessages})`
+        }
+        setError(errorMessage)
+        console.error('Checkout error details:', result)
       }
     } catch (err) {
       setError('Er is een fout opgetreden. Probeer het later opnieuw.')
