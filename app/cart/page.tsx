@@ -122,26 +122,33 @@ export default function CartPage() {
   return (
     <main className="min-h-screen bg-background">
       {/* Header Section */}
-      <section className="py-12 bg-gradient-to-r from-primary/10 to-transparent">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="flex items-center gap-4 mb-8">
-            <Link
-              href="/cursussen"
-              className="text-text-secondary hover:text-white transition-colors"
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </Link>
+      <header className="bg-dark-section border-b border-dark-border">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-                Winkelwagen
-              </h1>
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 text-text-secondary hover:text-primary transition-colors mb-4"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Terug naar homepage
+              </Link>
+              <h1 className="text-2xl font-bold text-white">Winkelwagen</h1>
               <p className="text-text-secondary">
                 {getItemCount()} {getItemCount() === 1 ? 'item' : 'items'} in je winkelwagen
               </p>
             </div>
+            {userId && (
+              <Link
+                href="/dashboard"
+                className="text-text-secondary hover:text-primary transition-colors text-sm"
+              >
+                Dashboard →
+              </Link>
+            )}
           </div>
         </div>
-      </section>
+      </header>
 
       {/* Cart Content */}
       <section className="py-12 bg-background">
@@ -151,62 +158,87 @@ export default function CartPage() {
             <div className="lg:col-span-2 bg-dark-card rounded-xl p-6 border border-dark-border">
               <h2 className="text-2xl font-bold mb-6">Jouw Winkelwagen</h2>
               {cartItems.length === 0 ? (
-                <div className="text-center py-8">
+                <div className="text-center py-12">
                   <ShoppingCart className="w-16 h-16 text-text-secondary mx-auto mb-4" />
-                  <p className="text-text-secondary text-lg">Je winkelwagen is leeg.</p>
-                  <Link href="/cursussen" className="text-primary hover:text-primary/80 transition-colors mt-4 inline-block">
-                    Bekijk onze producten
-                  </Link>
+                  <h3 className="text-xl font-semibold text-white mb-2">Je winkelwagen is leeg</h3>
+                  <p className="text-text-secondary mb-6">
+                    Voeg producten toe aan je winkelwagen om verder te gaan met bestellen.
+                  </p>
+                  <div className="flex gap-4 justify-center">
+                    <Link 
+                      href="/cursussen" 
+                      className="bg-primary text-black px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
+                    >
+                      Bekijk Cursussen
+                    </Link>
+                    <Link 
+                      href="/ebooks" 
+                      className="bg-dark-section border border-dark-border text-white px-6 py-3 rounded-lg font-semibold hover:border-primary hover:text-primary transition-colors inline-flex items-center gap-2"
+                    >
+                      Bekijk E-books
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {cartItems
                     .filter(item => item.product !== undefined)
                     .map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-4 bg-dark-section rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 bg-dark-card rounded-lg overflow-hidden">
+                      <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-dark-section rounded-lg border border-dark-border hover:border-primary transition-colors">
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <div className="relative w-20 h-20 bg-dark-card rounded-lg overflow-hidden flex-shrink-0">
                             {item.product!.imageUrl ? (
                               <Image
                                 src={item.product!.imageUrl}
                                 alt={item.product!.name}
-                                width={64}
-                                height={64}
-                                className="w-full h-full object-cover"
+                                fill
+                                className="object-contain p-2"
                               />
                             ) : (
                               <div className="w-full h-full bg-dark-border flex items-center justify-center">
-                                <ShoppingCart className="w-6 h-6 text-text-secondary" />
+                                <ShoppingCart className="w-8 h-8 text-text-secondary" />
                               </div>
                             )}
                           </div>
-                          <div>
-                            <h3 className="font-semibold text-white">{item.product!.name}</h3>
-                            <p className="text-sm text-text-secondary">
-                              {item.product!.type === 'course' ? 'Cursus' : 
-                               item.product!.type === 'ebook' ? 'E-book' : 'Review'}
-                            </p>
-                            <p className="text-primary font-semibold">
-                              {formatPrice(item.product!.price)}
-                            </p>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-white mb-1 truncate">{item.product!.name}</h3>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                item.product!.type === 'course' 
+                                  ? 'bg-blue-900/30 text-blue-400 border border-blue-500/30'
+                                  : item.product!.type === 'ebook'
+                                  ? 'bg-green-900/30 text-green-400 border border-green-500/30'
+                                  : 'bg-orange-900/30 text-orange-400 border border-orange-500/30'
+                              }`}>
+                                {item.product!.type === 'course' ? '📚 Cursus' : item.product!.type === 'ebook' ? '📖 E-book' : '⭐ Review'}
+                              </span>
+                              <span className="text-primary font-semibold text-sm">
+                                {formatPrice(item.product!.price)} per stuk
+                              </span>
+                              <span className="text-text-secondary text-sm">
+                                Totaal: {formatPrice(item.product!.price * item.quantity)}
+                              </span>
+                            </div>
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-shrink-0">
                           {/* Quantity Controls */}
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 bg-dark-card px-2 py-1 rounded-lg border border-dark-border">
                             <button
                               onClick={() => handleQuantityChange(item.productId, item.quantity - 1)}
-                              className="w-8 h-8 bg-dark-section border border-dark-border rounded-lg flex items-center justify-center hover:border-primary transition-colors"
+                              className="w-8 h-8 bg-dark-section border border-dark-border rounded flex items-center justify-center hover:border-primary hover:bg-primary/10 transition-colors"
+                              aria-label="Verlaag aantal"
                             >
                               <Minus className="w-4 h-4 text-white" />
                             </button>
-                            <span className="w-8 text-center text-white font-semibold">
+                            <span className="w-10 text-center text-white font-semibold">
                               {item.quantity}
                             </span>
                             <button
                               onClick={() => handleQuantityChange(item.productId, item.quantity + 1)}
-                              className="w-8 h-8 bg-dark-section border border-dark-border rounded-lg flex items-center justify-center hover:border-primary transition-colors"
+                              className="w-8 h-8 bg-dark-section border border-dark-border rounded flex items-center justify-center hover:border-primary hover:bg-primary/10 transition-colors"
+                              aria-label="Verhoog aantal"
                             >
                               <Plus className="w-4 h-4 text-white" />
                             </button>
@@ -215,7 +247,8 @@ export default function CartPage() {
                           {/* Remove Button */}
                           <button 
                             onClick={() => removeFromCart(item.productId)}
-                            className="text-red-400 hover:text-red-500 transition-colors"
+                            className="p-2 text-red-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                            aria-label="Verwijder uit winkelwagen"
                           >
                             <Trash2 className="w-5 h-5" />
                           </button>
@@ -227,37 +260,43 @@ export default function CartPage() {
             </div>
 
             {/* Order Summary */}
-            <div className="lg:col-span-1">
-              <div className="bg-dark-card rounded-xl p-6 border border-dark-border sticky top-6">
-                <h3 className="text-xl font-bold mb-6">Bestelling Overzicht</h3>
-                <div className="space-y-4 mb-6">
-                  <div className="flex justify-between text-text-secondary">
-                    <span>Subtotaal ({getItemCount()} items)</span>
-                    <span>{formatPrice(subtotalExclVAT)}</span>
-                  </div>
-                  <div className="flex justify-between text-text-secondary">
-                    <span>BTW (21%)</span>
-                    <span>{formatPrice(vatAmount)}</span>
-                  </div>
-                  <div className="border-t border-dark-border pt-4">
-                    <div className="flex justify-between text-xl font-bold">
-                      <span>Totaal (incl. BTW)</span>
-                      <span className="text-primary">
-                        {formatPrice(getTotalPrice())}
-                      </span>
+            {cartItems.length > 0 && (
+              <div className="lg:col-span-1">
+                <div className="bg-dark-card rounded-xl p-6 border border-dark-border sticky top-6">
+                  <h3 className="text-xl font-bold mb-6">Bestelling Overzicht</h3>
+                  <div className="space-y-4 mb-6">
+                    <div className="flex justify-between text-text-secondary text-sm">
+                      <span>Subtotaal ({getItemCount()} {getItemCount() === 1 ? 'item' : 'items'})</span>
+                      <span>{formatPrice(subtotalExclVAT)}</span>
+                    </div>
+                    <div className="flex justify-between text-text-secondary text-sm">
+                      <span>BTW (21%)</span>
+                      <span>{formatPrice(vatAmount)}</span>
+                    </div>
+                    <div className="border-t border-dark-border pt-4 mt-4">
+                      <div className="flex justify-between">
+                        <span className="text-lg font-semibold text-white">Totaal</span>
+                        <span className="text-xl font-bold text-primary">
+                          {formatPrice(getTotalPrice())}
+                        </span>
+                      </div>
+                      <p className="text-xs text-text-secondary mt-1">Inclusief BTW</p>
                     </div>
                   </div>
+                  <button 
+                    onClick={handleCheckout}
+                    disabled={cartItems.length === 0}
+                    className="w-full bg-primary text-black py-4 px-6 rounded-lg font-bold text-lg hover:bg-primary/90 transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    Naar Checkout
+                  </button>
+                  <p className="text-xs text-text-secondary text-center mt-4">
+                    Veilig betalen met Mollie
+                  </p>
                 </div>
-                <button 
-                  onClick={handleCheckout}
-                  disabled={cartItems.length === 0}
-                  className="w-full bg-primary text-black py-4 px-6 rounded-lg font-bold text-lg hover:bg-primary/90 transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <CreditCard className="w-5 h-5" />
-                  Naar Checkout
-                </button>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </section>

@@ -204,7 +204,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <Link
-                href="/orders"
+                href="/dashboard/orders"
                 className="text-primary hover:text-primary/80 transition-colors text-sm font-medium"
               >
                 Orders bekijken →

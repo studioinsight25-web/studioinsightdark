@@ -15,14 +15,22 @@ export interface User {
 
 export class UserService {
   // Convert database row to User interface
-  private static convertDbUser(dbUser: any): User {
+  private static convertDbUser(dbUser: any): any {
     return {
       id: dbUser.id,
       email: dbUser.email,
       name: dbUser.name,
       role: dbUser.role as UserRole,
-      createdAt: dbUser.createdat ? new Date(dbUser.createdat).toISOString() : new Date().toISOString(),
-      updatedAt: dbUser.updatedat ? new Date(dbUser.updatedat).toISOString() : new Date().toISOString(),
+      address: dbUser.address || null,
+      city: dbUser.city || null,
+      postcode: dbUser.postcode || null,
+      country: dbUser.country || null,
+      phone: dbUser.phone || null,
+      company_name: dbUser.company_name || null,
+      industry: dbUser.industry || null,
+      website: dbUser.website || null,
+      createdAt: dbUser.created_at ? new Date(dbUser.created_at).toISOString() : new Date().toISOString(),
+      updatedAt: dbUser.updated_at ? new Date(dbUser.updated_at).toISOString() : new Date().toISOString(),
     }
   }
 
@@ -88,7 +96,7 @@ export class UserService {
   static async getUserById(id: string): Promise<User | null> {
     try {
       const result = await DatabaseService.query(
-        'SELECT id, email, name, role, "createdAt", "updatedAt" FROM users WHERE id = $1',
+        'SELECT id, email, name, role, address, city, postcode, country, phone, company_name, industry, website, created_at, updated_at FROM users WHERE id = $1',
         [id]
       )
 
@@ -106,7 +114,7 @@ export class UserService {
   static async getUserByEmail(email: string): Promise<User | null> {
     try {
       const result = await DatabaseService.query(
-        'SELECT id, email, name, role, "createdAt", "updatedAt" FROM users WHERE email = $1',
+        'SELECT id, email, name, role, address, city, postcode, country, phone, company_name, industry, website, created_at, updated_at FROM users WHERE email = $1',
         [email]
       )
 

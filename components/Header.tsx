@@ -255,15 +255,16 @@ export default function Header() {
 
           {/* Auth Section */}
           <div className="hidden md:flex items-center gap-3">
-            {/* Cart Link with Counter */}
+            {/* Cart Link with Counter - Always visible */}
             <Link
               href="/cart"
               className="relative bg-transparent border border-dark-border text-white px-2 xl:px-4 py-2 rounded-lg font-semibold hover:border-primary hover:text-primary transition-colors duration-300 flex items-center gap-1 xl:gap-2 text-sm"
+              title="Winkelwagen"
             >
               <ShoppingCart className="w-4 h-4" />
               <span className="hidden xl:inline">Winkelwagen</span>
               {cartItemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-primary text-black text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-2 -right-2 bg-primary text-black text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center min-w-[20px]">
                   {cartItemCount}
                 </span>
               )}
