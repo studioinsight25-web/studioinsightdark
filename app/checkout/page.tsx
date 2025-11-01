@@ -68,6 +68,7 @@ export default function CheckoutPage() {
       }
 
       // Create payment via API (which creates the order)
+      // Prices are already in cents (from Product interface), so no conversion needed
       console.log('Checkout page: Sending payment request with items:', items)
       const response = await fetch('/api/checkout/create-payment', {
         method: 'POST',
@@ -79,7 +80,7 @@ export default function CheckoutPage() {
           items: items.map(item => ({
             id: item.id,
             name: item.name,
-            price: Math.round(item.price * 100), // Convert euros to cents for API
+            price: Math.round(item.price), // Prices are already in cents, just round to be safe
             type: item.type
           }))
         }),
