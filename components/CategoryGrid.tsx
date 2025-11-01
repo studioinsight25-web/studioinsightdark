@@ -30,7 +30,7 @@ const categories = [
 
 export default function CategoryGrid() {
   return (
-    <section className="py-20 bg-dark-section">
+    <section className="py-20 bg-dark-section" aria-label="Product categorieën">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {categories.map((category, index) => (
@@ -38,6 +38,7 @@ export default function CategoryGrid() {
               key={index}
               href={category.href}
               className="group bg-dark-card p-8 rounded-xl text-center border border-dark-border hover:border-primary transition-all duration-300 hover:-translate-y-2 hover:shadow-lg hover:shadow-primary/10 cursor-pointer block"
+              aria-label={`Ga naar ${category.title} pagina`}
             >
               <div className="mb-4 flex justify-center">
                 <category.icon className="w-12 h-12 text-primary group-hover:scale-110 transition-transform duration-300" />

@@ -21,6 +21,7 @@ import { Product, formatPrice } from '@/lib/products'
 import { ProductService } from '@/lib/products'
 import { trackViewItem, trackEbookDownload, trackReviewView, trackAddToCart } from '@/lib/analytics'
 import { useToast } from '@/hooks/useToast'
+import { CardSkeleton, TextSkeleton } from '@/components/LoadingSkeleton'
 // Removed direct database import - using API routes instead
 import SessionManager from '@/lib/session'
 
@@ -109,11 +110,27 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-background">
+      <main className="min-h-screen bg-background" aria-label="Product detail pagina">
         <div className="container mx-auto px-4 max-w-6xl py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-text-secondary">Product laden...</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <div className="h-96 bg-dark-card rounded-xl animate-pulse" />
+              <div className="grid grid-cols-4 gap-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-20 bg-dark-section rounded-lg animate-pulse" />
+                ))}
+              </div>
+            </div>
+            <div className="space-y-4">
+              <TextSkeleton height="h-8" width="3/4" />
+              <TextSkeleton height="h-6" width="1/2" />
+              <div className="space-y-2">
+                <TextSkeleton />
+                <TextSkeleton width="5/6" />
+                <TextSkeleton width="4/6" />
+              </div>
+              <div className="h-12 bg-dark-section rounded-lg animate-pulse" />
+            </div>
           </div>
         </div>
       </main>
@@ -142,7 +159,7 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background" aria-label="Product detail pagina">
       {/* Header */}
       <section className="py-8 bg-gradient-to-r from-primary/10 to-transparent">
         <div className="container mx-auto px-4 max-w-6xl">

@@ -9,6 +9,7 @@ import { Product, formatPrice } from '@/lib/products'
 import { useProducts } from '@/hooks/useProducts'
 import { trackAddToCart } from '@/lib/analytics'
 import { useToast } from '@/hooks/useToast'
+import { ProductGridSkeleton } from '@/components/LoadingSkeleton'
 // Removed direct database import - using API routes instead
 import SessionManager from '@/lib/session'
 
@@ -62,19 +63,29 @@ export default function CoursesPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 max-w-6xl py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-text-secondary">Cursussen laden...</p>
+      <main className="min-h-screen bg-background" aria-label="Cursussen pagina">
+        {/* Hero Section */}
+        <section className="py-20 bg-gradient-to-r from-primary/10 to-transparent">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <div className="text-center mb-12">
+              <div className="h-12 bg-dark-section rounded-lg w-64 mx-auto mb-6 animate-pulse" />
+              <div className="h-6 bg-dark-section rounded-lg w-96 mx-auto animate-pulse" />
+            </div>
           </div>
-        </div>
+        </section>
+
+        {/* Loading Skeleton */}
+        <section className="py-12 bg-background">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <ProductGridSkeleton count={6} />
+          </div>
+        </section>
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background" aria-label="Cursussen pagina">
       {/* Hero Section */}
       <section className="py-20 bg-gradient-to-r from-primary/10 to-transparent">
         <div className="container mx-auto px-4 max-w-6xl">

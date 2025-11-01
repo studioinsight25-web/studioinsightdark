@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 export default function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center text-center overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center text-center overflow-hidden" aria-label="Hero sectie">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <Image
