@@ -369,13 +369,20 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-dark-border/50 bg-dark-section/95 backdrop-blur-md">
-            <nav className="py-6 space-y-3 px-6">
-              {navigation.map((item) => (
+          <>
+            {/* Backdrop */}
+            <div 
+              className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-in fade-in"
+              onClick={() => setIsMenuOpen(false)}
+            />
+            {/* Menu */}
+            <div className="md:hidden border-t border-dark-border/50 bg-dark-section/98 backdrop-blur-xl z-50 animate-in slide-in-from-top-5 shadow-2xl">
+              <nav className="py-6 space-y-2 px-6 max-h-[calc(100vh-5rem)] overflow-y-auto">
+                {navigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="block px-4 py-3 text-white hover:text-primary hover:bg-dark-card/50 transition-all duration-300 rounded-lg font-medium"
+                  className="block px-4 py-3.5 text-white hover:text-primary hover:bg-dark-card/70 active:bg-dark-card transition-all duration-200 rounded-xl font-medium active:scale-[0.98] touch-manipulation"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {item.name}
@@ -387,7 +394,7 @@ export default function Header() {
                 {/* Mobile Cart Link */}
                 <Link
                   href="/cart"
-                  className="flex items-center gap-3 px-4 py-3 mb-4 bg-transparent border border-dark-border text-white rounded-lg font-semibold hover:border-primary hover:text-primary transition-colors duration-300"
+                  className="flex items-center gap-3 px-4 py-3.5 mb-4 bg-gradient-to-r from-dark-card to-dark-section border-2 border-dark-border text-white rounded-xl font-semibold hover:border-primary hover:text-primary active:scale-[0.98] transition-all duration-200 touch-manipulation"
                 >
                   <ShoppingCart className="w-5 h-5" />
                   <span>Winkelwagen</span>
@@ -416,7 +423,7 @@ export default function Header() {
                         {/* User Info - Clickable to Dashboard */}
                         <Link
                           href="/dashboard"
-                          className="flex items-center gap-3 px-4 py-3 bg-dark-card/50 rounded-lg border border-dark-border/50 hover:border-primary hover:bg-dark-card transition-all duration-300"
+                          className="flex items-center gap-3 px-4 py-3.5 bg-gradient-to-r from-dark-card to-dark-section rounded-xl border-2 border-dark-border/50 hover:border-primary hover:bg-dark-card active:scale-[0.98] transition-all duration-200 touch-manipulation"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
@@ -429,7 +436,7 @@ export default function Header() {
                         
                         <Link
                           href="/dashboard/profiel"
-                          className="flex items-center gap-3 px-4 py-3 text-white hover:text-primary hover:bg-dark-card/50 transition-all duration-300 rounded-lg"
+                          className="flex items-center gap-3 px-4 py-3.5 text-white hover:text-primary hover:bg-dark-card/70 active:bg-dark-card active:scale-[0.98] transition-all duration-200 rounded-xl touch-manipulation"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           <User className="w-5 h-5" />
@@ -440,7 +447,7 @@ export default function Header() {
                         {isAdmin && (
                           <Link
                             href="/admin"
-                            className="flex items-center gap-3 px-4 py-3 bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-300 rounded-lg border border-primary/20"
+                            className="flex items-center gap-3 px-4 py-3.5 bg-gradient-to-r from-primary/10 to-primary/5 text-primary hover:bg-primary/20 active:scale-[0.98] transition-all duration-200 rounded-xl border border-primary/30 touch-manipulation"
                             onClick={() => setIsMenuOpen(false)}
                           >
                             <LayoutDashboard className="w-5 h-5" />
@@ -453,7 +460,7 @@ export default function Header() {
                             handleLogout()
                             setIsMenuOpen(false)
                           }}
-                          className="flex items-center gap-3 px-4 py-3 text-text-secondary hover:text-white hover:bg-red-500/10 transition-all duration-300 rounded-lg border border-transparent hover:border-red-500/20 w-full text-left"
+                          className="w-full flex items-center gap-3 px-4 py-3.5 text-red-400 hover:text-red-500 hover:bg-red-500/10 active:scale-[0.98] transition-all duration-200 rounded-xl border border-transparent hover:border-red-500/20 touch-manipulation"
                         >
                           <LogOut className="w-5 h-5" />
                           Uitloggen
@@ -467,14 +474,14 @@ export default function Header() {
                     <div className="space-y-3">
                       <Link
                         href="/inloggen"
-                        className="block px-4 py-3 text-white hover:text-primary hover:bg-dark-card/50 transition-all duration-300 rounded-lg font-medium"
+                        className="block px-4 py-3.5 text-white hover:text-primary hover:bg-dark-card/70 active:scale-[0.98] transition-all duration-200 rounded-xl font-medium touch-manipulation"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         Inloggen
                       </Link>
                       <Link
                         href="/registreren"
-                        className="block px-4 py-3 bg-gradient-to-r from-primary to-primary/90 text-black hover:from-primary/90 hover:to-primary transition-all duration-300 rounded-lg text-center font-semibold shadow-lg"
+                        className="block px-4 py-3.5 bg-gradient-to-r from-primary to-primary/90 text-black hover:from-primary/90 hover:to-primary/80 active:scale-[0.98] transition-all duration-200 rounded-xl text-center font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 touch-manipulation"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         Registreren

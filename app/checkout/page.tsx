@@ -220,28 +220,47 @@ export default function CheckoutPage() {
               </h2>
 
               <div className="space-y-4 mb-6">
-                <div className="bg-dark-section rounded-lg p-4">
-                  <h3 className="font-semibold text-white mb-2">Veilige betaling via Mollie</h3>
-                  <p className="text-sm text-text-secondary mb-3">
+                <div className="bg-gradient-to-br from-dark-section via-dark-card to-dark-section rounded-xl p-5 border border-primary/20">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center">
+                      <CreditCard className="w-5 h-5 text-primary" />
+                    </div>
+                    <h3 className="font-bold text-white text-lg">Veilige betaling via Mollie</h3>
+                  </div>
+                  <p className="text-sm text-text-secondary mb-4">
                     Je wordt doorgestuurd naar een beveiligde betalingspagina waar je kunt betalen met:
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {['iDEAL', 'Creditcard', 'PayPal', 'Bancontact'].map((method) => (
-                      <span key={method} className="bg-primary/20 text-primary px-3 py-1 rounded-full text-sm">
+                      <span key={method} className="bg-gradient-to-r from-primary/20 to-primary/10 text-primary px-4 py-2 rounded-lg text-sm font-semibold border border-primary/30">
                         {method}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Lock className="w-4 h-4 text-green-400" />
-                    <span className="font-semibold text-green-400">Veilig en beveiligd</span>
+                <div className="bg-gradient-to-br from-green-900/30 via-green-900/20 to-green-900/30 border border-green-500/40 rounded-xl p-5 shadow-lg shadow-green-500/10">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 bg-gradient-to-br from-green-500/20 to-green-500/10 rounded-lg flex items-center justify-center">
+                      <Lock className="w-5 h-5 text-green-400" />
+                    </div>
+                    <span className="font-bold text-green-400 text-lg">Veilig en beveiligd</span>
                   </div>
-                  <p className="text-sm text-green-300">
-                    Je betalingsgegevens worden versleuteld en veilig verwerkt door Mollie.
+                  <p className="text-sm text-green-300 leading-relaxed">
+                    Je betalingsgegevens worden versleuteld en veilig verwerkt door Mollie. SSL-certificaat actief.
                   </p>
+                </div>
+
+                {/* Trust Badges */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-dark-section rounded-lg p-3 border border-dark-border text-center">
+                    <div className="text-xs text-text-secondary mb-1">Beveiligd door</div>
+                    <div className="text-xs font-bold text-white">SSL Encryption</div>
+                  </div>
+                  <div className="bg-dark-section rounded-lg p-3 border border-dark-border text-center">
+                    <div className="text-xs text-text-secondary mb-1">Gecertificeerd</div>
+                    <div className="text-xs font-bold text-white">Mollie Payment</div>
+                  </div>
                 </div>
               </div>
 
@@ -258,7 +277,7 @@ export default function CheckoutPage() {
               <button
                 onClick={handlePayment}
                 disabled={isLoading || items.length === 0}
-                className="w-full bg-primary text-black py-4 px-6 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-primary to-primary/90 text-black py-4 px-6 rounded-xl font-bold hover:from-primary/90 hover:to-primary/80 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] text-lg"
               >
                 {isLoading ? (
                   <>

@@ -123,26 +123,42 @@ export default function CoursesPage() {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {courses.map((course) => (
-              <div key={course.id} className="bg-dark-card rounded-xl overflow-hidden border border-dark-border hover:border-primary transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10">
+              <div key={course.id} className="group bg-gradient-to-br from-dark-card to-dark-section rounded-xl overflow-hidden border border-dark-border hover:border-blue-500/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-500/20">
                 {/* Course Image */}
-                <div className="relative h-48 bg-dark-section">
+                <div className="relative h-52 bg-dark-section overflow-hidden">
                   {course.imageUrl ? (
-                    <Image
-                      src={course.imageUrl}
-                      alt={course.name}
-                      fill
-                      className="object-cover"
-                    />
+                    <>
+                      <Image
+                        src={course.imageUrl}
+                        alt={course.name}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </>
                   ) : (
-                    <div className="w-full h-full bg-dark-border flex items-center justify-center">
-                      <Play className="w-12 h-12 text-text-secondary" />
+                    <div className="w-full h-full bg-gradient-to-br from-dark-border to-dark-section flex items-center justify-center">
+                      <Play className="w-16 h-16 text-text-secondary group-hover:text-primary transition-colors duration-300" />
                     </div>
                   )}
+                  {/* Featured Badge */}
                   {course.featured && (
-                    <div className="absolute top-4 left-4 bg-primary text-black px-3 py-1 rounded-full text-sm font-semibold">
-                      Featured
+                    <div className="absolute top-4 left-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-4 py-1.5 rounded-full text-xs font-bold shadow-lg shadow-yellow-500/30 animate-pulse">
+                      ⭐ Featured
                     </div>
                   )}
+                  {/* Coming Soon Badge */}
+                  {course.comingSoon && (
+                    <div className="absolute top-4 left-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg shadow-orange-500/30">
+                      🚀 Binnenkort
+                    </div>
+                  )}
+                  {/* Type Badge */}
+                  <div className="absolute top-4 right-4">
+                    <span className="bg-blue-500/90 text-white px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm border border-blue-400/50">
+                      📚 Cursus
+                    </span>
+                  </div>
                 </div>
 
                 {/* Course Content */}
@@ -192,16 +208,16 @@ export default function CoursesPage() {
                   {/* Action Buttons */}
                   <div className="space-y-3">
                     {course.comingSoon ? (
-                      <div className="w-full bg-orange-500 text-white py-3 px-4 rounded-lg font-semibold text-center">
+                      <div className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3.5 px-4 rounded-xl font-bold text-center shadow-lg shadow-orange-500/20">
                         🚀 Binnenkort beschikbaar
                       </div>
                     ) : (
                       <button
                         onClick={() => handleAddToCart(course)}
-                        className="w-full bg-primary text-black py-3 px-4 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-300 flex items-center justify-center gap-2"
+                        className="w-full bg-gradient-to-r from-primary to-primary/90 text-black py-3.5 px-4 rounded-xl font-bold hover:from-primary/90 hover:to-primary/80 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]"
                         aria-label={`Voeg ${course.name} toe aan winkelwagen`}
                       >
-                        <ShoppingCart className="w-4 h-4" aria-hidden="true" />
+                        <ShoppingCart className="w-5 h-5" aria-hidden="true" />
                         Koop Nu
                       </button>
                     )}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ShoppingCart, Plus, Minus, Trash2, CreditCard } from 'lucide-react'
+import { ArrowLeft, ShoppingCart, Plus, Minus, Trash2, CreditCard, BookOpen, Download } from 'lucide-react'
 // Note: formatPrice from lib/products expects cents, but database stores prices in euros
 // So we'll format prices directly here
 import { trackBeginCheckout } from '@/lib/analytics'
@@ -167,23 +167,28 @@ export default function CartPage() {
             <div className="lg:col-span-2 bg-dark-card rounded-xl p-6 border border-dark-border">
               <h2 className="text-2xl font-bold mb-6">Jouw Winkelwagen</h2>
               {cartItems.length === 0 ? (
-                <div className="text-center py-12">
-                  <ShoppingCart className="w-16 h-16 text-text-secondary mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">Je winkelwagen is leeg</h3>
-                  <p className="text-text-secondary mb-6">
-                    Voeg producten toe aan je winkelwagen om verder te gaan met bestellen.
+                <div className="text-center py-16">
+                  <div className="relative mx-auto w-32 h-32 mb-6">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full animate-pulse" />
+                    <ShoppingCart className="w-16 h-16 text-text-secondary mx-auto relative z-10" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-3">Je winkelwagen is leeg</h3>
+                  <p className="text-text-secondary mb-8 max-w-md mx-auto leading-relaxed">
+                    Voeg producten toe aan je winkelwagen om verder te gaan met bestellen. Ontdek onze cursussen en e-books!
                   </p>
-                  <div className="flex gap-4 justify-center">
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link 
                       href="/cursussen" 
-                      className="bg-primary text-black px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
+                      className="bg-primary text-black px-8 py-4 rounded-xl font-semibold hover:bg-primary/90 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/25 inline-flex items-center justify-center gap-2"
                     >
+                      <BookOpen className="w-5 h-5" />
                       Bekijk Cursussen
                     </Link>
                     <Link 
                       href="/ebooks" 
-                      className="bg-dark-section border border-dark-border text-white px-6 py-3 rounded-lg font-semibold hover:border-primary hover:text-primary transition-colors inline-flex items-center gap-2"
+                      className="bg-dark-section border-2 border-dark-border text-white px-8 py-4 rounded-xl font-semibold hover:border-primary hover:text-primary transition-all duration-300 hover:-translate-y-1 inline-flex items-center justify-center gap-2"
                     >
+                      <Download className="w-5 h-5" />
                       Bekijk E-books
                     </Link>
                   </div>

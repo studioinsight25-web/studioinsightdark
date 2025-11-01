@@ -1,55 +1,100 @@
 'use client'
 
-import { useEffect } from 'react'
 import { X, CheckCircle, AlertCircle, Info } from 'lucide-react'
-
-type ToastType = 'success' | 'error' | 'info'
+import { useEffect, useState } from 'react'
 
 interface ToastProps {
   message: string
-  type?: ToastType
-  duration?: number
+  type: 'success' | 'error' | 'info'
   onClose: () => void
 }
 
-export default function Toast({ message, type = 'info', duration = 3000, onClose }: ToastProps) {
+const typeClasses = {
+  success: {
+    bg: 'bg-green-500/95 border-green-400',
+    icon: CheckCircle,
+    iconColor: 'text-green-100',
+    progress: 'bg-green-300'
+  },
+  error: {
+    bg: 'bg-red-500/95 border-red-400',
+    icon: AlertCircle,
+    iconColor: 'text-red-100',
+    progress: 'bg-red-300'
+  },
+  info: {
+    bg: 'bg-blue-500/95 border-blue-400',
+    icon: Info,
+    iconColor: 'text-blue-100',
+    progress: 'bg-blue-300'
+  },
+}
+
+export default function Toast({ message, type, onClose }: ToastProps) {
+  const [isVisible, setIsVisible] = useState(true)
+  const [progress, setProgress] = useState(100)
+  const typeConfig = typeClasses[type]
+  const Icon = typeConfig.icon
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose()
-    }, duration)
+    // Auto-hide after 4 seconds
+    const hideTimer = setTimeout(() => {
+      setIsVisible(false)
+      setTimeout(onClose, 300) // Allow fade-out animation
+    }, 4000)
 
-    return () => clearTimeout(timer)
-  }, [duration, onClose])
+    // Progress bar animation
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev <= 0) {
+          clearInterval(progressInterval)
+          return 0
+        }
+        return prev - (100 / 40) // 40 updates over 4 seconds
+      })
+    }, 100)
 
-  const icons = {
-    success: CheckCircle,
-    error: AlertCircle,
-    info: Info,
-  }
+    return () => {
+      clearTimeout(hideTimer)
+      clearInterval(progressInterval)
+    }
+  }, [onClose])
 
-  const colors = {
-    success: 'bg-green-900/30 border-green-500/30 text-green-400',
-    error: 'bg-red-900/30 border-red-500/30 text-red-400',
-    info: 'bg-blue-900/30 border-blue-500/30 text-blue-400',
-  }
-
-  const Icon = icons[type]
+  if (!isVisible) return null
 
   return (
     <div
-      className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-lg border ${colors[type]} shadow-lg backdrop-blur-sm min-w-[300px] max-w-md animate-in slide-in-from-top-5 fade-in`}
+      className={`relative p-4 pr-10 rounded-xl shadow-2xl text-white flex items-start gap-3 min-w-[320px] max-w-md border backdrop-blur-sm overflow-hidden
+        ${typeConfig.bg} animate-in slide-in-from-top-5 fade-in`}
       role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
     >
-      <Icon className="w-5 h-5 flex-shrink-0" />
-      <p className="flex-1 font-medium">{message}</p>
+      {/* Progress bar */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
+        <div 
+          className={`h-full ${typeConfig.progress} transition-all duration-100 ease-linear`}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      {/* Icon */}
+      <Icon className={`w-5 h-5 ${typeConfig.iconColor} flex-shrink-0 mt-0.5`} />
+
+      {/* Message */}
+      <p className="text-sm font-medium flex-1 leading-relaxed">{message}</p>
+
+      {/* Close button */}
       <button
-        onClick={onClose}
-        className="ml-2 hover:opacity-70 transition-opacity"
-        aria-label="Close notification"
+        onClick={() => {
+          setIsVisible(false)
+          setTimeout(onClose, 300)
+        }}
+        className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-white/20 transition-colors active:scale-95"
+        aria-label="Sluit melding"
       >
         <X className="w-4 h-4" />
       </button>
     </div>
   )
 }
-

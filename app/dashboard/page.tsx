@@ -19,6 +19,7 @@ import {
 import Link from 'next/link'
 import SessionManager from '@/lib/session'
 import { Product, formatPrice } from '@/lib/products'
+import { ProductCardSkeleton } from '@/components/LoadingSkeleton'
 
 export default function DashboardPage() {
   // Check if user is admin and redirect to admin dashboard
@@ -117,99 +118,132 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
             {/* Profile Card */}
-            <div className="bg-dark-card p-6 rounded-lg border border-dark-border">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-black" />
+            <Link
+              href="/dashboard/profiel"
+              className="group bg-gradient-to-br from-dark-card to-dark-section p-6 rounded-xl border border-dark-border hover:border-blue-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-500/10"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform duration-300">
+                    <User className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors">Profiel</h3>
+                    <p className="text-text-secondary text-sm truncate max-w-[140px]">{user.email}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Profiel</h3>
-                  <p className="text-text-secondary text-sm">{user.email}</p>
-                </div>
+                <ArrowRight className="w-5 h-5 text-text-secondary group-hover:text-blue-400 group-hover:translate-x-1 transition-all duration-300" />
               </div>
-              <Link
-                href="/dashboard/profiel"
-                className="text-primary hover:text-primary/80 transition-colors text-sm font-medium"
-              >
-                Profiel bewerken →
-              </Link>
-            </div>
+              <p className="text-text-secondary text-sm group-hover:text-white/80 transition-colors">
+                Beheer je persoonlijke gegevens
+              </p>
+            </Link>
 
             {/* Cart Card */}
-            <div className="bg-dark-card p-6 rounded-lg border border-dark-border">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
-                  <ShoppingCart className="w-6 h-6 text-black" />
+            <Link
+              href="/cart"
+              className="group bg-gradient-to-br from-dark-card to-dark-section p-6 rounded-xl border border-dark-border hover:border-purple-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/10"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:scale-110 transition-transform duration-300">
+                    <ShoppingCart className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-purple-400 transition-colors">Winkelwagen</h3>
+                    <p className="text-text-secondary text-sm">Bekijk je items</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Winkelwagen</h3>
-                  <p className="text-text-secondary text-sm">Bekijk je items</p>
-                </div>
+                <ArrowRight className="w-5 h-5 text-text-secondary group-hover:text-purple-400 group-hover:translate-x-1 transition-all duration-300" />
               </div>
-              <Link
-                href="/cart"
-                className="text-primary hover:text-primary/80 transition-colors text-sm font-medium"
-              >
-                Winkelwagen bekijken →
-              </Link>
-            </div>
+              <p className="text-text-secondary text-sm group-hover:text-white/80 transition-colors">
+                Bekijk en beheer je winkelwagen
+              </p>
+            </Link>
 
             {/* Courses Card */}
-            <div className="bg-dark-card p-6 rounded-lg border border-dark-border">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
-                  <BookOpen className="w-6 h-6 text-black" />
+            <Link
+              href="/dashboard/cursussen"
+              className="group bg-gradient-to-br from-dark-card via-blue-950/20 to-dark-section p-6 rounded-xl border border-blue-500/30 hover:border-blue-500/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-500/20"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
+                    <BookOpen className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors">Mijn Cursussen</h3>
+                    <p className="text-text-secondary text-sm">
+                      {purchasedProducts.filter(p => p.type === 'course').length} {purchasedProducts.filter(p => p.type === 'course').length === 1 ? 'cursus' : 'cursussen'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Mijn Cursussen</h3>
-                  <p className="text-text-secondary text-sm">Je gekochte cursussen</p>
+                <div className="flex items-center gap-2">
+                  {purchasedProducts.filter(p => p.type === 'course').length > 0 && (
+                    <span className="px-2.5 py-1 bg-blue-500/20 text-blue-400 text-xs font-bold rounded-full border border-blue-500/30">
+                      {purchasedProducts.filter(p => p.type === 'course').length}
+                    </span>
+                  )}
+                  <ArrowRight className="w-5 h-5 text-text-secondary group-hover:text-blue-400 group-hover:translate-x-1 transition-all duration-300" />
                 </div>
               </div>
-              <Link
-                href="/dashboard/cursussen"
-                className="text-primary hover:text-primary/80 transition-colors text-sm font-medium"
-              >
-                Cursussen bekijken →
-              </Link>
-            </div>
+              <p className="text-text-secondary text-sm group-hover:text-white/80 transition-colors">
+                Start met leren en ontwikkelen
+              </p>
+            </Link>
 
             {/* E-books Card */}
-            <div className="bg-dark-card p-6 rounded-lg border border-dark-border">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
-                  <BookOpen className="w-6 h-6 text-black" />
+            <Link
+              href="/dashboard/ebooks"
+              className="group bg-gradient-to-br from-dark-card via-green-950/20 to-dark-section p-6 rounded-xl border border-green-500/30 hover:border-green-500/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-green-500/20"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform duration-300">
+                    <BookOpen className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-green-400 transition-colors">Mijn E-books</h3>
+                    <p className="text-text-secondary text-sm">
+                      {purchasedProducts.filter(p => p.type === 'ebook').length} {purchasedProducts.filter(p => p.type === 'ebook').length === 1 ? 'e-book' : 'e-books'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Mijn E-books</h3>
-                  <p className="text-text-secondary text-sm">Je gekochte e-books</p>
+                <div className="flex items-center gap-2">
+                  {purchasedProducts.filter(p => p.type === 'ebook').length > 0 && (
+                    <span className="px-2.5 py-1 bg-green-500/20 text-green-400 text-xs font-bold rounded-full border border-green-500/30">
+                      {purchasedProducts.filter(p => p.type === 'ebook').length}
+                    </span>
+                  )}
+                  <ArrowRight className="w-5 h-5 text-text-secondary group-hover:text-green-400 group-hover:translate-x-1 transition-all duration-300" />
                 </div>
               </div>
-              <Link
-                href="/dashboard/ebooks"
-                className="text-primary hover:text-primary/80 transition-colors text-sm font-medium"
-              >
-                E-books bekijken →
-              </Link>
-            </div>
+              <p className="text-text-secondary text-sm group-hover:text-white/80 transition-colors">
+                Download en lees je e-books
+              </p>
+            </Link>
 
             {/* Orders Card */}
-            <div className="bg-dark-card p-6 rounded-lg border border-dark-border">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
-                  <CreditCard className="w-6 h-6 text-black" />
+            <Link
+              href="/dashboard/orders"
+              className="group bg-gradient-to-br from-dark-card via-orange-950/20 to-dark-section p-6 rounded-xl border border-orange-500/30 hover:border-orange-500/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-orange-500/20"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform duration-300">
+                    <CreditCard className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-orange-400 transition-colors">Mijn Orders</h3>
+                    <p className="text-text-secondary text-sm">Bekijk je bestellingen</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Mijn Orders</h3>
-                  <p className="text-text-secondary text-sm">Bekijk je bestellingen</p>
-                </div>
+                <ArrowRight className="w-5 h-5 text-text-secondary group-hover:text-orange-400 group-hover:translate-x-1 transition-all duration-300" />
               </div>
-              <Link
-                href="/dashboard/orders"
-                className="text-primary hover:text-primary/80 transition-colors text-sm font-medium"
-              >
-                Orders bekijken →
-              </Link>
-            </div>
+              <p className="text-text-secondary text-sm group-hover:text-white/80 transition-colors">
+                Overzicht van al je aankopen
+              </p>
+            </Link>
 
           </div>
 
@@ -229,9 +263,10 @@ export default function DashboardPage() {
             </div>
 
             {loadingPurchases ? (
-              <div className="text-center py-12">
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-text-secondary">Producten laden...</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(3)].map((_, i) => (
+                  <ProductCardSkeleton key={i} />
+                ))}
               </div>
             ) : purchasedProducts.length === 0 ? (
               <div className="bg-dark-card rounded-xl p-12 border border-dark-border text-center">
@@ -262,31 +297,34 @@ export default function DashboardPage() {
                 {purchasedProducts.map((product) => (
                   <div
                     key={product.id}
-                    className="bg-dark-card rounded-xl overflow-hidden border border-dark-border hover:border-primary transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10"
+                    className="group bg-gradient-to-br from-dark-card to-dark-section rounded-xl overflow-hidden border border-dark-border hover:border-primary transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-primary/20"
                   >
-                    {/* Product Image */}
-                    <div className="relative h-48 bg-gradient-to-br from-dark-section to-dark-card">
+                      {/* Product Image */}
+                    <div className="relative h-52 bg-gradient-to-br from-dark-section to-dark-card overflow-hidden">
                       {product.imageUrl ? (
-                        <Image
-                          src={product.imageUrl}
-                          alt={product.name}
-                          fill
-                          className="object-contain p-4"
-                        />
+                        <>
+                          <Image
+                            src={product.imageUrl}
+                            alt={product.name}
+                            fill
+                            className="object-contain p-4 group-hover:scale-105 transition-transform duration-500"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        </>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <BookOpen className="w-16 h-16 text-text-secondary" />
+                          <BookOpen className="w-16 h-16 text-text-secondary group-hover:text-primary transition-colors duration-300" />
                         </div>
                       )}
                       
                       {/* Type Badge */}
-                      <div className="absolute top-3 right-3">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      <div className="absolute top-4 right-4">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-sm border ${
                           product.type === 'course' 
-                            ? 'bg-blue-900/30 text-blue-400 border border-blue-500/30'
+                            ? 'bg-blue-500/90 text-white border-blue-400/50 shadow-lg shadow-blue-500/30'
                             : product.type === 'ebook'
-                            ? 'bg-green-900/30 text-green-400 border border-green-500/30'
-                            : 'bg-orange-900/30 text-orange-400 border border-orange-500/30'
+                            ? 'bg-green-500/90 text-white border-green-400/50 shadow-lg shadow-green-500/30'
+                            : 'bg-orange-500/90 text-white border-orange-400/50 shadow-lg shadow-orange-500/30'
                         }`}>
                           {product.type === 'course' ? '📚 Cursus' : product.type === 'ebook' ? '📖 E-book' : '⭐ Review'}
                         </span>
@@ -307,7 +345,7 @@ export default function DashboardPage() {
                       {/* Action Button */}
                       <Link
                         href={`/products/${product.id}`}
-                        className="w-full bg-primary text-black py-3 px-4 rounded-lg font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                        className="w-full bg-gradient-to-r from-primary to-primary/90 text-black py-3.5 px-4 rounded-xl font-bold hover:from-primary/90 hover:to-primary/80 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]"
                       >
                         {product.type === 'course' ? (
                           <>
