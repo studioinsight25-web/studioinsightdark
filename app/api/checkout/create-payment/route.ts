@@ -158,11 +158,11 @@ export async function POST(request: NextRequest) {
     } catch (validationError) {
       console.error('Checkout: Validation error:', validationError)
       if (validationError instanceof z.ZodError) {
-        console.error('Checkout: Validation errors:', JSON.stringify(validationError.errors, null, 2))
+        console.error('Checkout: Validation errors:', JSON.stringify(validationError.issues, null, 2))
         return NextResponse.json(
           { 
             error: 'Ongeldige checkout gegevens',
-            details: validationError.errors.map(e => ({
+            details: validationError.issues.map(e => ({
               path: e.path.join('.'),
               message: e.message
             }))
@@ -243,11 +243,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     // ZodError should already be handled above, but just in case
     if (error instanceof z.ZodError) {
-      console.error('Checkout: Unhandled ZodError:', error.errors)
+      console.error('Checkout: Unhandled ZodError:', error.issues)
       return NextResponse.json(
         { 
           error: 'Ongeldige checkout gegevens',
-          details: error.errors.map(e => ({
+          details: error.issues.map(e => ({
             path: e.path.join('.'),
             message: e.message
           }))
