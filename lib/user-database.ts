@@ -103,9 +103,10 @@ export class UserService {
 
   static async getUserById(id: string): Promise<any> {
     try {
+      // Cast id to UUID if needed, or use as string
       const result = await DatabaseService.query(
-        'SELECT id, email, name, role, address, city, postcode, country, phone, company_name, industry, website, created_at, updated_at FROM users WHERE id = $1',
-        [id]
+        'SELECT id, email, name, role, address, city, postcode, country, phone, company_name, industry, website, created_at, updated_at FROM users WHERE id::text = $1',
+        [id.toString()]
       )
 
       if (result.length === 0) {
@@ -121,8 +122,9 @@ export class UserService {
 
   static async getUserByEmail(email: string): Promise<any> {
     try {
+      // Use LOWER() to make email comparison case-insensitive
       const result = await DatabaseService.query(
-        'SELECT id, email, name, role, address, city, postcode, country, phone, company_name, industry, website, created_at, updated_at FROM users WHERE email = $1',
+        'SELECT id, email, name, role, address, city, postcode, country, phone, company_name, industry, website, created_at, updated_at FROM users WHERE LOWER(email) = LOWER($1)',
         [email]
       )
 
