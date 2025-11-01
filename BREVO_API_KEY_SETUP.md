@@ -46,6 +46,11 @@
      - Value: Plak de nieuwe API key
      - Selecteer alle environments: ✅ Production, ✅ Preview, ✅ Development
      - Klik op **"Save"**
+   
+   **⚠️ BELANGRIJK - Ook checken:**
+   - Controleer dat `NEXT_PUBLIC_BASE_URL` ook is ingesteld (bijv. `https://studio-insight.nl` of je Vercel URL)
+   - Als deze niet is ingesteld, gaan bevestigingslinks in emails naar localhost!
+   - De code gebruikt nu automatisch de request origin als fallback, maar expliciet instellen is beter
 
 3. **Trigger nieuwe deployment:**
    - Na het updaten van environment variables moet je een nieuwe deployment triggeren

@@ -61,7 +61,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Send confirmation email
-    const confirmationUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/newsletter/confirm?token=${confirmationToken}`
+    // Get base URL: prefer env var, fallback to request origin, then localhost
+    const getBaseUrl = () => {
+      if (process.env.NEXT_PUBLIC_BASE_URL) {
+        return process.env.NEXT_PUBLIC_BASE_URL
+      }
+      // Try to get from request origin
+      try {
+        const url = new URL(request.url)
+        return `${url.protocol}//${url.host}`
+      } catch {
+        // Fallback to production URL or localhost
+        return process.env.NODE_ENV === 'production' 
+          ? 'https://studio-insight.nl' 
+          : 'http://localhost:3000'
+      }
+    }
+    const baseUrl = getBaseUrl()
+    const confirmationUrl = `${baseUrl}/newsletter/confirm?token=${confirmationToken}`
+    
+    // Log for debugging
+    console.log('📧 Newsletter confirmation URL:', {
+      baseUrl,
+      confirmationUrl: confirmationUrl.substring(0, 80) + '...',
+      envVar: process.env.NEXT_PUBLIC_BASE_URL || 'not set'
+    })
     
     let emailSent = false
     let emailError: any = null

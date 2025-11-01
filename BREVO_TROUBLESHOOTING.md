@@ -23,7 +23,9 @@ Ga naar je Vercel project → Settings → Environment Variables en controleer:
 
 **Verplicht:**
 - ✅ `BREVO_API_KEY` - Je Brevo API key
-- ✅ `NEXT_PUBLIC_BASE_URL` - Je website URL (bijv. `https://studio-insight.nl`)
+- ✅ `NEXT_PUBLIC_BASE_URL` - Je website URL (bijv. `https://studio-insight.nl` of `https://studioinsightdark.vercel.app`)
+  - **⚠️ BELANGRIJK:** Als deze niet is ingesteld, gaan bevestigingslinks naar localhost!
+  - De code gebruikt nu automatisch de request origin als fallback, maar het is beter om dit expliciet in te stellen
 
 **Optioneel:**
 - `BREVO_SENDER_EMAIL` - Standaard: `no-reply@studio-insight.nl` (MOET geverifieerd zijn in Brevo!)
