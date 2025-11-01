@@ -27,7 +27,10 @@ export default function SetupAdminPage() {
       if (response.ok) {
         setResult(data)
       } else {
-        setError(data.error || 'Failed to create admin')
+        const errorMsg = data.details 
+          ? `${data.error || 'Failed to create admin'}\n\n${data.details}`
+          : (data.error || 'Failed to create admin')
+        setError(errorMsg)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -75,7 +78,7 @@ export default function SetupAdminPage() {
         {error && (
           <div className="mb-4 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
             <p className="text-red-400 font-semibold mb-2">Error</p>
-            <p className="text-red-300 text-sm">{error}</p>
+            <p className="text-red-300 text-sm whitespace-pre-wrap break-words">{error}</p>
           </div>
         )}
 
