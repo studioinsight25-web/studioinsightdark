@@ -29,10 +29,11 @@ export default function RootLayout({
   return (
     <html lang="nl" className={inter.variable}>
       <body className="font-sans antialiased">
-        <Analytics />
-        <Header />
-        {children}
-        <ToastProvider />
+        <ToastProvider>
+          <Analytics />
+          <Header />
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );
