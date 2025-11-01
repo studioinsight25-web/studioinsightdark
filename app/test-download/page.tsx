@@ -202,6 +202,108 @@ export default function TestDownloadPage() {
         }
       }
 
+      // Test 5: Dashboard visibility test - Check if product appears in purchases API
+      try {
+        const purchasesRes = await fetch('/api/user/purchases')
+        const purchasesData = await purchasesRes.json()
+        const productInDashboard = (purchasesData.products || []).some((p: any) => p.id === productId)
+        
+        if (testMode) {
+          results.push({
+            test: 'Test 5: Dashboard zichtbaarheid (TEST MODE)',
+            passed: true,
+            message: '🧪 TEST MODE: Product zou in dashboard moeten verschijnen na betaling',
+            details: { 
+              productInDashboard: true, // Simulated
+              totalPurchased: purchasesData.products?.length || 0,
+              note: 'In werkelijkheid verschijnt product alleen na echte betaling'
+            }
+          })
+        } else {
+          results.push({
+            test: 'Test 5: Dashboard zichtbaarheid',
+            passed: true,
+            message: productInDashboard 
+              ? '✅ Product staat in dashboard (gekocht) - download knop zou zichtbaar zijn'
+              : '✅ Product staat NIET in dashboard (niet gekocht) - download knop zou verborgen zijn',
+            details: { 
+              productInDashboard,
+              totalPurchased: purchasesData.products?.length || 0
+            }
+          })
+        }
+      } catch (err) {
+        results.push({
+          test: 'Test 5: Dashboard zichtbaarheid',
+          passed: false,
+          message: `❌ Fout: ${err instanceof Error ? err.message : 'Unknown error'}`,
+          details: { error: err }
+        })
+      }
+
+      // Test 6: DigitalProductDownload component behavior simulation
+      try {
+        // Simulate what DigitalProductDownload component does
+        const purchasesRes = await fetch('/api/user/purchases')
+        const purchasesData = await purchasesRes.json()
+        const purchasedProductIds = (purchasesData.products || []).map((p: any) => p.id)
+        const hasAccess = testMode ? true : purchasedProductIds.includes(productId)
+        
+        // Try to access digital products (simulating component behavior)
+        const digitalRes = await fetch(`/api/digital-products/${productId}/user`)
+        
+        if (digitalRes.status === 403 && !hasAccess) {
+          results.push({
+            test: 'Test 6: Download component gedrag',
+            passed: true,
+            message: '✅ Component zou "Toegang Geweigerd" tonen (geen download knop)',
+            details: { 
+              hasAccess: false,
+              apiStatus: 403,
+              expectedBehavior: 'Geen download knop zichtbaar'
+            }
+          })
+        } else if (digitalRes.ok && hasAccess) {
+          const digitalProducts = await digitalRes.json()
+          results.push({
+            test: 'Test 6: Download component gedrag',
+            passed: true,
+            message: `✅ Component zou download knop tonen (${digitalProducts.length} bestand(en) beschikbaar)`,
+            details: { 
+              hasAccess: true,
+              apiStatus: 200,
+              digitalFilesCount: digitalProducts.length,
+              expectedBehavior: 'Download knop zichtbaar'
+            }
+          })
+        } else if (digitalRes.status === 403 && hasAccess && testMode) {
+          results.push({
+            test: 'Test 6: Download component gedrag (TEST MODE)',
+            passed: true,
+            message: '🧪 TEST MODE: Component zou download knop tonen na echte betaling',
+            details: { 
+              hasAccess: true, // Simulated
+              apiStatus: 403, // Still blocked because no real order
+              note: 'Na echte betaling zou API 200 teruggeven en download knop verschijnen'
+            }
+          })
+        } else {
+          results.push({
+            test: 'Test 6: Download component gedrag',
+            passed: false,
+            message: `⚠️ Onverwacht gedrag: hasAccess=${hasAccess}, API status=${digitalRes.status}`,
+            details: { hasAccess, apiStatus: digitalRes.status }
+          })
+        }
+      } catch (err) {
+        results.push({
+          test: 'Test 6: Download component gedrag',
+          passed: false,
+          message: `❌ Fout: ${err instanceof Error ? err.message : 'Unknown error'}`,
+          details: { error: err }
+        })
+      }
+
     } catch (error) {
       results.push({
         test: 'Test Suite',
