@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🚀 Creating simple admin user...')
     
-    const email = 'admin@studioinsight.nl'
+    const email = 'admin@studio-insight.nl'
     const password = 'admin123'
     const name = 'Admin User'
     const role = 'ADMIN'
@@ -71,7 +71,7 @@ export async function GET() {
   return NextResponse.json({
     message: 'Use POST to create admin user',
     credentials: {
-      email: 'admin@studioinsight.nl',
+      email: 'admin@studio-insight.nl',
       password: 'admin123'
     }
   })
