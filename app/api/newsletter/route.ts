@@ -14,6 +14,28 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = email.trim().toLowerCase()
     const confirmationToken = randomBytes(32).toString('hex')
 
+    // Ensure table exists (create if it doesn't)
+    try {
+      await DatabaseService.query(`
+        CREATE TABLE IF NOT EXISTS "newsletterSubscriptions" (
+          id VARCHAR(255) PRIMARY KEY,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          name VARCHAR(255),
+          consent BOOLEAN DEFAULT true,
+          status VARCHAR(50) DEFAULT 'pending',
+          "confirmationToken" VARCHAR(255) UNIQUE,
+          "confirmedAt" TIMESTAMP,
+          "createdAt" TIMESTAMP DEFAULT NOW(),
+          "updatedAt" TIMESTAMP DEFAULT NOW()
+        )
+      `)
+      await DatabaseService.query(`CREATE INDEX IF NOT EXISTS idx_newsletter_email ON "newsletterSubscriptions"(email)`)
+      await DatabaseService.query(`CREATE INDEX IF NOT EXISTS idx_newsletter_status ON "newsletterSubscriptions"(status)`)
+    } catch (tableError) {
+      // Table might already exist or there's a real error - continue anyway
+      console.log('Table creation check:', tableError)
+    }
+
     // Check if subscription exists
     const existing = await DatabaseService.query(
       'SELECT id FROM "newsletterSubscriptions" WHERE email = $1',
