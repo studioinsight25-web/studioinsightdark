@@ -18,12 +18,12 @@ export async function POST(request: NextRequest) {
       [email]
     )
     
-    if (existingUser.rows.length > 0) {
+    if (existingUser.length > 0) {
       console.log('✅ Admin user already exists')
       return NextResponse.json({
         success: true,
         message: 'Admin user already exists',
-        user: existingUser.rows[0],
+        user: existingUser[0],
         loginCredentials: {
           email: email,
           password: password
