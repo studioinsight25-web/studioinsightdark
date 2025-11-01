@@ -11,7 +11,8 @@ interface CheckoutItem {
   id: string
   name: string
   price: number
-  type: 'course' | 'ebook'
+  type: 'course' | 'ebook' | 'review'
+  quantity?: number
 }
 
 export default function CheckoutPage() {
@@ -33,7 +34,7 @@ export default function CheckoutPage() {
   }, [router])
 
   const getTotalPrice = () => {
-    return items.reduce((total, item) => total + item.price, 0)
+    return items.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0)
   }
 
   const formatPrice = (priceInCents: number) => {
