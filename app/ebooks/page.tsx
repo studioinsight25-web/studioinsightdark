@@ -8,6 +8,7 @@ import { BookOpen, Download, Star, ShoppingCart } from 'lucide-react'
 import { Product, formatPrice } from '@/lib/products'
 import { useProducts } from '@/hooks/useProducts'
 import { trackAddToCart } from '@/lib/analytics'
+import { useToast } from '@/hooks/useToast'
 // Removed direct database import - using API routes instead
 import SessionManager from '@/lib/session'
 
@@ -15,6 +16,7 @@ export default function EbooksPage() {
   const router = useRouter()
   const { products, loading } = useProducts()
   const [userId, setUserId] = useState<string | null>(null)
+  const { showToast } = useToast()
   
   const ebooks = products.filter(product => product.type === 'ebook' && product.isActive)
 
@@ -25,7 +27,7 @@ export default function EbooksPage() {
 
   const handleAddToCart = async (product: Product) => {
     if (!userId) {
-      alert('Je moet ingelogd zijn om producten toe te voegen aan je winkelwagen.')
+      showToast('Je moet ingelogd zijn om producten toe te voegen aan je winkelwagen.', 'info')
       router.push('/inloggen')
       return
     }
@@ -45,14 +47,16 @@ export default function EbooksPage() {
       if (response.ok) {
         trackAddToCart(product)
         window.dispatchEvent(new CustomEvent('cartUpdated'))
-        alert(`${product.name} is toegevoegd aan je winkelwagen!`)
-        router.push('/cart')
+        showToast(`${product.name} is toegevoegd aan je winkelwagen!`, 'success')
+        setTimeout(() => {
+          router.push('/cart')
+        }, 1000)
       } else {
-        alert('Er is een fout opgetreden bij het toevoegen aan je winkelwagen.')
+        showToast('Er is een fout opgetreden bij het toevoegen aan je winkelwagen.', 'error')
       }
     } catch (error) {
       console.error('Error adding to cart:', error)
-      alert('Er is een fout opgetreden bij het toevoegen aan je winkelwagen.')
+      showToast('Er is een fout opgetreden bij het toevoegen aan je winkelwagen.', 'error')
     }
   }
 
