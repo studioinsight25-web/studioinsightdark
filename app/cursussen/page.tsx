@@ -182,8 +182,9 @@ export default function CoursesPage() {
                       <button
                         onClick={() => handleAddToCart(course)}
                         className="w-full bg-primary text-black py-3 px-4 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-300 flex items-center justify-center gap-2"
+                        aria-label={`Voeg ${course.name} toe aan winkelwagen`}
                       >
-                        <ShoppingCart className="w-4 h-4" />
+                        <ShoppingCart className="w-4 h-4" aria-hidden="true" />
                         Koop Nu
                       </button>
                     )}
