@@ -3,9 +3,45 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Star, ArrowRight, MessageSquare, Clock, User } from 'lucide-react'
+import { Star, ArrowRight, MessageSquare, Clock, User, ChevronDown, ChevronUp } from 'lucide-react'
 import { Product, formatPrice } from '@/lib/products'
 import { useProducts } from '@/hooks/useProducts'
+
+// Component for truncated description with "read more"
+function TruncatedDescription({ text, maxLength = 150 }: { text: string; maxLength?: number }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  
+  if (!text) return null
+  
+  const shouldTruncate = text.length > maxLength
+  const displayText = isExpanded || !shouldTruncate ? text : `${text.slice(0, maxLength).trim()}...`
+  
+  return (
+    <div>
+      <p className="text-text-secondary text-lg leading-relaxed">
+        {displayText}
+      </p>
+      {shouldTruncate && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mt-2 text-primary hover:text-primary/80 font-semibold text-sm flex items-center gap-1 transition-colors"
+        >
+          {isExpanded ? (
+            <>
+              <span>Lees minder</span>
+              <ChevronUp className="w-4 h-4" />
+            </>
+          ) : (
+            <>
+              <span>Lees meer</span>
+              <ChevronDown className="w-4 h-4" />
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  )
+}
 
 export default function ReviewsPage() {
   const { products, loading } = useProducts()
@@ -175,9 +211,10 @@ export default function ReviewsPage() {
 
                       {/* Description */}
                       <div className="mb-8">
-                        <p className="text-text-secondary text-lg leading-relaxed">
-                          {review.shortDescription || review.description}
-                        </p>
+                        <TruncatedDescription 
+                          text={review.shortDescription || review.description || ''} 
+                          maxLength={200}
+                        />
                       </div>
 
                       {/* Amazon Button - Moved up */}
