@@ -44,7 +44,7 @@ export default function CartPage() {
     const products = cartItems.map(item => item.product).filter((p): p is NonNullable<typeof p> => p !== undefined)
     trackBeginCheckout(products)
     
-    // Store checkout data
+    // Store checkout data (use the key that checkout page expects)
     const checkoutData = {
       items: cartItems
         .filter(item => item.product !== undefined)
@@ -53,12 +53,12 @@ export default function CartPage() {
           name: item.product!.name,
           price: item.product!.price,
           quantity: item.quantity,
-          type: item.product!.type
-        })),
-      total: getTotalPrice()
+          type: item.product!.type as 'course' | 'ebook' | 'review'
+        }))
     }
     
-    sessionStorage.setItem('checkout-data', JSON.stringify(checkoutData))
+    // Use 'checkout-items' key that the checkout page expects
+    sessionStorage.setItem('checkout-items', JSON.stringify(checkoutData))
     router.push('/checkout')
   }
 
