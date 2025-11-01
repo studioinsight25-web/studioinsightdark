@@ -17,6 +17,7 @@ export default function TestDownloadPage() {
   const [testResults, setTestResults] = useState<TestResult[]>([])
   const [isRunning, setIsRunning] = useState(false)
   const [purchasedProducts, setPurchasedProducts] = useState<any[]>([])
+  const [testMode, setTestMode] = useState(false) // Simulate purchase for testing
 
   useEffect(() => {
     const sessionData = SessionManager.getSession()
@@ -50,13 +51,19 @@ export default function TestDownloadPage() {
       // Test 1: Check if user has purchased this product
       const purchasesRes = await fetch('/api/user/purchases')
       const purchasesData = await purchasesRes.json()
-      const hasPurchased = (purchasesData.products || []).some((p: any) => p.id === productId)
+      let hasPurchased = (purchasesData.products || []).some((p: any) => p.id === productId)
+      
+      // Test mode: Simulate purchase for testing
+      if (testMode) {
+        hasPurchased = true
+        console.log('🧪 Test Mode: Simulating purchase for', productId)
+      }
       
       results.push({
         test: 'Test 1: Product aankoop status',
         passed: true, // This test always passes - it's just informational
         message: hasPurchased 
-          ? '✅ Product is gekocht - download zou moeten werken' 
+          ? (testMode ? '🧪 TEST MODE: Product gesimuleerd als gekocht - download zou moeten werken' : '✅ Product is gekocht - download zou moeten werken')
           : '✅ Product is NIET gekocht - download zou moeten falen (correct)',
         details: { productId, hasPurchased, totalPurchased: purchasesData.products?.length || 0 }
       })
@@ -233,15 +240,34 @@ export default function TestDownloadPage() {
         <div className="bg-dark-card rounded-xl p-6 border border-dark-border mb-6">
           <h2 className="text-xl font-semibold text-white mb-4">Test Configuratie</h2>
           <div className="space-y-4">
-            <div>
-              <label className="block text-white font-medium mb-2">Product ID om te testen:</label>
-              <input
-                type="text"
-                value={productId}
-                onChange={(e) => setProductId(e.target.value)}
-                className="w-full bg-dark-section border border-dark-border rounded-lg px-4 py-2 text-white"
-                placeholder="product-123"
-              />
+            <div className="space-y-4">
+              <div>
+                <label className="block text-white font-medium mb-2">Product ID om te testen:</label>
+                <input
+                  type="text"
+                  value={productId}
+                  onChange={(e) => setProductId(e.target.value)}
+                  className="w-full bg-dark-section border border-dark-border rounded-lg px-4 py-2 text-white"
+                  placeholder="product-123"
+                />
+              </div>
+              
+              <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={testMode}
+                    onChange={(e) => setTestMode(e.target.checked)}
+                    className="w-5 h-5 rounded border-dark-border bg-dark-section text-primary focus:ring-primary"
+                  />
+                  <div>
+                    <span className="text-white font-medium">🧪 Test Mode</span>
+                    <p className="text-text-secondary text-sm mt-1">
+                      Simuleer dat het product is gekocht (voor testdoeleinden)
+                    </p>
+                  </div>
+                </label>
+              </div>
             </div>
             
             {purchasedProducts.length > 0 && (
