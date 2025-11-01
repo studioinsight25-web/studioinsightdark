@@ -26,19 +26,21 @@ export async function POST(request: Request) {
       )
     }
 
-    // Find order by payment ID
-    // In a real application, you'd query your database
-    // For now, we'll use a simple approach
-    const orders = await OrderService.getUserOrders('') // This would need to be improved
-    const order = orders.find(o => o.paymentId === paymentId)
+    // Find order by payment ID from database
+    console.log('Webhook: Looking for order with paymentId:', paymentId)
+    const order = await OrderService.getOrderByPaymentId(paymentId)
 
     if (!order) {
-      console.error('Order not found for payment:', paymentId)
+      console.error('Webhook: Order not found for paymentId:', paymentId)
+      // Try to find by searching all orders (fallback, but inefficient)
+      // This should not happen in production if payment_id is set correctly
       return NextResponse.json(
-        { error: 'Order not found' },
+        { error: 'Order not found for this payment' },
         { status: 404 }
       )
     }
+    
+    console.log('Webhook: Found order:', order.id, 'current status:', order.status)
 
     // Update order status based on payment status
     if (paymentStatus.paid) {

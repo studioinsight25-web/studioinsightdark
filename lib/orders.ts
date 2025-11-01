@@ -33,14 +33,23 @@ export class OrderService {
         throw new Error('Failed to create order')
       }
 
-      // Create order items
+      // Create order items - use snake_case as per database schema
       const { DatabaseService } = await import('@/lib/database-direct')
       for (const item of items) {
         const itemId = `order-item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-        await DatabaseService.query(
-          'INSERT INTO "orderItems" (id, "orderId", "productId", quantity, price, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, NOW(), NOW())',
-          [itemId, dbOrder.id, item.id, 1, item.price]
-        )
+        // Try camelCase first, fallback to snake_case
+        try {
+          await DatabaseService.query(
+            'INSERT INTO "orderItems" (id, "orderId", "productId", quantity, price, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, NOW(), NOW())',
+            [itemId, dbOrder.id, item.id, 1, item.price]
+          )
+        } catch {
+          // Fallback to snake_case (actual database schema)
+          await DatabaseService.query(
+            'INSERT INTO order_items (id, order_id, product_id, quantity, price, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
+            [itemId, dbOrder.id, item.id, 1, item.price]
+          )
+        }
       }
 
       return {
@@ -143,7 +152,7 @@ export class OrderService {
   static async updateOrderStatus(orderId: string, status: Order['status'], paymentId?: string): Promise<boolean> {
     try {
       const { DatabaseOrderService } = await import('./orders-database')
-      const dbOrder = await DatabaseOrderService.updateOrderStatus(orderId, status.toUpperCase() as any)
+      const dbOrder = await DatabaseOrderService.updateOrderStatus(orderId, status.toUpperCase() as any, paymentId)
       return dbOrder !== null
     } catch (error) {
       console.error('Error updating order status:', error)
@@ -160,6 +169,37 @@ export class OrderService {
       }
 
       return true
+    }
+  }
+
+  static async getOrderByPaymentId(paymentId: string): Promise<Order | null> {
+    try {
+      const { DatabaseOrderService } = await import('./orders-database')
+      const dbOrder = await DatabaseOrderService.getOrderByPaymentId(paymentId)
+      if (!dbOrder) return null
+
+      // Convert items
+      const items: Product[] = []
+      for (const item of dbOrder.items) {
+        const product = await ProductService.getProduct(item.productId)
+        if (product) {
+          items.push(product)
+        }
+      }
+
+      return {
+        id: dbOrder.id,
+        userId: dbOrder.userId,
+        items,
+        totalAmount: dbOrder.totalAmount,
+        currency: 'EUR',
+        status: dbOrder.status.toLowerCase() as Order['status'],
+        createdAt: dbOrder.createdAt,
+        paidAt: dbOrder.paidAt
+      }
+    } catch (error) {
+      console.error('Error fetching order by paymentId:', error)
+      return null
     }
   }
 

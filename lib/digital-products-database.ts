@@ -206,16 +206,32 @@ export class DigitalProductDatabaseService {
       if (!digitalProduct) return false
 
       // Check if user has purchased the product (by checking orders)
-      const productResult = await DatabaseService.query(
-        `SELECT o.*, oi."productId" 
-         FROM orders o 
-         JOIN "orderItems" oi ON o.id = oi."orderId" 
-         WHERE oi."productId" = $1 
-           AND o."userId" = $2 
-           AND UPPER(o.status) = 'PAID'
-         LIMIT 1`,
-        [digitalProduct.productId, userId]
-      )
+      // Try camelCase first, fallback to snake_case
+      let productResult
+      try {
+        productResult = await DatabaseService.query(
+          `SELECT o.id, oi."productId" 
+           FROM orders o 
+           JOIN "orderItems" oi ON o.id = oi."orderId" 
+           WHERE oi."productId" = $1 
+             AND o."userId" = $2 
+             AND UPPER(o.status) = 'PAID'
+           LIMIT 1`,
+          [digitalProduct.productId, userId]
+        )
+      } catch {
+        // Fallback to snake_case (actual database schema)
+        productResult = await DatabaseService.query(
+          `SELECT o.id, oi.product_id as "productId" 
+           FROM orders o 
+           JOIN order_items oi ON o.id = oi.order_id 
+           WHERE oi.product_id = $1 
+             AND o.user_id = $2 
+             AND UPPER(o.status) = 'PAID'
+           LIMIT 1`,
+          [digitalProduct.productId, userId]
+        )
+      }
 
       if (productResult.length === 0) {
         console.log(`Access denied: User ${userId} has not purchased product ${digitalProduct.productId}`)
@@ -252,16 +268,32 @@ export class DigitalProductDatabaseService {
    */
   static async hasUserPurchasedProduct(userId: string, productId: string): Promise<boolean> {
     try {
-      const result = await DatabaseService.query(
-        `SELECT o.id 
-         FROM orders o 
-         JOIN "orderItems" oi ON o.id = oi."orderId" 
-         WHERE oi."productId" = $1 
-           AND o."userId" = $2 
-           AND UPPER(o.status) = 'PAID'
-         LIMIT 1`,
-        [productId, userId]
-      )
+      // Try camelCase first, fallback to snake_case
+      let result
+      try {
+        result = await DatabaseService.query(
+          `SELECT o.id 
+           FROM orders o 
+           JOIN "orderItems" oi ON o.id = oi."orderId" 
+           WHERE oi."productId" = $1 
+             AND o."userId" = $2 
+             AND UPPER(o.status) = 'PAID'
+           LIMIT 1`,
+          [productId, userId]
+        )
+      } catch {
+        // Fallback to snake_case (actual database schema)
+        result = await DatabaseService.query(
+          `SELECT o.id 
+           FROM orders o 
+           JOIN order_items oi ON o.id = oi.order_id 
+           WHERE oi.product_id = $1 
+             AND o.user_id = $2 
+             AND UPPER(o.status) = 'PAID'
+           LIMIT 1`,
+          [productId, userId]
+        )
+      }
       return result.length > 0
     } catch (error) {
       console.error('Error checking product purchase:', error)

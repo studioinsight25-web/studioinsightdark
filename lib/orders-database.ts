@@ -26,8 +26,9 @@ export class DatabaseOrderService {
   static async createOrder(orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt' | 'items'>): Promise<Order | null> {
     try {
       const id = `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      // Use snake_case column names as per database schema
       const result = await DatabaseService.query(
-        'INSERT INTO orders (id, "userId", status, "totalAmount", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING *',
+        'INSERT INTO orders (id, user_id, status, total_amount, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING id, user_id, status, total_amount, payment_id, created_at, updated_at, paid_at',
         [id, orderData.userId, orderData.status, orderData.totalAmount]
       )
 
@@ -47,8 +48,9 @@ export class DatabaseOrderService {
 
   static async getOrder(orderId: string): Promise<Order | null> {
     try {
+      // Use snake_case column names as per database schema
       const result = await DatabaseService.query(
-        'SELECT * FROM orders WHERE id = $1',
+        'SELECT id, user_id, status, total_amount, payment_id, created_at, updated_at, paid_at FROM orders WHERE id = $1',
         [orderId]
       )
 
@@ -71,8 +73,9 @@ export class DatabaseOrderService {
 
   static async getOrdersByUser(userId: string): Promise<Order[]> {
     try {
+      // Use snake_case column names as per database schema
       const result = await DatabaseService.query(
-        'SELECT * FROM orders WHERE "userId" = $1 ORDER BY "createdAt" DESC',
+        'SELECT id, user_id, status, total_amount, payment_id, created_at, updated_at, paid_at FROM orders WHERE user_id = $1 ORDER BY created_at DESC',
         [userId]
       )
 
@@ -91,19 +94,28 @@ export class DatabaseOrderService {
     }
   }
 
-  static async updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order | null> {
+  static async updateOrderStatus(orderId: string, status: OrderStatus, paymentId?: string): Promise<Order | null> {
     try {
-      let updateQuery = 'UPDATE orders SET status = $1, "updatedAt" = NOW()'
+      // Use snake_case column names as per database schema
+      let updateQuery = 'UPDATE orders SET status = $1, updated_at = NOW()'
       const updateParams: any[] = [status]
 
       if (status === 'PAID') {
-        updateQuery = 'UPDATE orders SET status = $1, "paidAt" = NOW(), "updatedAt" = NOW()'
+        updateQuery = 'UPDATE orders SET status = $1, paid_at = NOW(), updated_at = NOW()'
       }
 
+      // Update payment_id if provided
+      if (paymentId) {
+        // Replace the SET clause to include payment_id
+        updateQuery = updateQuery.replace('SET status = $1', 'SET status = $1, payment_id = $2')
+        updateParams.push(paymentId)
+      }
+      
       updateParams.push(orderId)
-
+      
+      const paramIndex = updateParams.length
       const result = await DatabaseService.query(
-        `${updateQuery} WHERE id = $2 RETURNING *`,
+        `${updateQuery} WHERE id = $${paramIndex} RETURNING id, user_id, status, total_amount, payment_id, created_at, updated_at, paid_at`,
         updateParams
       )
 
@@ -139,8 +151,9 @@ export class DatabaseOrderService {
 
   static async getAllOrders(): Promise<Order[]> {
     try {
+      // Use snake_case column names as per database schema
       const result = await DatabaseService.query(
-        'SELECT * FROM orders ORDER BY "createdAt" DESC'
+        'SELECT id, user_id, status, total_amount, payment_id, created_at, updated_at, paid_at FROM orders ORDER BY created_at DESC'
       )
 
       const orders = await Promise.all(result.map(async (order: any) => {
@@ -160,8 +173,9 @@ export class DatabaseOrderService {
 
   static async getOrdersByStatus(status: OrderStatus): Promise<Order[]> {
     try {
+      // Use snake_case column names as per database schema
       const result = await DatabaseService.query(
-        'SELECT * FROM orders WHERE status = $1 ORDER BY "createdAt" DESC',
+        'SELECT id, user_id, status, total_amount, payment_id, created_at, updated_at, paid_at FROM orders WHERE status = $1 ORDER BY created_at DESC',
         [status]
       )
 
@@ -180,10 +194,36 @@ export class DatabaseOrderService {
     }
   }
 
+  static async getOrderByPaymentId(paymentId: string): Promise<Order | null> {
+    try {
+      // Use snake_case column names as per database schema
+      const result = await DatabaseService.query(
+        'SELECT id, user_id, status, total_amount, payment_id, created_at, updated_at, paid_at FROM orders WHERE payment_id = $1',
+        [paymentId]
+      )
+
+      if (result.length === 0) {
+        return null
+      }
+
+      const order = result[0]
+      const items = await this.getOrderItems(order.id)
+      
+      return {
+        ...this.convertDbOrder(order),
+        items
+      }
+    } catch (error) {
+      console.error('Error fetching order by paymentId:', error)
+      return null
+    }
+  }
+
   static async getOrdersByDateRange(startDate: string, endDate: string): Promise<Order[]> {
     try {
+      // Use snake_case column names as per database schema
       const result = await DatabaseService.query(
-        'SELECT * FROM orders WHERE "createdAt" >= $1 AND "createdAt" <= $2 ORDER BY "createdAt" DESC',
+        'SELECT id, user_id, status, total_amount, payment_id, created_at, updated_at, paid_at FROM orders WHERE created_at >= $1 AND created_at <= $2 ORDER BY created_at DESC',
         [startDate, endDate]
       )
 
@@ -206,13 +246,13 @@ export class DatabaseOrderService {
     try {
       const result = await DatabaseService.query(
         `SELECT 
-          "productId", 
-          SUM(quantity) as "totalSold", 
-          SUM(quantity * price) as "totalRevenue"
-        FROM "orderItems" 
-        JOIN orders ON "orderItems"."orderId" = orders.id 
-        WHERE orders.status = 'PAID'
-        GROUP BY "productId" 
+          oi.product_id as "productId", 
+          SUM(oi.quantity) as "totalSold", 
+          SUM(oi.quantity * oi.price) as "totalRevenue"
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.id 
+        WHERE o.status = 'PAID'
+        GROUP BY oi.product_id 
         ORDER BY "totalSold" DESC 
         LIMIT $1`,
         [limit]
@@ -231,15 +271,28 @@ export class DatabaseOrderService {
 
   private static async getOrderItems(orderId: string): Promise<OrderItem[]> {
     try {
-      const result = await DatabaseService.query(
-        'SELECT * FROM "orderItems" WHERE "orderId" = $1',
-        [orderId]
-      )
+      // Use snake_case column names as per database schema (order_items table)
+      // Database has: order_id, product_id (snake_case)
+      // But code might be using "orderItems" with camelCase - check both
+      let result
+      try {
+        // Try camelCase first (if table was created with quotes)
+        result = await DatabaseService.query(
+          'SELECT * FROM "orderItems" WHERE "orderId" = $1',
+          [orderId]
+        )
+      } catch {
+        // Fallback to snake_case (actual database schema)
+        result = await DatabaseService.query(
+          'SELECT id, order_id, product_id, quantity, price FROM order_items WHERE order_id = $1',
+          [orderId]
+        )
+      }
 
       return result.map((item: any) => ({
         id: item.id,
-        orderId: item.orderId,
-        productId: item.productId,
+        orderId: item.order_id || item.orderId, // Support both formats
+        productId: item.product_id || item.productId, // Support both formats
         quantity: parseInt(item.quantity || '0', 10),
         price: parseFloat(item.price || '0')
       }))
@@ -250,14 +303,21 @@ export class DatabaseOrderService {
   }
 
   private static convertDbOrder(dbOrder: any): Omit<Order, 'items'> {
+    // Map snake_case database columns to camelCase TypeScript interface
     return {
       id: dbOrder.id,
-      userId: dbOrder.userId,
-      status: dbOrder.status as OrderStatus,
-      totalAmount: parseFloat(dbOrder.totalAmount || '0'),
-      createdAt: dbOrder.createdAt ? new Date(dbOrder.createdAt).toISOString() : new Date().toISOString(),
-      updatedAt: dbOrder.updatedAt ? new Date(dbOrder.updatedAt).toISOString() : new Date().toISOString(),
-      paidAt: dbOrder.paidAt ? new Date(dbOrder.paidAt).toISOString() : undefined
+      userId: dbOrder.user_id || dbOrder.userId, // Support both formats for compatibility
+      status: (dbOrder.status as string).toUpperCase() as OrderStatus,
+      totalAmount: parseFloat(dbOrder.total_amount || dbOrder.totalAmount || '0'),
+      createdAt: dbOrder.created_at || dbOrder.createdAt 
+        ? new Date(dbOrder.created_at || dbOrder.createdAt).toISOString() 
+        : new Date().toISOString(),
+      updatedAt: dbOrder.updated_at || dbOrder.updatedAt
+        ? new Date(dbOrder.updated_at || dbOrder.updatedAt).toISOString()
+        : new Date().toISOString(),
+      paidAt: (dbOrder.paid_at || dbOrder.paidAt) 
+        ? new Date(dbOrder.paid_at || dbOrder.paidAt).toISOString() 
+        : undefined
     }
   }
 }
