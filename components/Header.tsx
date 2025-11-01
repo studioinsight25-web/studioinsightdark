@@ -289,15 +289,18 @@ export default function Header() {
                 
                 return (
                   <div className="flex items-center gap-3">
-                    {/* User Avatar */}
-                    <div className="flex items-center gap-3 px-3 py-2 bg-dark-card/50 rounded-lg border border-dark-border/50">
+                    {/* User Avatar - Clickable to Dashboard */}
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center gap-3 px-3 py-2 bg-dark-card/50 rounded-lg border border-dark-border/50 hover:border-primary hover:bg-dark-card transition-colors duration-300 cursor-pointer"
+                    >
                       <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
                         <User className="w-4 h-4 text-black" />
                       </div>
                       <span className="text-sm font-medium text-white">
                         {displayUser?.name || session?.email?.split('@')[0] || 'User'}
                       </span>
-                    </div>
+                    </Link>
                     
                     {/* Admin Link - Always show if session is admin */}
                     {isAdmin && (
@@ -397,23 +400,27 @@ export default function Header() {
                     
                     return (
                       <div className="space-y-3">
-                        {/* User Info */}
-                        <div className="flex items-center gap-3 px-4 py-3 bg-dark-card/50 rounded-lg border border-dark-border/50">
+                        {/* User Info - Clickable to Dashboard */}
+                        <Link
+                          href="/dashboard"
+                          className="flex items-center gap-3 px-4 py-3 bg-dark-card/50 rounded-lg border border-dark-border/50 hover:border-primary hover:bg-dark-card transition-all duration-300"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
                           <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
                             <User className="w-5 h-5 text-black" />
                           </div>
                           <span className="font-medium text-white">
                             {displayUser?.name || session?.email?.split('@')[0] || 'User'}
                           </span>
-                        </div>
+                        </Link>
                         
                         <Link
-                          href="/account"
+                          href="/dashboard/profiel"
                           className="flex items-center gap-3 px-4 py-3 text-white hover:text-primary hover:bg-dark-card/50 transition-all duration-300 rounded-lg"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           <User className="w-5 h-5" />
-                          Account
+                          Profiel
                         </Link>
                         
                         {/* Admin Link - Always show if session is admin */}
