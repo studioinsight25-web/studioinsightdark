@@ -40,32 +40,54 @@ export async function POST(request: NextRequest) {
     // Get full user details from database
     // Try email first since it's more reliable, then userId
     let user = null
+    let queryError = null
     
     if (session.email) {
       console.log('Checkout: Trying to find user by email first:', session.email)
-      user = await UserService.getUserByEmail(session.email)
-      if (user) {
-        console.log('Checkout: User found by email, id:', user.id, 'email:', user.email)
-      } else {
-        console.warn('Checkout: User not found by email:', session.email)
+      try {
+        user = await UserService.getUserByEmail(session.email)
+        if (user) {
+          console.log('Checkout: User found by email, id:', user.id, 'email:', user.email)
+        } else {
+          console.warn('Checkout: User not found by email:', session.email)
+        }
+      } catch (error) {
+        queryError = error
+        console.error('Checkout: Error fetching user by email:', error)
       }
     }
     
     // If not found by email, try userId
     if (!user && session.userId) {
       console.log('Checkout: User not found by email, trying userId:', session.userId)
-      user = await UserService.getUserById(session.userId)
-      if (user) {
-        console.log('Checkout: User found by userId, id:', user.id, 'email:', user.email)
-      } else {
-        console.warn('Checkout: User not found by userId:', session.userId)
+      try {
+        user = await UserService.getUserById(session.userId)
+        if (user) {
+          console.log('Checkout: User found by userId, id:', user.id, 'email:', user.email)
+        } else {
+          console.warn('Checkout: User not found by userId:', session.userId)
+        }
+      } catch (error) {
+        queryError = error
+        console.error('Checkout: Error fetching user by userId:', error)
       }
     }
     
     if (!user) {
       console.error('Checkout: User not found in database after all attempts. userId:', session.userId, 'email:', session.email)
+      if (queryError) {
+        console.error('Checkout: Query error details:', queryError instanceof Error ? queryError.message : queryError)
+      }
+      // Return a more helpful error message
       return NextResponse.json(
-        { error: 'Gebruiker niet gevonden in database. Probeer opnieuw in te loggen.' },
+        { 
+          error: 'Gebruiker niet gevonden in database. Probeer opnieuw in te loggen.',
+          debug: process.env.NODE_ENV === 'development' ? {
+            userId: session.userId,
+            email: session.email,
+            queryError: queryError instanceof Error ? queryError.message : null
+          } : undefined
+        },
         { status: 404 }
       )
     }
