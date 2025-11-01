@@ -1,13 +1,12 @@
-# Database Migration: Digital Products Tables
+# Database Migration: Missing Tables
 
-## Probleem
-De foutmelding "relation 'digitalProducts' does not exist" betekent dat de database tabellen voor digitale producten nog niet bestaan.
+## Problemen
+- "relation 'digitalProducts' does not exist" - Tabel voor digitale producten ontbreekt
+- "relation 'cartItems' does not exist" - Tabel voor winkelwagen items ontbreekt
 
-## Oplossing
+## Oplossingen
 
-Je hebt twee opties:
-
-### Optie 1: Quick Fix (aanbevolen)
+### 1. Digital Products Tabellen
 Voer deze SQL query uit in je Neon Database Console:
 
 ```sql
@@ -42,7 +41,26 @@ CREATE INDEX IF NOT EXISTS idx_user_downloads_user_id ON "userDownloads"("userId
 CREATE INDEX IF NOT EXISTS idx_user_downloads_digital_product_id ON "userDownloads"("digitalProductId");
 ```
 
-### Optie 2: Volledige Database Reset
+### 2. Cart Items Tabel (voor winkelwagen functionaliteit)
+Voer deze SQL query uit:
+
+```sql
+-- Create cartItems table
+CREATE TABLE IF NOT EXISTS "cartItems" (
+  id VARCHAR(255) PRIMARY KEY,
+  "userId" UUID REFERENCES users(id) ON DELETE CASCADE,
+  "productId" VARCHAR(255) REFERENCES products(id) ON DELETE CASCADE,
+  quantity INTEGER DEFAULT 1,
+  "createdAt" TIMESTAMP DEFAULT NOW(),
+  "updatedAt" TIMESTAMP DEFAULT NOW()
+);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_cart_items_user_id ON "cartItems"("userId");
+CREATE INDEX IF NOT EXISTS idx_cart_items_product_id ON "cartItems"("productId");
+```
+
+### Volledige Database Reset
 Als je een volledige reset wilt, gebruik dan `scripts/init-database.sql` (dit verwijdert alle bestaande data).
 
 ## Stappen
@@ -63,6 +81,7 @@ Als je een volledige reset wilt, gebruik dan `scripts/init-database.sql` (dit ve
 Na het uitvoeren zou je deze tabellen moeten hebben:
 - ✅ `digitalProducts` - voor digitale bestanden
 - ✅ `userDownloads` - voor het bijhouden van downloads
+- ✅ `cartItems` - voor winkelwagen functionaliteit
 
-Nu zou de upload functionaliteit moeten werken!
+Nu zou zowel de upload functionaliteit als het toevoegen aan winkelwagen moeten werken!
 
