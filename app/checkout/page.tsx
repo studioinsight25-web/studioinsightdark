@@ -54,19 +54,27 @@ export default function CheckoutPage() {
 
     try {
       // Check if user is logged in
-      const userId = SessionManager.getCurrentUserId()
-      if (!userId) {
+      const session = SessionManager.getSession()
+      console.log('Checkout page: Current session:', session ? {
+        userId: session.userId,
+        email: session.email,
+        role: session.role
+      } : null)
+      
+      if (!session || !session.userId) {
         setError('Je moet ingelogd zijn om te betalen.')
-        router.push('/login')
+        router.push('/inloggen')
         return
       }
 
       // Create payment via API (which creates the order)
+      console.log('Checkout page: Sending payment request with items:', items)
       const response = await fetch('/api/checkout/create-payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Important: include cookies in request
         body: JSON.stringify({
           items: items.map(item => ({
             id: item.id,
@@ -77,7 +85,9 @@ export default function CheckoutPage() {
         }),
       })
 
+      console.log('Checkout page: Response status:', response.status)
       const result = await response.json()
+      console.log('Checkout page: Response data:', result)
 
       if (response.ok && result.checkoutUrl) {
         // Track purchase event with estimated order ID
