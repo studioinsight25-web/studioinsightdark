@@ -10,10 +10,12 @@ export default function NewsletterSignup() {
   const [success, setSuccess] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [errorDetails, setErrorDetails] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setErrorDetails(null)
     setLoading(true)
     try {
       const res = await fetch('/api/newsletter', {
@@ -23,7 +25,11 @@ export default function NewsletterSignup() {
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || 'Er ging iets mis')
+        setError(data.error || 'Kon je inschrijving niet verwerken')
+        if (data.details) {
+          setErrorDetails(data.details)
+        }
+        return
       }
       setPending(true)
       setEmail('')
@@ -87,7 +93,10 @@ export default function NewsletterSignup() {
       
       {error && (
         <div className="mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
-          <p className="text-red-400 text-sm">{error}</p>
+          <p className="text-red-400 text-sm font-medium">{error}</p>
+          {errorDetails && (
+            <p className="text-red-400/70 text-xs mt-2 break-all">{errorDetails}</p>
+          )}
         </div>
       )}
       
