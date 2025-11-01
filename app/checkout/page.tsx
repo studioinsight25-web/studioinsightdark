@@ -33,12 +33,16 @@ export default function CheckoutPage() {
     }
   }, [router])
 
+  // Prices are stored in euros (not cents), so we need to work with euros
   const getTotalPrice = () => {
+    // Prices are in euros, so we sum them directly
     return items.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0)
   }
 
-  const formatPrice = (priceInCents: number) => {
-    return (priceInCents / 100).toFixed(2)
+  // Format price in euros (not cents)
+  const formatPrice = (priceInEuros: number) => {
+    if (priceInEuros === 0) return '0,00'
+    return priceInEuros.toFixed(2).replace('.', ',')
   }
 
   const handlePayment = async () => {
@@ -160,7 +164,7 @@ export default function CheckoutPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-primary">
-                        {item.price === 0 ? 'Gratis' : `€${formatPrice((item.price * (item.quantity || 1)) / 100)}`}
+                        {item.price === 0 ? 'Gratis' : `€${formatPrice(item.price * (item.quantity || 1))}`}
                       </p>
                     </div>
                   </div>
@@ -168,13 +172,14 @@ export default function CheckoutPage() {
               </div>
 
               <div className="border-t border-dark-border pt-4">
+                {/* Prices are already inclusive of VAT, so calculate backwards */}
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-lg font-semibold">Subtotaal:</span>
-                  <span className="text-lg font-semibold">€{formatPrice(Math.round(getTotalPrice() / 1.21))}</span>
+                  <span className="text-lg font-semibold">Subtotaal (excl. BTW):</span>
+                  <span className="text-lg font-semibold">€{formatPrice(getTotalPrice() / 1.21)}</span>
                 </div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-text-secondary">BTW (21%):</span>
-                  <span className="text-text-secondary">€{formatPrice(getTotalPrice() - Math.round(getTotalPrice() / 1.21))}</span>
+                  <span className="text-text-secondary">€{formatPrice(getTotalPrice() - (getTotalPrice() / 1.21))}</span>
                 </div>
                 <div className="flex items-center justify-between text-xl font-bold border-t border-dark-border pt-4">
                   <span>Totaal (incl. BTW):</span>
@@ -239,7 +244,7 @@ export default function CheckoutPage() {
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4" />
-                    Betaal €{formatPrice(getTotalPrice() + Math.round(getTotalPrice() * 0.21))}
+                    Betaal €{formatPrice(getTotalPrice())}
                   </>
                 )}
               </button>
