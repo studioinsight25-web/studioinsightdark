@@ -35,8 +35,8 @@ export default function CheckoutPage() {
 
   // Prices from cart are stored in CENTS (as per Product interface)
   const getTotalPrice = () => {
-    // Prices are in cents, so sum them and divide by 100 for display
-    return items.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0) / 100
+    // Prices are in cents, so sum them (keep in cents for calculations)
+    return items.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0)
   }
 
   // Format price - convert from cents to euros for display
@@ -165,11 +165,11 @@ export default function CheckoutPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-primary">
-                        {item.price === 0 ? 'Gratis' : `€${formatPrice((item.price * (item.quantity || 1)) / 100)}`}
+                        {item.price === 0 ? 'Gratis' : `€${formatPrice(item.price * (item.quantity || 1))}`}
                       </p>
                       {item.quantity && item.quantity > 1 && (
                         <p className="text-xs text-text-secondary mt-1">
-                          €{formatPrice(item.price / 100)} per stuk
+                          €{formatPrice(item.price)} per stuk
                         </p>
                       )}
                     </div>
@@ -178,7 +178,7 @@ export default function CheckoutPage() {
               </div>
 
               <div className="border-t border-dark-border pt-4">
-                {/* Prices are already inclusive of VAT, so calculate backwards */}
+                {/* Prices are in cents and already inclusive of VAT, so calculate backwards */}
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-lg font-semibold">Subtotaal (excl. BTW):</span>
                   <span className="text-lg font-semibold">€{formatPrice(getTotalPrice() / 1.21)}</span>
