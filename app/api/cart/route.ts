@@ -25,26 +25,42 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = SessionManager.getSession()
-    if (!session) {
+    if (!session || !session.userId) {
+      console.error('Cart API: No session or userId')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { productId, quantity = 1 } = await request.json()
+    const body = await request.json()
+    const { productId, quantity = 1 } = body
     
     if (!productId) {
+      console.error('Cart API: Missing productId', body)
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
     }
 
-    const success = await CartService.addToCart(session.userId, productId, quantity)
+    console.log(`Cart API: Adding product ${productId} to cart for user ${session.userId}`)
+
+    const result = await CartService.addToCart(session.userId, productId, quantity)
     
-    if (success) {
-      return NextResponse.json({ success: true })
+    if (result) {
+      console.log(`Cart API: Successfully added product ${productId} to cart`)
+      return NextResponse.json({ success: true, cartItem: result })
     } else {
-      return NextResponse.json({ error: 'Failed to add to cart' }, { status: 500 })
+      console.error(`Cart API: Failed to add product ${productId} to cart - returned null`)
+      return NextResponse.json({ 
+        error: 'Failed to add to cart. Please check if the cartItems table exists in the database.' 
+      }, { status: 500 })
     }
   } catch (error) {
-    console.error('Error adding to cart:', error)
-    return NextResponse.json({ error: 'Failed to add to cart' }, { status: 500 })
+    console.error('Cart API: Error adding to cart:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : undefined
+    console.error('Cart API: Error details:', { errorMessage, errorStack })
+    
+    return NextResponse.json({ 
+      error: `Failed to add to cart: ${errorMessage}`,
+      details: process.env.NODE_ENV === 'development' ? errorStack : undefined
+    }, { status: 500 })
   }
 }
 

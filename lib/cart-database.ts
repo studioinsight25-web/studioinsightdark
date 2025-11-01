@@ -55,6 +55,18 @@ export class DatabaseCartService {
 
   static async addToCart(userId: string, productId: string, quantity: number = 1): Promise<CartItem | null> {
     try {
+      if (!userId) {
+        console.error('DatabaseCartService.addToCart: No userId provided')
+        return null
+      }
+
+      if (!productId) {
+        console.error('DatabaseCartService.addToCart: No productId provided')
+        return null
+      }
+
+      console.log(`DatabaseCartService.addToCart: Adding product ${productId} for user ${userId}`)
+
       // Check if item already exists
       const existing = await DatabaseService.query(
         'SELECT * FROM "cartItems" WHERE "userId" = $1 AND "productId" = $2',
@@ -62,6 +74,7 @@ export class DatabaseCartService {
       )
 
       if (existing.length > 0) {
+        console.log(`DatabaseCartService.addToCart: Item exists, updating quantity`)
         // Update existing item
         const result = await DatabaseService.query(
           'UPDATE "cartItems" SET quantity = quantity + $1, "updatedAt" = NOW() WHERE "userId" = $2 AND "productId" = $3 RETURNING *',
@@ -69,17 +82,28 @@ export class DatabaseCartService {
         )
         return result.length > 0 ? this.convertDbCartItem(result[0]) : null
       } else {
+        console.log(`DatabaseCartService.addToCart: Creating new cart item`)
         // Create new item
         const id = `cart-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         const result = await DatabaseService.query(
           'INSERT INTO "cartItems" (id, "userId", "productId", quantity, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING *',
           [id, userId, productId, quantity]
         )
-        return result.length > 0 ? this.convertDbCartItem(result[0]) : null
+        if (result.length > 0) {
+          console.log(`DatabaseCartService.addToCart: Successfully created cart item ${id}`)
+          return this.convertDbCartItem(result[0])
+        } else {
+          console.error('DatabaseCartService.addToCart: INSERT returned no rows')
+          return null
+        }
       }
     } catch (error) {
-      console.error('Error adding to cart:', error)
-      return null
+      console.error('DatabaseCartService.addToCart: Error:', error)
+      if (error instanceof Error) {
+        console.error('DatabaseCartService.addToCart: Error message:', error.message)
+        console.error('DatabaseCartService.addToCart: Error stack:', error.stack)
+      }
+      throw error // Re-throw to allow API route to see the actual error
     }
   }
 
