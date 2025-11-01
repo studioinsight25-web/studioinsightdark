@@ -118,14 +118,6 @@ export default function Header() {
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </Link>
             ))}
-            {/* Admin Link - Always visible for testing */}
-            <Link
-              href="/admin"
-              className="relative px-4 py-2 text-primary hover:text-primary/80 transition-all duration-300 font-medium text-sm rounded-lg hover:bg-primary/10 border border-primary/20 group"
-            >
-              <span className="relative z-10">Admin</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </Link>
           </nav>
 
           {/* Auth Section */}
@@ -217,15 +209,6 @@ export default function Header() {
                   {item.name}
                 </Link>
               ))}
-              
-              {/* Admin Link - Always visible for testing */}
-              <Link
-                href="/admin"
-                className="block px-4 py-3 text-primary hover:text-primary/80 hover:bg-primary/10 transition-all duration-300 rounded-lg font-medium border border-primary/20"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Admin
-              </Link>
               
               {/* Mobile Auth Section */}
               <div className="border-t border-dark-border/50 pt-6 mt-6">
