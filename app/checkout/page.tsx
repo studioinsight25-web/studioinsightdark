@@ -153,11 +153,14 @@ export default function CheckoutPage() {
                   <div key={item.id} className="flex items-center justify-between p-4 bg-dark-section rounded-lg">
                     <div>
                       <h3 className="font-semibold text-white">{item.name}</h3>
-                      <p className="text-sm text-text-secondary capitalize">{item.type}</p>
+                      <p className="text-sm text-text-secondary capitalize">
+                        {item.type === 'course' ? '📚 Cursus' : item.type === 'ebook' ? '📖 E-book' : '⭐ Review'}
+                        {item.quantity && item.quantity > 1 && ` × ${item.quantity}`}
+                      </p>
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-primary">
-                        {item.price === 0 ? 'Gratis' : `€${formatPrice(item.price)}`}
+                        {item.price === 0 ? 'Gratis' : `€${formatPrice((item.price * (item.quantity || 1)) / 100)}`}
                       </p>
                     </div>
                   </div>
