@@ -23,6 +23,7 @@ export default function Header() {
   useEffect(() => {
     const loadUserData = () => {
       const session = SessionManager.getSession()
+      console.log('Header - Session loaded:', session)
       if (session) {
         setUser({
           id: session.userId,
@@ -30,6 +31,7 @@ export default function Header() {
           name: session.name || '',
           role: session.role
         })
+        console.log('Header - isAdmin():', SessionManager.isAdmin())
       }
       setIsLoading(false)
     }
