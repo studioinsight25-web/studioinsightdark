@@ -5,7 +5,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, ShoppingCart, Plus, Minus, Trash2, CreditCard } from 'lucide-react'
-import { formatPrice } from '@/lib/products'
+// Note: formatPrice from lib/products expects cents, but database stores prices in euros
+// So we'll format prices directly here
 import { trackBeginCheckout } from '@/lib/analytics'
 import { useCart } from '@/hooks/useCart'
 import SessionManager from '@/lib/session'
@@ -60,6 +61,12 @@ export default function CartPage() {
     // Use 'checkout-items' key that the checkout page expects
     sessionStorage.setItem('checkout-items', JSON.stringify(checkoutData))
     router.push('/checkout')
+  }
+
+  // Helper to format price in euros (database stores prices as euros)
+  const formatPriceInEuros = (priceInEuros: number): string => {
+    if (priceInEuros === 0) return 'Gratis'
+    return `€${priceInEuros.toFixed(2).replace('.', ',')}`
   }
 
   const VAT_RATE = 0.21
@@ -213,10 +220,10 @@ export default function CartPage() {
                                 {item.product!.type === 'course' ? '📚 Cursus' : item.product!.type === 'ebook' ? '📖 E-book' : '⭐ Review'}
                               </span>
                               <span className="text-primary font-semibold text-sm">
-                                {formatPrice(item.product!.price)} per stuk
+                                {formatPriceInEuros(item.product!.price)} per stuk
                               </span>
                               <span className="text-text-secondary text-sm">
-                                Totaal: {formatPrice(item.product!.price * item.quantity)}
+                                Totaal: {formatPriceInEuros(item.product!.price * item.quantity)}
                               </span>
                             </div>
                           </div>
@@ -267,17 +274,17 @@ export default function CartPage() {
                   <div className="space-y-4 mb-6">
                     <div className="flex justify-between text-text-secondary text-sm">
                       <span>Subtotaal ({getItemCount()} {getItemCount() === 1 ? 'item' : 'items'})</span>
-                      <span>{formatPrice(subtotalExclVAT)}</span>
+                      <span>{formatPriceInEuros(subtotalExclVAT)}</span>
                     </div>
                     <div className="flex justify-between text-text-secondary text-sm">
                       <span>BTW (21%)</span>
-                      <span>{formatPrice(vatAmount)}</span>
+                      <span>{formatPriceInEuros(vatAmount)}</span>
                     </div>
                     <div className="border-t border-dark-border pt-4 mt-4">
                       <div className="flex justify-between">
                         <span className="text-lg font-semibold text-white">Totaal</span>
                         <span className="text-xl font-bold text-primary">
-                          {formatPrice(getTotalPrice())}
+                          {formatPriceInEuros(getTotalPrice())}
                         </span>
                       </div>
                       <p className="text-xs text-text-secondary mt-1">Inclusief BTW</p>
