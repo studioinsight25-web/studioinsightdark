@@ -35,26 +35,35 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    console.log('Checkout: Session found, userId:', session.userId, 'type:', typeof session.userId, 'email:', session.email)
+    console.log('Checkout: Session found, userId:', session.userId, 'userId type:', typeof session.userId, 'email:', session.email)
     
     // Get full user details from database
-    // Try both userId and email to handle any format issues
-    let user = await UserService.getUserById(session.userId)
+    // Try email first since it's more reliable, then userId
+    let user = null
     
-    if (!user && session.email) {
-      console.log('Checkout: User not found by ID, trying email:', session.email)
+    if (session.email) {
+      console.log('Checkout: Trying to find user by email first:', session.email)
       user = await UserService.getUserByEmail(session.email)
       if (user) {
-        console.log('Checkout: User found by email, userId in DB:', user.id, 'userId in session:', session.userId)
-        // Update session with correct userId if they differ
-        if (user.id !== session.userId) {
-          console.warn('Checkout: userId mismatch - session:', session.userId, 'database:', user.id)
-        }
+        console.log('Checkout: User found by email, id:', user.id, 'email:', user.email)
+      } else {
+        console.warn('Checkout: User not found by email:', session.email)
+      }
+    }
+    
+    // If not found by email, try userId
+    if (!user && session.userId) {
+      console.log('Checkout: User not found by email, trying userId:', session.userId)
+      user = await UserService.getUserById(session.userId)
+      if (user) {
+        console.log('Checkout: User found by userId, id:', user.id, 'email:', user.email)
+      } else {
+        console.warn('Checkout: User not found by userId:', session.userId)
       }
     }
     
     if (!user) {
-      console.error('Checkout: User not found in database. userId:', session.userId, 'email:', session.email)
+      console.error('Checkout: User not found in database after all attempts. userId:', session.userId, 'email:', session.email)
       return NextResponse.json(
         { error: 'Gebruiker niet gevonden in database. Probeer opnieuw in te loggen.' },
         { status: 404 }
