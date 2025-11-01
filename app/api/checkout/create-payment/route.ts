@@ -149,7 +149,29 @@ export async function POST(request: NextRequest) {
 
     // Validate request body
     const body = await request.json()
-    const validatedData = checkoutSchema.parse(body)
+    console.log('Checkout: Received request body:', JSON.stringify(body, null, 2))
+    
+    let validatedData
+    try {
+      validatedData = checkoutSchema.parse(body)
+      console.log('Checkout: Validation successful:', JSON.stringify(validatedData, null, 2))
+    } catch (validationError) {
+      console.error('Checkout: Validation error:', validationError)
+      if (validationError instanceof z.ZodError) {
+        console.error('Checkout: Validation errors:', JSON.stringify(validationError.errors, null, 2))
+        return NextResponse.json(
+          { 
+            error: 'Ongeldige checkout gegevens',
+            details: validationError.errors.map(e => ({
+              path: e.path.join('.'),
+              message: e.message
+            }))
+          },
+          { status: 400 }
+        )
+      }
+      throw validationError
+    }
 
     if (validatedData.items.length === 0) {
       return NextResponse.json(
@@ -219,14 +241,26 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
+    // ZodError should already be handled above, but just in case
     if (error instanceof z.ZodError) {
+      console.error('Checkout: Unhandled ZodError:', error.errors)
       return NextResponse.json(
-        { error: 'Ongeldige checkout gegevens' },
+        { 
+          error: 'Ongeldige checkout gegevens',
+          details: error.errors.map(e => ({
+            path: e.path.join('.'),
+            message: e.message
+          }))
+        },
         { status: 400 }
       )
     }
 
     console.error('Checkout error:', error)
+    if (error instanceof Error) {
+      console.error('Checkout error message:', error.message)
+      console.error('Checkout error stack:', error.stack)
+    }
     return NextResponse.json(
       { error: 'Interne serverfout' },
       { status: 500 }
