@@ -278,21 +278,21 @@ export default function Header() {
             </Link>
             
             {(() => {
-              // ALWAYS check session directly - don't rely on state
-              const session = getCurrentSession() || SessionManager.getSession()
+              // Use state or currentSession state (not localStorage during render to avoid hydration)
+              const session = currentSession || user
               const displayUser = session ? {
-                id: session.userId,
+                id: session.userId || session.id,
                 email: session.email,
-                name: session.name || session.email.split('@')[0] || 'User',
+                name: session.name || (session.email ? session.email.split('@')[0] : 'User') || 'User',
                 role: session.role
               } : user
               
-              if (isLoading && !session && !user) {
+              if (isLoading && !currentSession && !user) {
                 return <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               }
               
-              if (displayUser || session) {
-                const isAdmin = (displayUser?.role === 'ADMIN') || (session?.role === 'ADMIN')
+              if (displayUser || currentSession || user) {
+                const isAdmin = (displayUser?.role === 'ADMIN') || (currentSession?.role === 'ADMIN') || (user?.role === 'ADMIN')
                 
                 
                 return (
@@ -306,7 +306,7 @@ export default function Header() {
                         <User className="w-4 h-4 text-black" />
                       </div>
                       <span className="text-sm font-medium text-white">
-                        {displayUser?.name || session?.email?.split('@')[0] || 'User'}
+                        {displayUser?.name || displayUser?.email?.split('@')[0] || 'User'}
                       </span>
                     </Link>
                     
@@ -333,23 +333,28 @@ export default function Header() {
                 )
               }
               
-              // Not logged in
-              return (
-                <div className="flex items-center gap-3">
-                  <Link
-                    href="/inloggen"
-                    className="px-4 py-2 text-white hover:text-primary transition-all duration-300 font-medium text-sm rounded-lg hover:bg-dark-card/50"
-                  >
-                    Inloggen
-                  </Link>
-                  <Link
-                    href="/registreren"
-                    className="px-4 py-2 bg-gradient-to-r from-primary to-primary/90 text-black font-semibold hover:from-primary/90 hover:to-primary transition-all duration-300 rounded-lg text-sm shadow-lg hover:shadow-primary/25"
-                  >
-                    Registreren
-                  </Link>
-                </div>
-              )
+              // Not logged in (only show when definitely not loading and no user)
+              if (!isLoading && !user && !currentSession) {
+                return (
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href="/inloggen"
+                      className="px-4 py-2 text-white hover:text-primary transition-all duration-300 font-medium text-sm rounded-lg hover:bg-dark-card/50"
+                    >
+                      Inloggen
+                    </Link>
+                    <Link
+                      href="/registreren"
+                      className="px-4 py-2 bg-gradient-to-r from-primary to-primary/90 text-black font-semibold hover:from-primary/90 hover:to-primary transition-all duration-300 rounded-lg text-sm shadow-lg hover:shadow-primary/25"
+                    >
+                      Registreren
+                    </Link>
+                  </div>
+                )
+              }
+              
+              // Still loading or checking
+              return <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             })()}
           </div>
 
