@@ -103,46 +103,71 @@ export class UserService {
 
   static async getUserById(id: string): Promise<any> {
     try {
-      // Try both UUID cast and text comparison to handle different formats
+      console.log('UserService.getUserById: Searching for userId:', id, 'type:', typeof id)
+      
+      // Try UUID comparison first (PostgreSQL UUID type)
       let result = await DatabaseService.query(
         'SELECT id, email, name, role, address, city, postcode, country, phone, company_name, industry, website, created_at, updated_at FROM users WHERE id = $1::uuid',
         [id]
       )
       
-      // If UUID cast fails, try as text
+      console.log('UserService.getUserById: UUID query result length:', result.length)
+      
+      // If UUID cast fails or returns no results, try as text
       if (result.length === 0) {
+        console.log('UserService.getUserById: Trying text comparison')
         result = await DatabaseService.query(
           'SELECT id, email, name, role, address, city, postcode, country, phone, company_name, industry, website, created_at, updated_at FROM users WHERE id::text = $1',
           [id.toString()]
         )
+        console.log('UserService.getUserById: Text query result length:', result.length)
       }
 
       if (result.length === 0) {
+        console.warn('UserService.getUserById: No user found with id:', id)
+        // Debug: try to see what users exist
+        const allUsers = await DatabaseService.query('SELECT id, email FROM users LIMIT 5')
+        console.log('UserService.getUserById: Sample users in database:', allUsers.map((u: any) => ({ id: u.id, email: u.email })))
         return null
       }
 
       return this.convertDbUser(result[0])
     } catch (error) {
-      console.error('Error fetching user:', error)
+      console.error('Error fetching user by ID:', error)
+      if (error instanceof Error) {
+        console.error('Error message:', error.message)
+        console.error('Error stack:', error.stack)
+      }
       return null
     }
   }
 
   static async getUserByEmail(email: string): Promise<any> {
     try {
+      console.log('UserService.getUserByEmail: Searching for email:', email)
       // Use LOWER() to make email comparison case-insensitive
       const result = await DatabaseService.query(
         'SELECT id, email, name, role, address, city, postcode, country, phone, company_name, industry, website, created_at, updated_at FROM users WHERE LOWER(email) = LOWER($1)',
         [email]
       )
 
+      console.log('UserService.getUserByEmail: Query result length:', result.length)
+
       if (result.length === 0) {
+        console.warn('UserService.getUserByEmail: No user found with email:', email)
+        // Debug: try to see what users exist
+        const allUsers = await DatabaseService.query('SELECT id, email FROM users LIMIT 5')
+        console.log('UserService.getUserByEmail: Sample users in database:', allUsers.map((u: any) => ({ id: u.id, email: u.email })))
         return null
       }
 
       return this.convertDbUser(result[0])
     } catch (error) {
       console.error('Error fetching user by email:', error)
+      if (error instanceof Error) {
+        console.error('Error message:', error.message)
+        console.error('Error stack:', error.stack)
+      }
       return null
     }
   }
