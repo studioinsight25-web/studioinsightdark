@@ -42,8 +42,15 @@ export default function Header() {
     }
   }
   
-  // Get current session directly - this runs on every render to always get latest
-  const currentSession = typeof window !== 'undefined' ? getCurrentSession() : null
+  // Don't read session during render to avoid hydration mismatch
+  // Session will be loaded in useEffect instead
+  const [currentSession, setCurrentSession] = useState<any>(null)
+  
+  // Load session only on client side after mount
+  useEffect(() => {
+    const session = getCurrentSession()
+    setCurrentSession(session)
+  }, [])
   
   // Optional: Debug logging (can be removed in production)
   // Uncomment to debug session issues:
