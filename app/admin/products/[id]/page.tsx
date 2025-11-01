@@ -118,6 +118,13 @@ export default function EditProductPage() {
         category: formData.category?.trim() || undefined,
       }
       
+      // Price: required for course and ebook, optional for review and comingSoon
+      if (formData.type === 'review' || formData.comingSoon) {
+        productData.price = 0 // Review products and coming soon products don't need a price
+      } else {
+        productData.price = formData.price
+      }
+      
       // Course specific fields - only include if not empty
       if (formData.duration?.trim()) {
         productData.duration = formData.duration.trim()
@@ -319,24 +326,42 @@ export default function EditProductPage() {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-2">
-                      Prijs (€) *
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      required
-                      value={formData.price / 100}
-                      onChange={(e) => setFormData(prev => ({ ...prev, price: Math.round(parseFloat(e.target.value) * 100) }))}
-                      className="w-full px-3 py-2 bg-dark-section border border-dark-border rounded-lg text-white placeholder-text-secondary focus:outline-none focus:border-primary"
-                      placeholder="0.00"
-                    />
-                    <p className="text-xs text-text-secondary mt-1">
-                      Laat leeg voor gratis producten
-                    </p>
-                  </div>
+                  {formData.type !== 'review' && !formData.comingSoon && (
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Prijs (€) *
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        required
+                        value={formData.price / 100}
+                        onChange={(e) => setFormData(prev => ({ ...prev, price: Math.round(parseFloat(e.target.value) * 100) }))}
+                        className="w-full px-3 py-2 bg-dark-section border border-dark-border rounded-lg text-white placeholder-text-secondary focus:outline-none focus:border-primary"
+                        placeholder="0.00"
+                      />
+                      <p className="text-xs text-text-secondary mt-1">
+                        Laat leeg voor gratis producten
+                      </p>
+                    </div>
+                  )}
+                  
+                  {formData.comingSoon && formData.type !== 'review' && (
+                    <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4">
+                      <p className="text-sm text-orange-400">
+                        💡 <strong>Binnenkort beschikbaar:</strong> Voor producten die nog niet beschikbaar zijn, wordt geen prijs getoond. De prijs wordt automatisch op €0,00 gezet totdat het product actief wordt.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {formData.type === 'review' && (
+                    <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                      <p className="text-sm text-blue-400">
+                        💡 <strong>Review product:</strong> Voor review producten is geen prijs nodig omdat ze affiliate links gebruiken. De prijs wordt automatisch op €0,00 gezet.
+                      </p>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-white mb-2">

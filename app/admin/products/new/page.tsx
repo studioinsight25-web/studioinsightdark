@@ -89,9 +89,9 @@ export default function NewProductPage() {
         externalUrl: formData.externalUrl || undefined
       }
       
-      // Price: required for course and ebook, optional for review
-      if (formData.type === 'review') {
-        productData.price = 0 // Review products don't need a price
+      // Price: required for course and ebook, optional for review and comingSoon
+      if (formData.type === 'review' || formData.comingSoon) {
+        productData.price = 0 // Review products and coming soon products don't need a price
       } else {
         productData.price = formData.price
       }
@@ -219,7 +219,7 @@ export default function NewProductPage() {
                     </div>
                   </div>
 
-                  {formData.type !== 'review' && (
+                  {formData.type !== 'review' && !formData.comingSoon && (
                     <div>
                       <label className="block text-sm font-medium text-white mb-2">
                         Prijs (€) *
@@ -236,6 +236,14 @@ export default function NewProductPage() {
                       />
                       <p className="text-xs text-text-secondary mt-1">
                         Laat leeg voor gratis producten
+                      </p>
+                    </div>
+                  )}
+                  
+                  {formData.comingSoon && formData.type !== 'review' && (
+                    <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4">
+                      <p className="text-sm text-orange-400">
+                        💡 <strong>Binnenkort beschikbaar:</strong> Voor producten die nog niet beschikbaar zijn, wordt geen prijs getoond. De prijs wordt automatisch op €0,00 gezet totdat het product actief wordt.
                       </p>
                     </div>
                   )}

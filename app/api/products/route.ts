@@ -26,16 +26,19 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Price is required for course and ebook, but optional for review products (they use affiliate links)
-    if (productData.type !== 'review' && (!productData.price || productData.price <= 0)) {
+    // Price is required for course and ebook, but optional for review products and comingSoon products
+    const isComingSoon = productData.comingSoon === true || productData.comingSoon === 'true'
+    const isReview = productData.type === 'review'
+    
+    if (!isReview && !isComingSoon && (!productData.price || productData.price <= 0)) {
       return NextResponse.json(
-        { error: 'Price is required for course and ebook products' },
+        { error: 'Price is required for course and ebook products (unless marked as coming soon)' },
         { status: 400 }
       )
     }
     
-    // For review products, set price to 0 if not provided (or undefined)
-    if (productData.type === 'review' && (productData.price === undefined || productData.price === null)) {
+    // For review products and comingSoon products, set price to 0 if not provided
+    if ((isReview || isComingSoon) && (productData.price === undefined || productData.price === null)) {
       productData.price = 0
     }
 
