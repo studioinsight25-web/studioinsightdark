@@ -11,7 +11,7 @@ interface OrderItem {
   id: string
   name: string
   price: number
-  type: 'course' | 'ebook'
+  type: 'course' | 'ebook' | 'review'
 }
 
     const checkoutSchema = z.object({
