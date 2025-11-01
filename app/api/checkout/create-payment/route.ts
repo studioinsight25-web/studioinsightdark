@@ -1,8 +1,9 @@
 // app/api/checkout/create-payment/route.ts - Create Payment API
-import { NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
+import { NextRequest, NextResponse } from 'next/server'
+import { getSessionFromRequest } from '@/lib/session-server'
 import { MollieService } from '@/lib/mollie'
 import { OrderService } from '@/lib/orders'
+import { UserService } from '@/lib/user-database'
 import { z } from 'zod'
 
 // Define OrderItem interface for checkout
@@ -13,23 +14,32 @@ interface OrderItem {
   type: 'course' | 'ebook'
 }
 
-const checkoutSchema = z.object({
-  items: z.array(z.object({
-    id: z.string(),
-    name: z.string(),
-    price: z.number(),
-    type: z.enum(['course', 'ebook'])
-  }))
-})
+    const checkoutSchema = z.object({
+      items: z.array(z.object({
+        id: z.string(),
+        name: z.string(),
+        price: z.number(),
+        type: z.enum(['course', 'ebook', 'review'])
+      }))
+    })
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    // Check if user is logged in
-    const user = await getCurrentUser()
-    if (!user) {
+    // Check if user is logged in (using session cookie)
+    const session = getSessionFromRequest(request)
+    if (!session || !session.userId) {
       return NextResponse.json(
         { error: 'Je moet ingelogd zijn om te betalen' },
         { status: 401 }
+      )
+    }
+    
+    // Get full user details from database
+    const user = await UserService.getUserById(session.userId)
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Gebruiker niet gevonden' },
+        { status: 404 }
       )
     }
 
