@@ -205,6 +205,26 @@ export async function POST(request: NextRequest) {
 
     const order = await OrderService.createOrder(user.id, products)
 
+    // Get base URL: prefer env var, fallback to request origin, then production URL
+    const getBaseUrl = () => {
+      if (process.env.NEXT_PUBLIC_BASE_URL) {
+        // Ensure it doesn't end with a slash
+        return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, '')
+      }
+      // Try to get from request origin
+      try {
+        const url = new URL(request.url)
+        return `${url.protocol}//${url.host}`
+      } catch {
+        // Fallback to production URL or localhost
+        return process.env.NODE_ENV === 'production' 
+          ? 'https://studioinsightdark.vercel.app' 
+          : 'http://localhost:3000'
+      }
+    }
+    
+    const baseUrl = getBaseUrl()
+    
     // Create Mollie payment
     const paymentData = {
       amount: {
@@ -212,14 +232,16 @@ export async function POST(request: NextRequest) {
         currency: 'EUR'
       },
       description: `Studio Insight - Bestelling ${order.id}`,
-      redirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?orderId=${order.id}`,
-      webhookUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/payment/webhook`,
+      redirectUrl: `${baseUrl}/payment/success?orderId=${order.id}`,
+      webhookUrl: `${baseUrl}/api/payment/webhook`,
       metadata: {
         orderId: order.id,
         userId: user.id,
         products: validatedData.items.map(item => item.id)
       }
     }
+    
+    console.log('Checkout: Base URL determined:', baseUrl)
 
     console.log('Checkout: Creating Mollie payment with data:', {
       amount: paymentData.amount,
