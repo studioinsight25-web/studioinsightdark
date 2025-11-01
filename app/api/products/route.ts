@@ -19,11 +19,24 @@ export async function POST(request: NextRequest) {
     const productData = await request.json()
     
     // Validate required fields
-    if (!productData.name || !productData.price) {
+    if (!productData.name) {
       return NextResponse.json(
-        { error: 'Name and price are required' },
+        { error: 'Name is required' },
         { status: 400 }
       )
+    }
+    
+    // Price is required for course and ebook, but optional for review products (they use affiliate links)
+    if (productData.type !== 'review' && (!productData.price || productData.price <= 0)) {
+      return NextResponse.json(
+        { error: 'Price is required for course and ebook products' },
+        { status: 400 }
+      )
+    }
+    
+    // For review products, set price to 0 if not provided (or undefined)
+    if (productData.type === 'review' && (productData.price === undefined || productData.price === null)) {
+      productData.price = 0
     }
 
     const newProduct = await DatabaseProductService.createProduct(productData)
