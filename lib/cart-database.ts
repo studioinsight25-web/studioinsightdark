@@ -45,7 +45,7 @@ export class DatabaseCartService {
         return []
       }
 
-      return result.map(this.convertDbCartItem).filter(item => item.product !== undefined)
+      return result.map(this.convertDbCartItem).filter((item: CartItem) => item.product !== undefined)
     } catch (error) {
       console.error('Error fetching cart items:', error)
       // Return empty array instead of throwing error - empty cart is valid
