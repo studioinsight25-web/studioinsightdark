@@ -15,6 +15,7 @@ export default function CartPage() {
   const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set())
+  const [inputValues, setInputValues] = useState<Record<string, string>>({})
   const { 
     cartItems, 
     loading, 
@@ -51,6 +52,38 @@ export default function CartPage() {
         next.delete(productId)
         return next
       })
+    }
+  }
+
+  const handleQuantityInputChange = (productId: string, value: string) => {
+    // Update local input value immediately for responsive UI
+    setInputValues(prev => ({ ...prev, [productId]: value }))
+    
+    // Only allow digits
+    if (value !== '' && !/^\d+$/.test(value)) {
+      return
+    }
+  }
+
+  const handleQuantityInputBlur = async (productId: string, value: string, currentQuantity: number) => {
+    // Clear local input value
+    setInputValues(prev => {
+      const next = { ...prev }
+      delete next[productId]
+      return next
+    })
+    
+    // Parse input value
+    const numValue = parseInt(value, 10)
+    
+    // If empty or invalid, restore to current quantity
+    if (value === '' || isNaN(numValue) || numValue < 1) {
+      return // Will show current quantity from cartItems
+    }
+    
+    // If different from current, update
+    if (numValue !== currentQuantity) {
+      await handleQuantityChange(productId, numValue)
     }
   }
 
@@ -263,9 +296,36 @@ export default function CartPage() {
                             >
                               <Minus className="w-4 h-4 text-white" />
                             </button>
-                            <span className="w-10 text-center text-white font-semibold">
-                              {updatingItems.has(item.productId) ? '...' : item.quantity}
-                            </span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              min="1"
+                              value={
+                                updatingItems.has(item.productId)
+                                  ? '...'
+                                  : inputValues[item.productId] !== undefined
+                                  ? inputValues[item.productId]
+                                  : item.quantity.toString()
+                              }
+                              onChange={(e) => {
+                                handleQuantityInputChange(item.productId, e.target.value)
+                              }}
+                              onBlur={(e) => {
+                                handleQuantityInputBlur(item.productId, e.target.value, item.quantity)
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.currentTarget.blur()
+                                }
+                                // Prevent non-numeric characters
+                                if (e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab' && e.key !== 'Enter' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && isNaN(parseInt(e.key, 10))) {
+                                  e.preventDefault()
+                                }
+                              }}
+                              disabled={updatingItems.has(item.productId)}
+                              className="w-12 text-center text-white font-semibold bg-transparent border-none outline-none focus:ring-2 focus:ring-primary rounded px-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                              aria-label="Aantal items"
+                            />
                             <button
                               onClick={() => handleQuantityChange(item.productId, item.quantity + 1)}
                               disabled={updatingItems.has(item.productId)}
