@@ -46,14 +46,17 @@ export default function DigitalProductDownload({
           const response = await fetch(`/api/digital-products/${productId}/user`)
           if (response.ok) {
             const products = await response.json()
-            setDigitalProducts(products)
+            console.log(`[DigitalProductDownload] Loaded ${products.length} digital products for product ${productId}:`, products)
+            setDigitalProducts(Array.isArray(products) ? products : [])
           } else {
+            const errorData = await response.json().catch(() => ({}))
+            console.warn(`[DigitalProductDownload] Failed to load digital products for ${productId}:`, response.status, errorData)
             // No products or not authorized
             setDigitalProducts([])
           }
         } catch (err) {
           // API might not be available - that's OK
-          console.log('Could not load digital products:', err)
+          console.error('[DigitalProductDownload] Error loading digital products:', err)
           setDigitalProducts([])
         }
       } catch (error) {
@@ -97,11 +100,27 @@ export default function DigitalProductDownload({
       }
 
       // Fetch the actual file using the secure download URL
-      const downloadResponse = await fetch(linkResult.downloadUrl)
+      // IMPORTANT: Use credentials to ensure session cookie is sent
+      const downloadResponse = await fetch(linkResult.downloadUrl, {
+        method: 'GET',
+        credentials: 'include', // Include cookies for session
+      })
       
       if (!downloadResponse.ok) {
-        const errorData = await downloadResponse.json().catch(() => ({}))
-        throw new Error(errorData.error || 'Download mislukt')
+        // Try to get error message, but if it's a file stream, it might not be JSON
+        let errorMessage = 'Download mislukt'
+        try {
+          const contentType = downloadResponse.headers.get('Content-Type')
+          if (contentType?.includes('application/json')) {
+            const errorData = await downloadResponse.json()
+            errorMessage = errorData.error || errorMessage
+          } else {
+            errorMessage = `Download mislukt: ${downloadResponse.status} ${downloadResponse.statusText}`
+          }
+        } catch {
+          errorMessage = `Download mislukt: ${downloadResponse.status}`
+        }
+        throw new Error(errorMessage)
       }
 
       // Get filename from Content-Disposition header or use provided filename
@@ -109,22 +128,39 @@ export default function DigitalProductDownload({
       let downloadFileName = fileName
       
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
-        if (filenameMatch && filenameMatch[1]) {
-          downloadFileName = filenameMatch[1].replace(/['"]/g, '')
+        // Try both formats: filename="..." and filename*=UTF-8''...
+        const quotedMatch = contentDisposition.match(/filename="([^"]+)"/)
+        const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/)
+        
+        if (utf8Match) {
+          downloadFileName = decodeURIComponent(utf8Match[1])
+        } else if (quotedMatch) {
+          downloadFileName = quotedMatch[1]
+        } else {
+          const simpleMatch = contentDisposition.match(/filename=([^;]+)/)
+          if (simpleMatch) {
+            downloadFileName = simpleMatch[1].trim().replace(/['"]/g, '')
+          }
         }
       }
 
-      // Create blob and download
+      // Create blob and trigger DIRECT download (no page navigation)
       const blob = await downloadResponse.blob()
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = decodeURIComponent(downloadFileName)
+      link.download = downloadFileName // Use the filename from server
+      link.style.display = 'none' // Hide the link
       document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
+      link.click() // Trigger download
+      
+      // Clean up after a short delay
+      setTimeout(() => {
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+      }, 100)
+      
+      console.log(`[DigitalProductDownload] ✅ Download started: ${downloadFileName}`)
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Download mislukt. Probeer het opnieuw.')
