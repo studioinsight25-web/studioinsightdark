@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { CheckCircle, ArrowRight, Download, Play } from 'lucide-react'
-import { OrderService } from '@/lib/orders'
 
 interface SuccessPageProps {
   searchParams: {
@@ -58,8 +57,15 @@ function SuccessContent({ orderId }: { orderId?: string }) {
     )
   }
 
-  const order = await OrderService.getOrder(orderId)
-  
+  if (loading) {
+    return (
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-text-secondary">Bestelling laden...</p>
+      </div>
+    )
+  }
+
   if (!order) {
     return (
       <div className="text-center">
