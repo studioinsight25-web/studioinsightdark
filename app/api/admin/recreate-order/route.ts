@@ -114,15 +114,22 @@ export async function POST(request: NextRequest) {
           return product
         })
       )
-    } else if (molliePayment?.metadata?.products) {
+    } else if (paymentMetadata?.products && Array.isArray(paymentMetadata.products)) {
       // Try to get from Mollie payment metadata
-      const productIdsFromMollie = molliePayment.metadata.products
+      const productIdsFromMollie = paymentMetadata.products
+      console.log('[Recreate Order] Found products in Mollie metadata:', productIdsFromMollie)
       products = await Promise.all(
         productIdsFromMollie.map(async (productId: string) => {
-          const product = await DatabaseProductService.getProduct(productId)
-          return product
-        }).filter(p => p !== null)
+          try {
+            const product = await DatabaseProductService.getProduct(productId)
+            return product
+          } catch (error) {
+            console.error(`[Recreate Order] Product ${productId} not found:`, error)
+            return null
+          }
+        })
       )
+      products = products.filter(p => p !== null)
     }
 
     if (products.length === 0) {
