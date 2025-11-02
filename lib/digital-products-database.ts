@@ -102,42 +102,65 @@ export class DigitalProductDatabaseService {
       // Otherwise, store fileUrl (external storage like Cloudinary)
       const hasFileData = product.fileData && product.fileData.length > 0
       
+      console.log(`[DatabaseOrderService] Adding digital product:`, {
+        id,
+        productId: product.productId,
+        fileName: product.fileName,
+        hasFileData,
+        fileDataLength: product.fileData?.length || 0,
+        fileUrl: product.fileUrl || ''
+      })
+      
       if (hasFileData) {
         // Store file data directly in database
-        const result = await DatabaseService.query(
-          'INSERT INTO "digitalProducts" (id, "productId", "fileName", "filePath", "fileData", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()) RETURNING id, "productId", "fileName", "filePath", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt"',
-          [
-            id,
-            product.productId,
-            product.fileName,
-            '', // filePath is empty when using fileData
-            product.fileData, // BYTEA binary data
-            product.fileSize,
-            product.fileType.toUpperCase(),
-            product.downloadLimit,
-            product.expiresAt ? new Date(product.expiresAt) : null
-          ]
-        )
-        return this.convertDbDigitalProduct(result[0])
+        console.log(`[DatabaseOrderService] Inserting with fileData (BYTEA)`)
+        try {
+          const result = await DatabaseService.query(
+            'INSERT INTO "digitalProducts" (id, "productId", "fileName", "filePath", "fileData", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()) RETURNING id, "productId", "fileName", "filePath", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt"',
+            [
+              id,
+              product.productId,
+              product.fileName,
+              '', // filePath is empty when using fileData
+              product.fileData, // BYTEA binary data
+              product.fileSize,
+              product.fileType.toUpperCase(),
+              product.downloadLimit,
+              product.expiresAt ? new Date(product.expiresAt) : null
+            ]
+          )
+          console.log(`[DatabaseOrderService] ✅ Inserted digital product with fileData`)
+          return this.convertDbDigitalProduct(result[0])
+        } catch (dbError) {
+          console.error(`[DatabaseOrderService] ❌ Database error inserting with fileData:`, dbError)
+          throw dbError
+        }
       } else {
         // Store file URL (external storage)
-        const result = await DatabaseService.query(
-          'INSERT INTO "digitalProducts" (id, "productId", "fileName", "filePath", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING id, "productId", "fileName", "filePath", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt"',
-          [
-            id,
-            product.productId,
-            product.fileName,
-            product.fileUrl,
-            product.fileSize,
-            product.fileType.toUpperCase(),
-            product.downloadLimit,
-            product.expiresAt ? new Date(product.expiresAt) : null
-          ]
-        )
-        return this.convertDbDigitalProduct(result[0])
+        console.log(`[DatabaseOrderService] Inserting with fileUrl (external storage)`)
+        try {
+          const result = await DatabaseService.query(
+            'INSERT INTO "digitalProducts" (id, "productId", "fileName", "filePath", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING id, "productId", "fileName", "filePath", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt"',
+            [
+              id,
+              product.productId,
+              product.fileName,
+              product.fileUrl,
+              product.fileSize,
+              product.fileType.toUpperCase(),
+              product.downloadLimit,
+              product.expiresAt ? new Date(product.expiresAt) : null
+            ]
+          )
+          console.log(`[DatabaseOrderService] ✅ Inserted digital product with fileUrl`)
+          return this.convertDbDigitalProduct(result[0])
+        } catch (dbError) {
+          console.error(`[DatabaseOrderService] ❌ Database error inserting with fileUrl:`, dbError)
+          throw dbError
+        }
       }
     } catch (error) {
-      console.error('Error adding digital product:', error)
+      console.error('[DatabaseOrderService] Error adding digital product:', error)
       throw error
     }
   }
