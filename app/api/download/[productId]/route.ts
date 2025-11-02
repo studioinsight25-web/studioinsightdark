@@ -21,13 +21,27 @@ export async function GET(
     }
 
     // Verify token (in production, use proper JWT verification)
+    // Token format: userId::productId::expiresAt (using :: as separator since UUIDs contain -)
     let expiresAt: string
     try {
       const decoded = atob(token)
-      const [tokenUserId, tokenProductId, tokenExpiresAt] = decoded.split('-')
+      const parts = decoded.split('::')
+      
+      if (parts.length !== 3) {
+        console.error('[Download] Invalid token format: wrong number of parts', parts.length)
+        return NextResponse.json(
+          { error: 'Invalid token format' },
+          { status: 401 }
+        )
+      }
+      
+      const [tokenUserId, tokenProductId, tokenExpiresAt] = parts
       expiresAt = tokenExpiresAt
       
+      console.log(`[Download] Token verification: userId=${tokenUserId === userId}, productId=${tokenProductId === productId}, expiresAt=${expiresAt}`)
+      
       if (tokenUserId !== userId || tokenProductId !== productId) {
+        console.error(`[Download] Token mismatch: tokenUserId=${tokenUserId}, userId=${userId}, tokenProductId=${tokenProductId}, productId=${productId}`)
         return NextResponse.json(
           { error: 'Invalid token' },
           { status: 401 }
@@ -35,13 +49,16 @@ export async function GET(
       }
 
       // Check expiration
-      if (new Date(expiresAt) < new Date()) {
+      const expirationDate = new Date(parseInt(expiresAt))
+      if (expirationDate < new Date()) {
+        console.error(`[Download] Token expired: ${expirationDate} < ${new Date()}`)
         return NextResponse.json(
           { error: 'Download link expired' },
           { status: 410 }
         )
       }
-    } catch {
+    } catch (error) {
+      console.error('[Download] Token decode error:', error)
       return NextResponse.json(
         { error: 'Invalid token format' },
         { status: 401 }
@@ -187,9 +204,12 @@ export async function POST(
     }
 
     // Generate a secure download URL with token (30 days expiry)
+    // Using :: as separator since UUIDs contain - characters
     const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days expiry
-    const token = btoa(`${userId}-${productId}-${expiryTime}`)
+    const token = btoa(`${userId}::${productId}::${expiryTime}`)
     const downloadUrl = `${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/download/${productId}?token=${encodeURIComponent(token)}&userId=${userId}`
+    
+    console.log(`[Download] Generated token for userId=${userId}, productId=${productId}, expiresAt=${expiryTime}`)
 
     return NextResponse.json({
       success: true,

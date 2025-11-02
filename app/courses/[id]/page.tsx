@@ -231,16 +231,9 @@ export default function CoursePage() {
                 <h3 className="text-lg font-semibold mb-4">Materialen</h3>
                 <div className="space-y-3">
                   <div className="p-4 bg-dark-section rounded-lg border border-dark-border">
-                    <p className="text-sm text-text-secondary mb-3">
-                      Downloads zijn beschikbaar in je persoonlijke dashboard na aankoop.
+                    <p className="text-sm text-text-secondary">
+                      Downloads zijn beschikbaar in je persoonlijke dashboard na aankoop. Ga naar je dashboard om cursusmaterialen te downloaden.
                     </p>
-                    <Link
-                      href="/dashboard/cursussen"
-                      className="w-full bg-primary text-black py-2 px-4 rounded-lg font-semibold hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2 text-sm"
-                    >
-                      <Download className="w-4 h-4" />
-                      Ga naar Dashboard
-                    </Link>
                   </div>
                 </div>
               </div>

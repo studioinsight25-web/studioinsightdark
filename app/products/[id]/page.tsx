@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { Product, formatPrice } from '@/lib/products'
 import { ProductService } from '@/lib/products'
-import { trackViewItem, trackEbookDownload, trackReviewView, trackAddToCart } from '@/lib/analytics'
+import { trackViewItem, trackReviewView, trackAddToCart } from '@/lib/analytics'
 import { useToast } from '@/hooks/useToast'
 import { CardSkeleton, TextSkeleton } from '@/components/LoadingSkeleton'
 // Removed direct database import - using API routes instead
@@ -111,13 +111,6 @@ export default function ProductDetailPage() {
         'error'
       )
     }
-  }
-
-  const handleEbookDownload = () => {
-    if (!product) return
-    trackEbookDownload(product.id, product.name)
-    // Handle ebook download logic
-    showToast('E-book download gestart!', 'success')
   }
 
   const handleReviewView = () => {
@@ -332,21 +325,6 @@ export default function ProductDetailPage() {
                 )}
 
 
-                {/* E-book Actions */}
-                {product.type === 'ebook' && !product.comingSoon && (
-                  <div className="space-y-3">
-                    <button
-                      onClick={() => {
-                        // Redirect to dashboard for downloads
-                        window.location.href = '/dashboard/ebooks'
-                      }}
-                      className="w-full bg-primary text-black py-3 px-6 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-300 flex items-center justify-center gap-2"
-                    >
-                      <Download className="w-5 h-5" />
-                      Download via Dashboard
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           </div>
