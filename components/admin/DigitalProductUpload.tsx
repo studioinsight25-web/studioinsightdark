@@ -113,54 +113,66 @@ export default function DigitalProductUpload({
         throw new Error('Bestand te groot. Maximum grootte is 100MB')
       }
 
-      console.log('File validation passed, uploading file...')
+      console.log('File validation passed, uploading file directly to Cloudinary...')
 
-      // Step 1: Upload file to Cloudinary
-      const uploadFormData = new FormData()
-      uploadFormData.append('file', file)
-      uploadFormData.append('folder', `studio-insight/digital-products/${productId}`)
+      // Step 1: Get Cloudinary config from API (only cloud name and preset, not secrets)
+      const configResponse = await fetch('/api/admin/cloudinary-config')
+      if (!configResponse.ok) {
+        throw new Error('Kon Cloudinary configuratie niet ophalen')
+      }
+      const config = await configResponse.json()
+      
+      if (!config.cloudName || !config.uploadPreset) {
+        throw new Error('Cloudinary niet geconfigureerd. Stel CLOUDINARY_CLOUD_NAME en CLOUDINARY_UPLOAD_PRESET in.')
+      }
 
-      const uploadResponse = await fetch('/api/admin/upload-digital', {
-        method: 'POST',
-        body: uploadFormData
+      // Step 2: Upload file directly to Cloudinary (bypassing Next.js API to avoid size limits)
+      const folder = `studio-insight/digital-products/${productId}`
+      
+      // Determine resource type based on file type
+      let resourceType = 'raw' // Default for PDF, ZIP, etc.
+      if (file.type.startsWith('video/')) {
+        resourceType = 'video'
+      } else if (file.type.startsWith('audio/')) {
+        resourceType = 'video' // Cloudinary uses 'video' for audio too
+      }
+
+      const cloudForm = new FormData()
+      cloudForm.append('file', file)
+      cloudForm.append('upload_preset', config.uploadPreset)
+      cloudForm.append('folder', folder)
+      cloudForm.append('resource_type', resourceType)
+
+      console.log('Uploading to Cloudinary:', {
+        cloudName: config.cloudName,
+        resourceType,
+        folder,
+        fileName: file.name,
+        fileSize: file.size
       })
 
-      if (!uploadResponse.ok) {
-        // Try to parse JSON error, but handle non-JSON responses
-        let errorMessage = 'Bestand upload mislukt'
-        try {
-          const contentType = uploadResponse.headers.get('content-type')
-          if (contentType && contentType.includes('application/json')) {
-            const uploadError = await uploadResponse.json()
-            errorMessage = uploadError.error || uploadError.message || errorMessage
-          } else {
-            // Response is not JSON, get text instead
-            const errorText = await uploadResponse.text()
-            errorMessage = errorText || `Upload mislukt (status: ${uploadResponse.status})`
-          }
-        } catch (parseError) {
-          // If parsing fails, use status text
-          errorMessage = `Upload mislukt: ${uploadResponse.statusText || `Status ${uploadResponse.status}`}`
+      const cloudRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${config.cloudName}/${resourceType}/upload`,
+        {
+          method: 'POST',
+          body: cloudForm
         }
-        throw new Error(errorMessage)
+      )
+
+      if (!cloudRes.ok) {
+        const errText = await cloudRes.text()
+        console.error('Cloudinary upload failed:', errText)
+        throw new Error(`Cloudinary upload mislukt: ${errText}`)
       }
 
-      // Check if response is JSON before parsing
-      const contentType = uploadResponse.headers.get('content-type')
-      if (!contentType || !contentType.includes('application/json')) {
-        const responseText = await uploadResponse.text()
-        console.error('Unexpected response type:', contentType, responseText)
-        throw new Error(`Server antwoordde niet met JSON. Status: ${uploadResponse.status}`)
-      }
-
-      const uploadResult = await uploadResponse.json()
+      const result = await cloudRes.json()
       
-      if (!uploadResult.success || !uploadResult.data.secure_url) {
-        throw new Error('Upload mislukt: Geen URL ontvangen')
+      if (!result.secure_url) {
+        throw new Error('Upload mislukt: Geen URL ontvangen van Cloudinary')
       }
 
-      const fileUrl = uploadResult.data.secure_url
-      console.log('File uploaded successfully:', fileUrl)
+      const fileUrl = result.secure_url
+      console.log('✅ File uploaded successfully to Cloudinary:', fileUrl)
 
       // Step 2: Create digital product record with the uploaded file URL
       const response = await fetch(`/api/digital-products/${productId}`, {
