@@ -123,7 +123,7 @@ function SuccessContent({ orderId }: { orderId?: string }) {
       <div className="bg-dark-card rounded-xl p-6 border border-dark-border mb-8">
         <h2 className="text-xl font-semibold mb-4">Gekochte Items</h2>
         <div className="space-y-4">
-          {order.items.map((item) => (
+          {order.items.map((item: { id: string; name: string; type: string }) => (
             <div key={item.id} className="flex items-center justify-between p-4 bg-dark-section rounded-lg">
               <div>
                 <h3 className="font-semibold text-white">{item.name}</h3>
