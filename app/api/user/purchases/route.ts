@@ -14,46 +14,130 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get user orders
-    const orders = await OrderService.getUserOrders(session.userId)
+    // Get user orders - use direct database query to get order items
+    const { DatabaseService } = await import('@/lib/database-direct')
     
-    console.log(`[Purchases] Found ${orders.length} orders for user ${session.userId}`)
-    console.log(`[Purchases] Order statuses:`, orders.map(o => ({ id: o.id, status: o.status, itemsCount: o.items.length })))
+    // Get all orders for this user directly from database
+    const dbOrders = await DatabaseService.query(
+      `SELECT 
+        o.id,
+        o.user_id,
+        o.status,
+        o.total_amount,
+        o.payment_id,
+        o.created_at,
+        o.updated_at,
+        o.paid_at
+      FROM orders o
+      WHERE o.user_id = $1
+      ORDER BY o.created_at DESC`,
+      [session.userId]
+    )
+    
+    console.log(`[Purchases] Found ${dbOrders.length} orders in database for user ${session.userId}`)
+    console.log(`[Purchases] Order statuses:`, dbOrders.map((o: any) => ({ 
+      id: o.id, 
+      status: o.status, 
+      payment_id: o.payment_id,
+      created_at: o.created_at
+    })))
     
     // Filter only paid orders (check both uppercase and lowercase)
-    const paidOrders = orders.filter(order => {
+    const paidOrders = dbOrders.filter((order: any) => {
       const status = typeof order.status === 'string' ? order.status.toLowerCase() : String(order.status).toLowerCase()
       const isPaid = status === 'paid'
-      if (isPaid) {
-        console.log(`[Purchases] ✅ Found PAID order ${order.id} with ${order.items.length} items`)
-        console.log(`[Purchases] Order items:`, order.items.map((item: any) => ({ 
-          id: item.id, 
-          name: item.name, 
-          type: item.type 
-        })))
-      } else {
-        console.log(`[Purchases] ⚠️ Order ${order.id} has status: ${status} (not paid)`)
+      if (!isPaid) {
+        console.log(`[Purchases] ⚠️ Order ${order.id} has status: ${order.status} (${status}) - NOT PAID`)
       }
       return isPaid
     })
     
-    console.log(`[Purchases] Found ${paidOrders.length} paid orders out of ${orders.length} total`)
+    console.log(`[Purchases] Found ${paidOrders.length} PAID orders out of ${dbOrders.length} total`)
     
-    // Collect all purchased product IDs
-    const purchasedProductIds = new Set<string>()
-    paidOrders.forEach(order => {
-      order.items.forEach((item: any) => {
-        if (item && item.id) {
-          purchasedProductIds.add(item.id)
-          console.log(`[Purchases] Adding product ID to purchased set: ${item.id} (${item.name || 'unnamed'})`)
-        } else {
-          console.error(`[Purchases] ⚠️ Invalid item in order ${order.id}:`, item)
+    if (paidOrders.length === 0) {
+      console.log(`[Purchases] ❌ No paid orders found for user ${session.userId}`)
+      return NextResponse.json({
+        products: [],
+        grouped: { courses: [], ebooks: [], reviews: [] },
+        count: 0,
+        coursesCount: 0,
+        ebooksCount: 0,
+        reviewsCount: 0,
+        debug: {
+          totalOrders: dbOrders.length,
+          paidOrders: 0,
+          orderStatuses: dbOrders.map((o: any) => ({ id: o.id, status: o.status }))
         }
       })
-    })
+    }
+    
+    // Get order items directly from database for paid orders
+    const purchasedProductIds = new Set<string>()
+    
+    for (const order of paidOrders) {
+      console.log(`[Purchases] Processing PAID order ${order.id}`)
+      
+      // Get order items from database
+      let orderItems
+      try {
+        // Try snake_case first (actual schema)
+        orderItems = await DatabaseService.query(
+          `SELECT 
+            oi.id,
+            oi.order_id,
+            oi.product_id,
+            oi.quantity,
+            oi.price
+          FROM order_items oi
+          WHERE oi.order_id = $1`,
+          [order.id]
+        )
+      } catch (error) {
+        // Fallback to camelCase
+        try {
+          orderItems = await DatabaseService.query(
+            `SELECT * FROM "orderItems" WHERE "orderId" = $1`,
+            [order.id]
+          )
+        } catch (fallbackError) {
+          console.error(`[Purchases] ❌ Error fetching order items for order ${order.id}:`, fallbackError)
+          orderItems = []
+        }
+      }
+      
+      console.log(`[Purchases] Order ${order.id} has ${orderItems.length} items`)
+      
+      orderItems.forEach((item: any) => {
+        const productId = item.product_id || item.productId
+        if (productId) {
+          purchasedProductIds.add(productId)
+          console.log(`[Purchases] ✅ Adding product ID to purchased set: ${productId}`)
+        } else {
+          console.error(`[Purchases] ⚠️ Order item ${item.id} has no product_id:`, item)
+        }
+      })
+    }
     
     console.log(`[Purchases] Total unique purchased product IDs: ${purchasedProductIds.size}`)
     console.log(`[Purchases] Product IDs:`, Array.from(purchasedProductIds))
+    
+    if (purchasedProductIds.size === 0) {
+      console.log(`[Purchases] ❌ No product IDs found in paid orders`)
+      return NextResponse.json({
+        products: [],
+        grouped: { courses: [], ebooks: [], reviews: [] },
+        count: 0,
+        coursesCount: 0,
+        ebooksCount: 0,
+        reviewsCount: 0,
+        debug: {
+          totalOrders: dbOrders.length,
+          paidOrders: paidOrders.length,
+          orderIds: paidOrders.map((o: any) => o.id),
+          message: 'No product IDs found in order items'
+        }
+      })
+    }
     
     // Get full product details for purchased products
     const purchasedProducts = await Promise.all(
