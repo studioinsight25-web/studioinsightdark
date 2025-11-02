@@ -32,9 +32,10 @@ export async function POST(
     const body = await request.json()
     
     // Validate required fields
-    if (!body.fileName || !body.fileUrl) {
+    // Either fileUrl OR fileData must be provided
+    if (!body.fileName || (!body.fileUrl && !body.fileData)) {
       return NextResponse.json(
-        { error: 'fileName en fileUrl zijn verplicht' },
+        { error: 'fileName en fileUrl of fileData zijn verplicht' },
         { status: 400 }
       )
     }
@@ -48,8 +49,24 @@ export async function POST(
       )
     }
     
+    // Convert base64 fileData to Buffer if provided
+    let fileData: Buffer | undefined
+    if (body.fileData && typeof body.fileData === 'string') {
+      try {
+        fileData = Buffer.from(body.fileData, 'base64')
+        console.log(`[Digital Products API] Converted base64 fileData to Buffer (${fileData.length} bytes)`)
+      } catch (error) {
+        console.error('[Digital Products API] Failed to decode base64 fileData:', error)
+        return NextResponse.json(
+          { error: 'Ongeldige fileData (geen geldige base64 string)' },
+          { status: 400 }
+        )
+      }
+    }
+    
     const digitalProduct = await DigitalProductDatabaseService.addDigitalProduct({
       ...body,
+      fileData: fileData, // Buffer instead of base64 string
       productId
     })
     

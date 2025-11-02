@@ -214,8 +214,21 @@ export default function DigitalProductUpload({
 
       const fileUrl = result.secure_url
       console.log('✅ File uploaded successfully to Cloudinary:', fileUrl)
+      
+      // NEW: Store file in database instead of Cloudinary URL
+      // Convert file to base64 for database storage (client-side)
+      const arrayBuffer = await file.arrayBuffer()
+      // Convert ArrayBuffer to base64 string (browser compatible)
+      const bytes = new Uint8Array(arrayBuffer)
+      let binary = ''
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i])
+      }
+      const base64String = btoa(binary)
+      
+      console.log('📦 Converting file to base64 for database storage...', `Size: ${base64String.length} chars`)
 
-      // Step 2: Create digital product record with the uploaded file URL
+      // Step 2: Create digital product record with file data stored in database
       const response = await fetch(`/api/digital-products/${productId}`, {
         method: 'POST',
         headers: {
@@ -225,7 +238,8 @@ export default function DigitalProductUpload({
           fileName: file.name,
           fileType: getFileType(file.type),
           fileSize: file.size,
-          fileUrl: fileUrl, // Real Cloudinary URL
+          fileUrl: '', // Empty URL - using database storage instead
+          fileData: base64String, // Base64 encoded file data for database
           downloadLimit: 5, // Default download limit
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
         })

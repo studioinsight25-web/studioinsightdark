@@ -7,8 +7,9 @@ export interface DigitalProduct {
   fileName: string
   fileType: 'pdf' | 'video' | 'audio' | 'zip' | 'doc' | 'docx'
   fileSize: number
-  fileUrl: string
+  fileUrl: string // URL to external storage (Cloudinary, etc.) - optional if fileData is present
   secureUrl?: string
+  fileData?: Buffer | Uint8Array // Binary file data stored in database (BYTEA)
   downloadLimit?: number
   expiresAt?: string
   createdAt: string
@@ -67,8 +68,9 @@ export class DigitalProductDatabaseService {
 
   static async getDigitalProduct(digitalProductId: string): Promise<DigitalProduct | null> {
     try {
+      // Don't select fileData by default (it's large) - only metadata
       const result = await DatabaseService.query(
-        'SELECT * FROM "digitalProducts" WHERE id = $1',
+        'SELECT id, "productId", "fileName", "filePath", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt" FROM "digitalProducts" WHERE id = $1',
         [digitalProductId]
       )
       return result.length > 0 ? this.convertDbDigitalProduct(result[0]) : null
@@ -77,24 +79,63 @@ export class DigitalProductDatabaseService {
       return null
     }
   }
+  
+  static async getDigitalProductWithData(digitalProductId: string): Promise<DigitalProduct | null> {
+    try {
+      // Select fileData when needed for downloads
+      const result = await DatabaseService.query(
+        'SELECT id, "productId", "fileName", "filePath", "fileData", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt" FROM "digitalProducts" WHERE id = $1',
+        [digitalProductId]
+      )
+      return result.length > 0 ? this.convertDbDigitalProduct(result[0]) : null
+    } catch (error) {
+      console.error('Error fetching digital product with data:', error)
+      return null
+    }
+  }
 
   static async addDigitalProduct(product: Omit<DigitalProduct, 'id' | 'createdAt' | 'updatedAt'>): Promise<DigitalProduct> {
     try {
       const id = `digital-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      const result = await DatabaseService.query(
-        'INSERT INTO "digitalProducts" (id, "productId", "fileName", "filePath", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *',
-        [
-          id,
-          product.productId,
-          product.fileName,
-          product.fileUrl,
-          product.fileSize,
-          product.fileType.toUpperCase(),
-          product.downloadLimit,
-          product.expiresAt ? new Date(product.expiresAt) : null
-        ]
-      )
-      return this.convertDbDigitalProduct(result[0])
+      
+      // If fileData is provided, store it directly in database (BYTEA)
+      // Otherwise, store fileUrl (external storage like Cloudinary)
+      const hasFileData = product.fileData && product.fileData.length > 0
+      
+      if (hasFileData) {
+        // Store file data directly in database
+        const result = await DatabaseService.query(
+          'INSERT INTO "digitalProducts" (id, "productId", "fileName", "filePath", "fileData", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()) RETURNING id, "productId", "fileName", "filePath", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt"',
+          [
+            id,
+            product.productId,
+            product.fileName,
+            '', // filePath is empty when using fileData
+            product.fileData, // BYTEA binary data
+            product.fileSize,
+            product.fileType.toUpperCase(),
+            product.downloadLimit,
+            product.expiresAt ? new Date(product.expiresAt) : null
+          ]
+        )
+        return this.convertDbDigitalProduct(result[0])
+      } else {
+        // Store file URL (external storage)
+        const result = await DatabaseService.query(
+          'INSERT INTO "digitalProducts" (id, "productId", "fileName", "filePath", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING id, "productId", "fileName", "filePath", "fileSize", "mimeType", "downloadLimit", "expiresAt", "createdAt", "updatedAt"',
+          [
+            id,
+            product.productId,
+            product.fileName,
+            product.fileUrl,
+            product.fileSize,
+            product.fileType.toUpperCase(),
+            product.downloadLimit,
+            product.expiresAt ? new Date(product.expiresAt) : null
+          ]
+        )
+        return this.convertDbDigitalProduct(result[0])
+      }
     } catch (error) {
       console.error('Error adding digital product:', error)
       throw error
@@ -396,8 +437,9 @@ export class DigitalProductDatabaseService {
       fileName: dbProduct.fileName,
       fileType: dbProduct.mimeType?.toLowerCase() as 'pdf' | 'video' | 'audio' | 'zip' | 'doc' | 'docx',
       fileSize: parseInt(dbProduct.fileSize || '0', 10),
-      fileUrl: dbProduct.filePath,
-      secureUrl: dbProduct.filePath,
+      fileUrl: dbProduct.filePath || '',
+      secureUrl: dbProduct.filePath || '',
+      fileData: dbProduct.fileData ? Buffer.from(dbProduct.fileData) : undefined, // Convert BYTEA to Buffer
       downloadLimit: dbProduct.downloadLimit,
       expiresAt: dbProduct.expiresAt ? new Date(dbProduct.expiresAt).toISOString() : undefined,
       createdAt: dbProduct.createdAt ? new Date(dbProduct.createdAt).toISOString() : new Date().toISOString(),

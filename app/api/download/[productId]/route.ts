@@ -74,15 +74,6 @@ export async function GET(
       )
     }
 
-    // Get digital product
-    const digitalProduct = await DigitalProductDatabaseService.getDigitalProduct(productId)
-    if (!digitalProduct) {
-      return NextResponse.json(
-        { error: 'Digital product not found' },
-        { status: 404 }
-      )
-    }
-
     // CRITICAL SECURITY CHECK: Verify user has purchased and can download
     const canDownload = await DigitalProductDatabaseService.canUserDownload(userId, productId)
     
@@ -90,6 +81,85 @@ export async function GET(
       return NextResponse.json(
         { error: 'You have not purchased this product or download limit exceeded. Access denied.' },
         { status: 403 }
+      )
+    }
+
+    // Get digital product WITH file data (if stored in database)
+    const digitalProduct = await DigitalProductDatabaseService.getDigitalProductWithData(productId)
+    if (!digitalProduct) {
+      return NextResponse.json(
+        { error: 'Digital product not found' },
+        { status: 404 }
+      )
+    }
+
+    console.log(`[Download] Digital product details:`, {
+      id: digitalProduct.id,
+      productId: digitalProduct.productId,
+      fileName: digitalProduct.fileName,
+      fileUrl: digitalProduct.fileUrl,
+      fileSize: digitalProduct.fileSize,
+      hasFileData: !!digitalProduct.fileData,
+      fileDataSize: digitalProduct.fileData?.length || 0
+    })
+
+    // PRIORITY 1: If file is stored in database (fileData), serve it directly
+    if (digitalProduct.fileData && digitalProduct.fileData.length > 0) {
+      console.log(`[Download] ✅ Serving file from database (${digitalProduct.fileData.length} bytes)`)
+      
+      // Get product name for filename
+      const { DatabaseProductService } = await import('@/lib/products-database')
+      const product = await DatabaseProductService.getProduct(digitalProduct.productId)
+      
+      const originalFileName = digitalProduct.fileName || 'download'
+      const fileExtension = originalFileName.split('.').pop() || 'pdf'
+      const productName = product ? 
+        product.name.replace(/[^a-z0-9]/gi, '-').toLowerCase() : 
+        'product'
+      const safeFileName = `${productName}-${digitalProduct.productId}.${fileExtension}`
+      
+      // Track download
+      await DigitalProductDatabaseService.trackDownload(userId, productId)
+      
+      // Determine content type
+      const contentType = digitalProduct.fileType || 
+        (fileExtension === 'pdf' ? 'application/pdf' :
+         fileExtension === 'zip' ? 'application/zip' :
+         fileExtension === 'epub' ? 'application/epub+zip' :
+         'application/octet-stream')
+      
+      // Convert fileData (Buffer/Uint8Array) to ArrayBuffer for NextResponse
+      // Create a copy to ensure we have a proper ArrayBuffer
+      let fileBuffer: ArrayBuffer
+      if (digitalProduct.fileData instanceof Buffer) {
+        // Buffer to ArrayBuffer
+        fileBuffer = new Uint8Array(digitalProduct.fileData).buffer
+      } else if (digitalProduct.fileData instanceof Uint8Array) {
+        // Uint8Array to ArrayBuffer
+        fileBuffer = new Uint8Array(digitalProduct.fileData).buffer
+      } else {
+        // Assume it's already an ArrayBuffer - create a copy to be safe
+        const view = new Uint8Array(digitalProduct.fileData as ArrayBuffer)
+        fileBuffer = view.buffer
+      }
+      
+      // Return file with proper headers
+      return new NextResponse(fileBuffer, {
+        status: 200,
+        headers: {
+          'Content-Type': contentType,
+          'Content-Disposition': `attachment; filename="${safeFileName}"; filename*=UTF-8''${encodeURIComponent(safeFileName)}`,
+          'Content-Length': digitalProduct.fileData.length.toString(),
+          'Cache-Control': 'no-cache',
+        },
+      })
+    }
+    
+    // PRIORITY 2: Fallback to external storage (Cloudinary, etc.)
+    if (!digitalProduct.fileUrl || digitalProduct.fileUrl.trim() === '') {
+      return NextResponse.json(
+        { error: 'File not available (no file data or URL found)' },
+        { status: 404 }
       )
     }
 
@@ -109,14 +179,7 @@ export async function GET(
     await DigitalProductDatabaseService.trackDownload(userId, productId)
 
     // Fetch file from Cloudinary/storage and stream it
-    console.log(`[Download] Attempting to fetch file from URL: ${digitalProduct.fileUrl}`)
-    console.log(`[Download] Digital product details:`, {
-      id: digitalProduct.id,
-      productId: digitalProduct.productId,
-      fileName: digitalProduct.fileName,
-      fileUrl: digitalProduct.fileUrl,
-      fileSize: digitalProduct.fileSize
-    })
+    console.log(`[Download] Fallback: Attempting to fetch file from external URL: ${digitalProduct.fileUrl.substring(0, 100)}...`)
     
     // Extract public_id from Cloudinary URL and generate signed URL if needed
     // Format: https://res.cloudinary.com/cloudname/resource_type/upload/v1234567/folder/public_id.ext
