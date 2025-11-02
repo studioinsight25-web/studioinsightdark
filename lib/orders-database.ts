@@ -136,12 +136,15 @@ export class DatabaseOrderService {
 
   static async updateOrderStatus(orderId: string, status: OrderStatus, paymentId?: string): Promise<Order | null> {
     try {
+      console.log(`[DatabaseOrderService] Updating order ${orderId} to status ${status}${paymentId ? ` with paymentId ${paymentId}` : ''}`)
+      
       // Use snake_case column names as per database schema
       let updateQuery = 'UPDATE orders SET status = $1, updated_at = NOW()'
       const updateParams: any[] = [status]
 
       if (status === 'PAID') {
-        updateQuery = 'UPDATE orders SET status = $1, paid_at = NOW(), updated_at = NOW()'
+        // Note: paid_at doesn't exist in schema, removing it
+        updateQuery = 'UPDATE orders SET status = $1, updated_at = NOW()'
       }
 
       // Update payment_id if provided
@@ -149,15 +152,26 @@ export class DatabaseOrderService {
         // Replace the SET clause to include payment_id
         updateQuery = updateQuery.replace('SET status = $1', 'SET status = $1, payment_id = $2')
         updateParams.push(paymentId)
+        console.log(`[DatabaseOrderService] Including payment_id in update: ${paymentId}`)
       }
       
-      updateParams.push(orderId)
-      
-      const paramIndex = updateParams.length
-      const result = await DatabaseService.query(
-        `${updateQuery} WHERE id = $${paramIndex} RETURNING id, user_id, status, total_amount, payment_id, created_at, updated_at, paid_at`,
-        updateParams
-      )
+      // Try UUID cast for orderId, fallback to text
+      let result
+      try {
+        updateParams.push(orderId)
+        const paramIndex = updateParams.length
+        result = await DatabaseService.query(
+          `${updateQuery} WHERE id = $${paramIndex}::uuid RETURNING id, user_id, status, total_amount, payment_id, created_at, updated_at`,
+          updateParams
+        )
+      } catch (uuidError) {
+        // Fallback to text comparison
+        console.log(`[DatabaseOrderService] UUID cast failed, trying text comparison for orderId:`, uuidError)
+        result = await DatabaseService.query(
+          `${updateQuery.replace(`$${updateParams.length}::uuid`, `$${updateParams.length}`)} WHERE id::text = $${updateParams.length} RETURNING id, user_id, status, total_amount, payment_id, created_at, updated_at`,
+          updateParams
+        )
+      }
 
       if (result.length === 0) {
         return null

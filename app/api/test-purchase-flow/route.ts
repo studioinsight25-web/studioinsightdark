@@ -88,8 +88,15 @@ export async function GET(request: NextRequest) {
             )
           }
           
-          (order as any).items = itemsResult
-          (order as any).itemsCount = itemsResult.length
+          const orderWithItems: any = order
+          orderWithItems.items = itemsResult
+          orderWithItems.itemsCount = itemsResult.length
+          
+          // If order has items but no paymentId and is PENDING, check if there's a recent Mollie payment
+          if (orderWithItems.status === 'PENDING' && !orderWithItems.paymentId && itemsResult.length > 0) {
+            orderWithItems.needsManualFix = true
+            orderWithItems.note = 'This order has items but no paymentId. If payment was successful, manually update to PAID.'
+          }
         } catch (error) {
           (order as any).itemsError = error instanceof Error ? error.message : 'Unknown error'
         }
