@@ -186,40 +186,54 @@ export async function GET(
         redirect: 'follow'
       })
       
-      // If signed URL fails, try using Cloudinary Admin API to fetch the file directly
+      // If signed URL fails (404/403), try using Cloudinary Admin API to stream file directly
+      // This bypasses "Blocked for delivery" restrictions by using Admin API credentials
       if (!fileResponse.ok && isCloudinaryUrl && process.env.CLOUDINARY_API_SECRET) {
-        console.log(`[Download] Signed URL failed (${fileResponse.status}), trying direct Cloudinary Admin API fetch`)
+        console.log(`[Download] Signed URL failed (${fileResponse.status}), trying Cloudinary Admin API stream`)
         
         try {
-          // Extract public_id again if we haven't already
+          // Extract public_id again
           const cloudinaryMatch = digitalProduct.fileUrl.match(/cloudinary\.com\/[^\/]+\/([^\/]+)\/upload\/v\d+\/(.+)$/)
           if (cloudinaryMatch) {
             const resourceType = cloudinaryMatch[1]
             const pathWithExt = cloudinaryMatch[2]
             const publicId = pathWithExt.replace(/\.\w+$/, '')
             
-            // Use Cloudinary Admin API to generate a proper download URL
-            // This works even for blocked files if we have API credentials
+            console.log(`[Download] Using Admin API to stream file with public_id: ${publicId}`)
+            
+            // Use Cloudinary Admin API to generate a download URL with authentication
+            // This works even for "Blocked for delivery" files
             const { v2: cloudinary } = await import('cloudinary')
             cloudinary.config({
-              cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-              api_key: process.env.CLOUDINARY_API_KEY,
-              api_secret: process.env.CLOUDINARY_API_SECRET,
+              cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+              api_key: process.env.CLOUDINARY_API_KEY!,
+              api_secret: process.env.CLOUDINARY_API_SECRET!,
             })
             
-            // Generate authenticated URL using Admin API
-            const adminUrl = cloudinary.url(publicId, {
-              resource_type: resourceType === 'video' ? 'video' : 'raw',
+            // Generate a signed URL - the SDK handles authentication automatically
+            const resourceTypeForSDK = resourceType === 'video' ? 'video' : 'raw'
+            const signedUrl = cloudinary.url(publicId, {
+              resource_type: resourceTypeForSDK,
               secure: true,
               sign_url: true,
-              type: 'authenticated', // Use authenticated delivery for blocked files
             })
             
-            console.log(`[Download] Trying authenticated Cloudinary URL: ${adminUrl.substring(0, 150)}...`)
-            fileResponse = await fetch(adminUrl)
+            console.log(`[Download] Admin API signed URL generated: ${signedUrl.substring(0, 150)}...`)
+            
+            // Try fetching with the signed URL
+            fileResponse = await fetch(signedUrl, {
+              method: 'GET',
+            })
+            
+            if (fileResponse.ok) {
+              console.log(`[Download] ✅ Admin API fetch successful`)
+            } else {
+              console.error(`[Download] Admin API fetch also failed: ${fileResponse.status} ${fileResponse.statusText}`)
+            }
           }
         } catch (adminError) {
-          console.error(`[Download] Admin API fallback also failed:`, adminError)
+          console.error(`[Download] Admin API fallback failed:`, adminError)
+          // Continue to show error to user
         }
       }
       
@@ -230,16 +244,28 @@ export async function GET(
           headers: Object.fromEntries(fileResponse.headers.entries())
         })
         
-        // More helpful error message
+        // More helpful error message with instructions
         let errorMessage = `File not found in storage (Status: ${fileResponse.status})`
+        let details = 'Check Cloudinary console for file access settings'
+        
         if (fileResponse.status === 403 || fileResponse.status === 401) {
-          errorMessage = 'File access denied. File may be blocked in Cloudinary. Please contact support.'
+          errorMessage = 'Bestand is geblokkeerd in Cloudinary (Blocked for delivery). Dit gebeurt vaak met PDF/ZIP bestanden op free tier accounts.'
+          details = 'Oplossing: Ga naar Cloudinary Console → Security Settings → Zet "Allow delivery of PDF and ZIP files" aan. Of gebruik het admin endpoint /api/admin/fix-cloudinary-access om het automatisch te proberen.'
         } else if (fileResponse.status === 404) {
-          errorMessage = 'File not found in Cloudinary. The file may have been deleted or the URL is incorrect.'
+          errorMessage = 'Bestand niet gevonden in Cloudinary. Het bestand kan verwijderd zijn of de URL is incorrect.'
+          details = 'Controleer of het bestand nog bestaat in Cloudinary Media Library.'
         }
         
         return NextResponse.json(
-          { error: errorMessage, url: fileUrl.substring(0, 150), details: 'Check Cloudinary console for file access settings' },
+          { 
+            error: errorMessage, 
+            url: fileUrl.substring(0, 150), 
+            details: details,
+            status: fileResponse.status,
+            solution: fileResponse.status === 403 || fileResponse.status === 401 ? 
+              'Activeer PDF/ZIP delivery in Cloudinary Security Settings' : 
+              'Controleer of het bestand bestaat in Cloudinary'
+          },
           { status: fileResponse.status || 404 }
         )
       }
