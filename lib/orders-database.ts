@@ -104,10 +104,20 @@ export class DatabaseOrderService {
   static async getOrdersByUser(userId: string): Promise<Order[]> {
     try {
       // Use snake_case column names as per database schema
-      const result = await DatabaseService.query(
-        'SELECT id, user_id, status, total_amount, payment_id, created_at, updated_at, paid_at FROM orders WHERE user_id = $1 ORDER BY created_at DESC',
-        [userId]
-      )
+      // Try UUID cast first, then text comparison
+      let result
+      try {
+        result = await DatabaseService.query(
+          'SELECT id, user_id, status, total_amount, payment_id, created_at, updated_at FROM orders WHERE user_id = $1::uuid ORDER BY created_at DESC',
+          [userId]
+        )
+      } catch (uuidError) {
+        // Fallback to text comparison
+        result = await DatabaseService.query(
+          'SELECT id, user_id, status, total_amount, payment_id, created_at, updated_at FROM orders WHERE user_id::text = $1 ORDER BY created_at DESC',
+          [userId]
+        )
+      }
 
       const orders = await Promise.all(result.map(async (order: any) => {
         const items = await this.getOrderItems(order.id)
@@ -313,10 +323,19 @@ export class DatabaseOrderService {
         )
       } catch {
         // Fallback to snake_case (actual database schema)
-        result = await DatabaseService.query(
-          'SELECT id, order_id, product_id, quantity, price FROM order_items WHERE order_id = $1',
-          [orderId]
-        )
+        // Try UUID cast first, then without cast
+        try {
+          result = await DatabaseService.query(
+            'SELECT id, order_id, product_id, product_name, quantity, price FROM order_items WHERE order_id = $1::uuid',
+            [orderId]
+          )
+        } catch (uuidError) {
+          // Fallback to text comparison
+          result = await DatabaseService.query(
+            'SELECT id, order_id, product_id, product_name, quantity, price FROM order_items WHERE order_id::text = $1',
+            [orderId]
+          )
+        }
       }
 
       return result.map((item: any) => ({

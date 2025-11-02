@@ -18,21 +18,47 @@ export async function GET(request: NextRequest) {
     const { DatabaseService } = await import('@/lib/database-direct')
     
     // Get all orders for this user directly from database
-    const dbOrders = await DatabaseService.query(
-      `SELECT 
-        o.id,
-        o.user_id,
-        o.status,
-        o.total_amount,
-        o.payment_id,
-        o.created_at,
-        o.updated_at,
-        o.paid_at
-      FROM orders o
-      WHERE o.user_id = $1
-      ORDER BY o.created_at DESC`,
-      [session.userId]
-    )
+    // Try both UUID cast and text comparison for user_id
+    let dbOrders
+    try {
+      // Try UUID first
+      dbOrders = await DatabaseService.query(
+        `SELECT 
+          o.id,
+          o.user_id,
+          o.status,
+          o.total_amount,
+          o.payment_id,
+          o.created_at,
+          o.updated_at
+        FROM orders o
+        WHERE o.user_id = $1::uuid
+        ORDER BY o.created_at DESC`,
+        [session.userId]
+      )
+    } catch (uuidError) {
+      // Fallback to text comparison
+      console.log(`[Purchases] UUID cast failed, trying text comparison:`, uuidError)
+      try {
+        dbOrders = await DatabaseService.query(
+          `SELECT 
+            o.id,
+            o.user_id,
+            o.status,
+            o.total_amount,
+            o.payment_id,
+            o.created_at,
+            o.updated_at
+          FROM orders o
+          WHERE o.user_id::text = $1
+          ORDER BY o.created_at DESC`,
+          [session.userId]
+        )
+      } catch (textError) {
+        console.error(`[Purchases] ❌ Both UUID and text comparison failed:`, textError)
+        dbOrders = []
+      }
+    }
     
     console.log(`[Purchases] Found ${dbOrders.length} orders in database for user ${session.userId}`)
     console.log(`[Purchases] Order statuses:`, dbOrders.map((o: any) => ({ 
@@ -80,18 +106,35 @@ export async function GET(request: NextRequest) {
       // Get order items from database
       let orderItems
       try {
-        // Try snake_case first (actual schema)
-        orderItems = await DatabaseService.query(
-          `SELECT 
-            oi.id,
-            oi.order_id,
-            oi.product_id,
-            oi.quantity,
-            oi.price
-          FROM order_items oi
-          WHERE oi.order_id = $1`,
-          [order.id]
-        )
+        // Try UUID cast first, then text comparison
+        try {
+          orderItems = await DatabaseService.query(
+            `SELECT 
+              oi.id,
+              oi.order_id,
+              oi.product_id,
+              oi.product_name,
+              oi.quantity,
+              oi.price
+            FROM order_items oi
+            WHERE oi.order_id = $1::uuid`,
+            [order.id]
+          )
+        } catch (uuidError) {
+          // Fallback to text comparison
+          orderItems = await DatabaseService.query(
+            `SELECT 
+              oi.id,
+              oi.order_id,
+              oi.product_id,
+              oi.product_name,
+              oi.quantity,
+              oi.price
+            FROM order_items oi
+            WHERE oi.order_id::text = $1`,
+            [order.id]
+          )
+        }
       } catch (error) {
         // Fallback to camelCase
         try {
