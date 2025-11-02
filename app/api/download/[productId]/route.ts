@@ -76,26 +76,60 @@ export async function GET(
       )
     }
 
-    // Get download record for tracking
-    const downloadRecord = await DigitalProductDatabaseService.getUserDownload(userId, productId)
-    const downloadCount = downloadRecord ? downloadRecord.downloadCount : 0
+    // Get product name for filename
+    const { DatabaseProductService } = await import('@/lib/products-database')
+    const product = await DatabaseProductService.getProduct(digitalProduct.productId)
+    
+    // Generate filename: productName-productId.extension
+    const originalFileName = digitalProduct.fileName || 'download'
+    const fileExtension = originalFileName.split('.').pop() || 'pdf'
+    const productName = product ? 
+      product.name.replace(/[^a-z0-9]/gi, '-').toLowerCase() : 
+      'product'
+    const safeFileName = `${productName}-${digitalProduct.productId}.${fileExtension}`
 
     // Track download
     await DigitalProductDatabaseService.trackDownload(userId, productId)
 
-    // In production, you would:
-    // 1. Generate a signed URL from your cloud storage (AWS S3, Cloudinary, etc.)
-    // 2. Set appropriate headers for file download
-    // 3. Stream the file content
+    // Fetch file from Cloudinary/storage and stream it
+    try {
+      const fileResponse = await fetch(digitalProduct.fileUrl)
+      
+      if (!fileResponse.ok) {
+        console.error(`[Download] Failed to fetch file from ${digitalProduct.fileUrl}: ${fileResponse.status}`)
+        return NextResponse.json(
+          { error: 'File not found in storage' },
+          { status: 404 }
+        )
+      }
 
-    // For demo purposes, return the file URL
-    return NextResponse.json({
-      success: true,
-      downloadUrl: digitalProduct.fileUrl,
-      fileName: digitalProduct.fileName,
-      fileSize: digitalProduct.fileSize,
-      expiresAt: expiresAt
-    })
+      // Get file content
+      const fileBuffer = await fileResponse.arrayBuffer()
+      
+      // Determine content type
+      const contentType = digitalProduct.fileType || 
+        (fileExtension === 'pdf' ? 'application/pdf' :
+         fileExtension === 'zip' ? 'application/zip' :
+         fileExtension === 'epub' ? 'application/epub+zip' :
+         'application/octet-stream')
+
+      // Return file with proper headers for download
+      return new NextResponse(fileBuffer, {
+        status: 200,
+        headers: {
+          'Content-Type': contentType,
+          'Content-Disposition': `attachment; filename="${safeFileName}"; filename*=UTF-8''${encodeURIComponent(safeFileName)}`,
+          'Content-Length': fileBuffer.byteLength.toString(),
+          'Cache-Control': 'no-cache',
+        },
+      })
+    } catch (error) {
+      console.error('[Download] Error fetching file:', error)
+      return NextResponse.json(
+        { error: 'Failed to retrieve file' },
+        { status: 500 }
+      )
+    }
 
   } catch (error) {
     console.error('Download error:', error)

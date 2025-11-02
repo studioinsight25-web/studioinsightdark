@@ -336,11 +336,14 @@ export default function ProductDetailPage() {
                 {product.type === 'ebook' && !product.comingSoon && (
                   <div className="space-y-3">
                     <button
-                      onClick={handleEbookDownload}
+                      onClick={() => {
+                        // Redirect to dashboard for downloads
+                        window.location.href = '/dashboard/ebooks'
+                      }}
                       className="w-full bg-primary text-black py-3 px-6 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-300 flex items-center justify-center gap-2"
                     >
                       <Download className="w-5 h-5" />
-                      Download E-book
+                      Download via Dashboard
                     </button>
                   </div>
                 )}

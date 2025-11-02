@@ -77,7 +77,7 @@ export default function DigitalProductDownload({
 
     try {
       // Generate download link via API
-      const response = await fetch(`/api/download/${digitalProductId}`, {
+      const linkResponse = await fetch(`/api/download/${digitalProductId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,18 +85,47 @@ export default function DigitalProductDownload({
         body: JSON.stringify({ userId }),
       })
 
-      const result = await response.json()
+      const linkResult = await linkResponse.json()
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Download link kon niet worden gegenereerd')
+      if (!linkResponse.ok) {
+        throw new Error(linkResult.error || 'Download link kon niet worden gegenereerd')
       }
 
-      // Use the download URL
-      if (result.downloadUrl) {
-        window.open(result.downloadUrl, '_blank')
-      } else {
+      // Get the download URL with token
+      if (!linkResult.downloadUrl) {
         throw new Error('Geen download URL ontvangen')
       }
+
+      // Fetch the actual file using the secure download URL
+      const downloadResponse = await fetch(linkResult.downloadUrl)
+      
+      if (!downloadResponse.ok) {
+        const errorData = await downloadResponse.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Download mislukt')
+      }
+
+      // Get filename from Content-Disposition header or use provided filename
+      const contentDisposition = downloadResponse.headers.get('Content-Disposition')
+      let downloadFileName = fileName
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+        if (filenameMatch && filenameMatch[1]) {
+          downloadFileName = filenameMatch[1].replace(/['"]/g, '')
+        }
+      }
+
+      // Create blob and download
+      const blob = await downloadResponse.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = decodeURIComponent(downloadFileName)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Download mislukt. Probeer het opnieuw.')
     } finally {

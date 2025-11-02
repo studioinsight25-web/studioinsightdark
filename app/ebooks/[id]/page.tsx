@@ -116,12 +116,15 @@ export default async function EbookPage({ params }: EbookPageProps) {
                     <FileText className="w-16 h-16 text-primary mx-auto mb-4" />
                     <h3 className="text-xl font-semibold mb-2">{product.name}</h3>
                     <p className="text-text-secondary mb-4">
-                      E-book beschikbaar voor download
+                      E-book beschikbaar voor download in je dashboard
                     </p>
-                    <button className="bg-primary text-black px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-300 flex items-center gap-2 mx-auto">
+                    <Link
+                      href="/dashboard/ebooks"
+                      className="bg-primary text-black px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-300 flex items-center gap-2 mx-auto"
+                    >
                       <Download className="w-4 h-4" />
-                      Download PDF
-                    </button>
+                      Ga naar Dashboard
+                    </Link>
                   </div>
                 </div>
                 
@@ -157,31 +160,22 @@ export default async function EbookPage({ params }: EbookPageProps) {
 
             {/* E-book Sidebar */}
             <div className="space-y-6">
-              {/* Download Options */}
+              {/* Download Info */}
               <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
-                <h3 className="text-lg font-semibold mb-4">Download Opties</h3>
+                <h3 className="text-lg font-semibold mb-4">Download</h3>
                 <div className="space-y-3">
-                  <button className="w-full text-left p-3 bg-dark-section rounded-lg border border-dark-border hover:border-primary transition-colors flex items-center gap-3">
-                    <Download className="w-4 h-4 text-primary" />
-                    <div>
-                      <span className="text-white font-medium">PDF Versie</span>
-                      <p className="text-xs text-text-secondary">Hoge kwaliteit</p>
-                    </div>
-                  </button>
-                  <button className="w-full text-left p-3 bg-dark-section rounded-lg border border-dark-border hover:border-primary transition-colors flex items-center gap-3">
-                    <Download className="w-4 h-4 text-primary" />
-                    <div>
-                      <span className="text-white font-medium">EPUB Versie</span>
-                      <p className="text-xs text-text-secondary">Voor e-readers</p>
-                    </div>
-                  </button>
-                  <button className="w-full text-left p-3 bg-dark-section rounded-lg border border-dark-border hover:border-primary transition-colors flex items-center gap-3">
-                    <Download className="w-4 h-4 text-primary" />
-                    <div>
-                      <span className="text-white font-medium">Mobi Versie</span>
-                      <p className="text-xs text-text-secondary">Voor Kindle</p>
-                    </div>
-                  </button>
+                  <div className="p-4 bg-dark-section rounded-lg border border-dark-border">
+                    <p className="text-sm text-text-secondary mb-3">
+                      Downloads zijn beschikbaar in je persoonlijke dashboard na aankoop.
+                    </p>
+                    <Link
+                      href="/dashboard/ebooks"
+                      className="w-full bg-primary text-black py-2 px-4 rounded-lg font-semibold hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2 text-sm"
+                    >
+                      <Download className="w-4 h-4" />
+                      Ga naar Dashboard
+                    </Link>
+                  </div>
                 </div>
               </div>
 
