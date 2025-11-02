@@ -75,7 +75,27 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log(`[Debug Order] Found ${ordersResult.length} orders`)
+    console.log(`[Debug Order] Found ${ordersResult.length} orders for user ${user.id}`)
+
+    // Also check if there are orders without user_id (orphaned) or with different user
+    // Check for recent orders that might belong to this user
+    const allRecentOrders = await DatabaseService.query(
+      `SELECT 
+        o.id,
+        o.user_id,
+        o.status,
+        o.total_amount,
+        o.payment_id,
+        o.created_at,
+        u.email as user_email
+      FROM orders o
+      LEFT JOIN users u ON o.user_id = u.id
+      WHERE o.created_at > NOW() - INTERVAL '30 days'
+      ORDER BY o.created_at DESC
+      LIMIT 20`
+    )
+
+    console.log(`[Debug Order] Found ${allRecentOrders.length} recent orders total`)
 
     // Get order items for each order
     const ordersWithItems = await Promise.all(
@@ -112,7 +132,15 @@ export async function GET(request: NextRequest) {
       totalOrders: ordersWithItems.length,
       paidOrders: ordersWithItems.filter((o: any) => 
         o.status?.toLowerCase() === 'paid' || o.status === 'PAID'
-      ).length
+      ).length,
+      recentOrdersInSystem: allRecentOrders.map((o: any) => ({
+        id: o.id,
+        userId: o.user_id,
+        userEmail: o.user_email,
+        status: o.status,
+        paymentId: o.payment_id,
+        createdAt: o.created_at
+      }))
     })
 
   } catch (error) {
