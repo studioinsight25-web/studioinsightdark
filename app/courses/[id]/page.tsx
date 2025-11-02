@@ -229,37 +229,19 @@ export default function CoursePage() {
               {/* Resources */}
               <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
                 <h3 className="text-lg font-semibold mb-4">Materialen</h3>
-                <div className="space-y-2">
-                  <button 
-                    onClick={() => {
-                      console.log('Downloading course PDF for:', product.name)
-                      alert('Download functionaliteit komt binnenkort!')
-                    }}
-                    className="w-full text-left p-3 bg-dark-section rounded-lg border border-dark-border hover:border-primary transition-colors flex items-center gap-3"
-                  >
-                    <Download className="w-4 h-4 text-primary" />
-                    <span className="text-white">Cursus PDF</span>
-                  </button>
-                  <button 
-                    onClick={() => {
-                      console.log('Downloading exercises for:', product.name)
-                      alert('Download functionaliteit komt binnenkort!')
-                    }}
-                    className="w-full text-left p-3 bg-dark-section rounded-lg border border-dark-border hover:border-primary transition-colors flex items-center gap-3"
-                  >
-                    <Download className="w-4 h-4 text-primary" />
-                    <span className="text-white">Oefeningen</span>
-                  </button>
-                  <button 
-                    onClick={() => {
-                      console.log('Downloading certificate for:', product.name)
-                      alert('Download functionaliteit komt binnenkort!')
-                    }}
-                    className="w-full text-left p-3 bg-dark-section rounded-lg border border-dark-border hover:border-primary transition-colors flex items-center gap-3"
-                  >
-                    <Download className="w-4 h-4 text-primary" />
-                    <span className="text-white">Certificaat</span>
-                  </button>
+                <div className="space-y-3">
+                  <div className="p-4 bg-dark-section rounded-lg border border-dark-border">
+                    <p className="text-sm text-text-secondary mb-3">
+                      Downloads zijn beschikbaar in je persoonlijke dashboard na aankoop.
+                    </p>
+                    <Link
+                      href="/dashboard/cursussen"
+                      className="w-full bg-primary text-black py-2 px-4 rounded-lg font-semibold hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2 text-sm"
+                    >
+                      <Download className="w-4 h-4" />
+                      Ga naar Dashboard
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>

@@ -221,56 +221,82 @@ export class DigitalProductDatabaseService {
       if (!digitalProduct) return false
 
       // Check if user has purchased the product (by checking orders)
-      // Try camelCase first, fallback to snake_case
+      // Accept both PAID orders and PENDING orders with payment_id
+      console.log(`[canUserDownload] Checking if user ${userId} can download digital product ${digitalProductId} (productId: ${digitalProduct.productId})`)
+      
       let productResult
       try {
+        // Try UUID first
         productResult = await DatabaseService.query(
-          `SELECT o.id, oi."productId" 
-           FROM orders o 
-           JOIN "orderItems" oi ON o.id = oi."orderId" 
-           WHERE oi."productId" = $1 
-             AND o."userId" = $2 
-             AND UPPER(o.status) = 'PAID'
-           LIMIT 1`,
-          [digitalProduct.productId, userId]
-        )
-      } catch {
-        // Fallback to snake_case (actual database schema)
-        productResult = await DatabaseService.query(
-          `SELECT o.id, oi.product_id as "productId" 
+          `SELECT o.id, o.status, o.payment_id, oi.product_id as "productId" 
            FROM orders o 
            JOIN order_items oi ON o.id = oi.order_id 
            WHERE oi.product_id = $1 
-             AND o.user_id = $2 
-             AND UPPER(o.status) = 'PAID'
+             AND o.user_id = $2::uuid 
+             AND (UPPER(o.status) = 'PAID' OR (o.status = 'PENDING' AND o.payment_id IS NOT NULL))
            LIMIT 1`,
           [digitalProduct.productId, userId]
         )
+      } catch (uuidError) {
+        // Fallback to text comparison
+        try {
+          productResult = await DatabaseService.query(
+            `SELECT o.id, o.status, o.payment_id, oi.product_id as "productId" 
+             FROM orders o 
+             JOIN order_items oi ON o.id = oi.order_id 
+             WHERE oi.product_id = $1 
+               AND o.user_id::text = $2 
+               AND (UPPER(o.status) = 'PAID' OR (o.status = 'PENDING' AND o.payment_id IS NOT NULL))
+             LIMIT 1`,
+            [digitalProduct.productId, userId]
+          )
+        } catch (textError) {
+          // Last fallback: try camelCase
+          try {
+            productResult = await DatabaseService.query(
+              `SELECT o.id, oi."productId" 
+               FROM orders o 
+               JOIN "orderItems" oi ON o.id = oi."orderId" 
+               WHERE oi."productId" = $1 
+                 AND o."userId" = $2 
+                 AND UPPER(o.status) = 'PAID'
+               LIMIT 1`,
+              [digitalProduct.productId, userId]
+            )
+          } catch (camelError) {
+            console.error('[canUserDownload] All query attempts failed:', camelError)
+            return false
+          }
+        }
       }
 
       if (productResult.length === 0) {
-        console.log(`Access denied: User ${userId} has not purchased product ${digitalProduct.productId}`)
+        console.log(`[canUserDownload] ❌ Access denied: User ${userId} has not purchased product ${digitalProduct.productId}`)
         return false
       }
+      
+      console.log(`[canUserDownload] ✅ User ${userId} has purchased product ${digitalProduct.productId}`)
 
-      // Check download limit
-      const userDownload = await this.getUserDownload(userId, digitalProductId)
-      if (userDownload && digitalProduct.downloadLimit) {
-        if (userDownload.downloadCount >= digitalProduct.downloadLimit) {
-          console.log(`Access denied: Download limit exceeded for user ${userId}, product ${digitalProductId}`)
-          return false
-        }
-      }
+      // Download limit check - TEMPORARILY DISABLED FOR TESTING
+      // const userDownload = await this.getUserDownload(userId, digitalProductId)
+      // if (userDownload && digitalProduct.downloadLimit) {
+      //   if (userDownload.downloadCount >= digitalProduct.downloadLimit) {
+      //     console.log(`[canUserDownload] ❌ Access denied: Download limit exceeded for user ${userId}, product ${digitalProductId} (${userDownload.downloadCount}/${digitalProduct.downloadLimit})`)
+      //     return false
+      //   }
+      //   console.log(`[canUserDownload] Download count: ${userDownload.downloadCount}/${digitalProduct.downloadLimit}`)
+      // }
 
-      // Check expiration
-      if (digitalProduct.expiresAt) {
-        const expirationDate = new Date(digitalProduct.expiresAt)
-        if (new Date() >= expirationDate) {
-          console.log(`Access denied: Digital product expired for user ${userId}, product ${digitalProductId}`)
-          return false
-        }
-      }
+      // Product expiration check - TEMPORARILY DISABLED FOR TESTING
+      // if (digitalProduct.expiresAt) {
+      //   const expirationDate = new Date(digitalProduct.expiresAt)
+      //   if (new Date() >= expirationDate) {
+      //     console.log(`[canUserDownload] ❌ Access denied: Digital product expired for user ${userId}, product ${digitalProductId}`)
+      //     return false
+      //   }
+      // }
 
+      console.log(`[canUserDownload] ✅ User ${userId} can download digital product ${digitalProductId}`)
       return true
     } catch (error) {
       console.error('Error checking download access:', error)

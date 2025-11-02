@@ -344,18 +344,18 @@ export default function DashboardPage() {
 
                       {/* Action Button */}
                       <Link
-                        href={`/products/${product.id}`}
+                        href={product.type === 'course' ? '/dashboard/cursussen' : product.type === 'ebook' ? '/dashboard/ebooks' : `/products/${product.id}`}
                         className="w-full bg-gradient-to-r from-primary to-primary/90 text-black py-3.5 px-4 rounded-xl font-bold hover:from-primary/90 hover:to-primary/80 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]"
                       >
                         {product.type === 'course' ? (
                           <>
                             <Play className="w-4 h-4" />
-                            Start Cursus
+                            Naar Mijn Cursussen
                           </>
                         ) : product.type === 'ebook' ? (
                           <>
                             <Download className="w-4 h-4" />
-                            Bekijk E-book
+                            Download E-book
                           </>
                         ) : (
                           <>

@@ -186,8 +186,8 @@ export async function POST(
       )
     }
 
-    // Generate a secure download URL with token
-    const expiryTime = Date.now() + 3600000 // 1 hour expiry
+    // Generate a secure download URL with token (30 days expiry)
+    const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days expiry
     const token = btoa(`${userId}-${productId}-${expiryTime}`)
     const downloadUrl = `${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/download/${productId}?token=${encodeURIComponent(token)}&userId=${userId}`
 
