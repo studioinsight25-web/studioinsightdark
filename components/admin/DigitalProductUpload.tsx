@@ -128,95 +128,11 @@ export default function DigitalProductUpload({
         }
       }
 
-      console.log('File validation passed, uploading file directly to Cloudinary...')
+      console.log('File validation passed, uploading file directly to database...')
 
-      // Step 1: Get Cloudinary config from API (only cloud name and preset, not secrets)
-      const configResponse = await fetch('/api/admin/cloudinary-config')
-      if (!configResponse.ok) {
-        throw new Error('Kon Cloudinary configuratie niet ophalen')
-      }
-      const config = await configResponse.json()
-      
-      if (!config.cloudName || !config.uploadPreset) {
-        throw new Error('Cloudinary niet geconfigureerd. Stel CLOUDINARY_CLOUD_NAME en CLOUDINARY_UPLOAD_PRESET in.')
-      }
-
-      // Step 2: Upload file directly to Cloudinary (bypassing Next.js API to avoid size limits)
-      const folder = `studio-insight/digital-products/${productId}`
-      
-      // Determine resource type based on file type
-      let resourceType = 'raw' // Default for PDF, ZIP, etc.
-      if (file.type.startsWith('video/')) {
-        resourceType = 'video'
-      } else if (file.type.startsWith('audio/')) {
-        resourceType = 'video' // Cloudinary uses 'video' for audio too
-      }
-
-      const cloudForm = new FormData()
-      cloudForm.append('file', file)
-      cloudForm.append('upload_preset', config.uploadPreset)
-      cloudForm.append('folder', folder)
-      cloudForm.append('resource_type', resourceType)
-      cloudForm.append('access_mode', 'public') // Ensure files are publicly accessible
-
-      console.log('Uploading to Cloudinary:', {
-        cloudName: config.cloudName,
-        resourceType,
-        folder,
-        fileName: file.name,
-        fileSize: file.size
-      })
-
-      const cloudRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${config.cloudName}/${resourceType}/upload`,
-        {
-          method: 'POST',
-          body: cloudForm
-        }
-      )
-
-      if (!cloudRes.ok) {
-        let errorMessage = 'Cloudinary upload mislukt'
-        try {
-          const errData = await cloudRes.json()
-          
-          // Check for file size limit error
-          if (errData.error?.message?.includes('File size too large') || 
-              errData.error?.message?.includes('Maximum is')) {
-            const sizeMB = (file.size / (1024 * 1024)).toFixed(2)
-            errorMessage = `Bestand te groot voor Cloudinary free tier (${sizeMB}MB > 10MB). ` +
-              `Upgrade je Cloudinary plan of comprimeer het bestand.`
-          } else if (errData.error?.message) {
-            errorMessage = `Cloudinary fout: ${errData.error.message}`
-          } else {
-            errorMessage = `Cloudinary upload mislukt (status: ${cloudRes.status})`
-          }
-        } catch {
-          // If JSON parsing fails, use text
-          const errText = await cloudRes.text()
-          if (errText.includes('File size too large') || errText.includes('Maximum is')) {
-            const sizeMB = (file.size / (1024 * 1024)).toFixed(2)
-            errorMessage = `Bestand te groot voor Cloudinary free tier (${sizeMB}MB > 10MB). ` +
-              `Upgrade je Cloudinary plan of comprimeer het bestand.`
-          } else {
-            errorMessage = `Cloudinary upload mislukt: ${errText.substring(0, 200)}`
-          }
-        }
-        console.error('Cloudinary upload failed:', errorMessage)
-        throw new Error(errorMessage)
-      }
-
-      const result = await cloudRes.json()
-      
-      if (!result.secure_url) {
-        throw new Error('Upload mislukt: Geen URL ontvangen van Cloudinary')
-      }
-
-      const fileUrl = result.secure_url
-      console.log('✅ File uploaded successfully to Cloudinary:', fileUrl)
-      
-      // NEW: Store file in database instead of Cloudinary URL
+      // NEW APPROACH: Upload directly to database, skip Cloudinary entirely
       // Convert file to base64 for database storage (client-side)
+      console.log('📦 Converting file to base64 for database storage...')
       const arrayBuffer = await file.arrayBuffer()
       // Convert ArrayBuffer to base64 string (browser compatible)
       const bytes = new Uint8Array(arrayBuffer)
@@ -226,9 +142,13 @@ export default function DigitalProductUpload({
       }
       const base64String = btoa(binary)
       
-      console.log('📦 Converting file to base64 for database storage...', `Size: ${base64String.length} chars`)
+      console.log('✅ File converted to base64:', {
+        originalSize: file.size,
+        base64Size: base64String.length,
+        fileName: file.name
+      })
 
-      // Step 2: Create digital product record with file data stored in database
+      // Upload directly to database API (no Cloudinary needed)
       const response = await fetch(`/api/digital-products/${productId}`, {
         method: 'POST',
         headers: {
