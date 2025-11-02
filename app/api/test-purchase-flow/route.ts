@@ -92,10 +92,24 @@ export async function GET(request: NextRequest) {
           orderWithItems.items = itemsResult
           orderWithItems.itemsCount = itemsResult.length
           
-          // If order has items but no paymentId and is PENDING, check if there's a recent Mollie payment
+          // Log order item details
+          orderWithItems.itemsDetail = itemsResult.map((item: any) => ({
+            id: item.id,
+            product_id: item.product_id,
+            product_name: item.product_name,
+            quantity: item.quantity
+          }))
+          
+          // If order has items but no paymentId and is PENDING
           if (orderWithItems.status === 'PENDING' && !orderWithItems.paymentId && itemsResult.length > 0) {
             orderWithItems.needsManualFix = true
             orderWithItems.note = 'This order has items but no paymentId. If payment was successful, manually update to PAID.'
+          }
+          
+          // If order has paymentId but is still PENDING, it should show in dashboard
+          if (orderWithItems.status === 'PENDING' && orderWithItems.paymentId && itemsResult.length > 0) {
+            orderWithItems.shouldShowInDashboard = true
+            orderWithItems.note = 'This order has paymentId and items - should appear in dashboard even though status is PENDING'
           }
         } catch (error) {
           (order as any).itemsError = error instanceof Error ? error.message : 'Unknown error'
@@ -109,9 +123,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Check 3: Paid orders specifically
-    const paidOrders = diagnostics.checks.orders?.orders?.filter((o: any) => 
-      o.status?.toLowerCase() === 'paid'
-    ) || []
+    // Include orders with status PAID, or PENDING orders that have a payment_id
+    const paidOrders = diagnostics.checks.orders?.orders?.filter((o: any) => {
+      const status = typeof o.status === 'string' ? o.status.toLowerCase() : String(o.status).toLowerCase()
+      const isPaid = status === 'paid'
+      const hasPaymentId = o.paymentId && o.paymentId !== null
+      const mightBePaid = hasPaymentId && status === 'pending'
+      return isPaid || mightBePaid
+    }) || []
     
     diagnostics.checks.paidOrders = {
       count: paidOrders.length,
