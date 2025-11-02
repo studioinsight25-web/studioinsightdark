@@ -157,6 +157,7 @@ export default function DigitalProductUpload({
       cloudForm.append('upload_preset', config.uploadPreset)
       cloudForm.append('folder', folder)
       cloudForm.append('resource_type', resourceType)
+      cloudForm.append('access_mode', 'public') // Ensure files are publicly accessible
 
       console.log('Uploading to Cloudinary:', {
         cloudName: config.cloudName,

@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
     cloudForm.append('upload_preset', uploadPreset)
     cloudForm.append('folder', folder)
     cloudForm.append('resource_type', resourceType)
+    cloudForm.append('access_mode', 'public') // Ensure files are publicly accessible
 
     const cloudRes = await fetch(
       `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
