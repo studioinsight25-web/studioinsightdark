@@ -53,33 +53,30 @@ export class OrderService {
     console.log(`[OrderService] ✅ Order verified in database: ${verifyOrder[0].id}, userId: ${verifyOrder[0].user_id}`)
     
     // Create order items - use snake_case as per database schema
+    // Database schema requires: id UUID, order_id UUID, product_id VARCHAR, product_name VARCHAR, price DECIMAL, quantity INTEGER
     const orderItemErrors: string[] = []
     for (const item of items) {
-      const itemId = `order-item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      // Generate UUID for order item ID (database expects UUID)
+      const { randomUUID } = await import('crypto')
+      const itemId = randomUUID()
       let itemCreated = false
       
-      // Try camelCase first, fallback to snake_case
+      // Database schema: order_items table uses snake_case
+      // Required fields: order_id (UUID), product_id (VARCHAR), product_name (VARCHAR), price (DECIMAL), quantity (INTEGER)
       try {
         await DatabaseService.query(
-          'INSERT INTO "orderItems" (id, "orderId", "productId", quantity, price, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, NOW(), NOW())',
-          [itemId, dbOrder.id, item.id, 1, item.price]
+          'INSERT INTO order_items (id, order_id, product_id, product_name, quantity, price, created_at) VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, NOW())',
+          [itemId, dbOrder.id, item.id, item.name, 1, item.price]
         )
         itemCreated = true
-        console.log(`[OrderService] ✅ Order item created (camelCase): ${item.id} for order ${dbOrder.id}`)
-      } catch (camelCaseError) {
-        // Fallback to snake_case (actual database schema)
-        try {
-          await DatabaseService.query(
-            'INSERT INTO order_items (id, order_id, product_id, quantity, price, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
-            [itemId, dbOrder.id, item.id, 1, item.price]
-          )
-          itemCreated = true
-          console.log(`[OrderService] ✅ Order item created (snake_case): ${item.id} for order ${dbOrder.id}`)
-        } catch (snakeCaseError) {
-          const errorMsg = `Failed to create order item for product ${item.id}: ${snakeCaseError instanceof Error ? snakeCaseError.message : 'Unknown error'}`
-          console.error(`[OrderService] ❌ ${errorMsg}`)
-          orderItemErrors.push(errorMsg)
+        console.log(`[OrderService] ✅ Order item created: ${item.id} (${item.name}) for order ${dbOrder.id}`)
+      } catch (insertError) {
+        const errorMsg = `Failed to create order item for product ${item.id}: ${insertError instanceof Error ? insertError.message : 'Unknown error'}`
+        console.error(`[OrderService] ❌ ${errorMsg}`)
+        if (insertError instanceof Error) {
+          console.error(`[OrderService] Error details:`, insertError.stack)
         }
+        orderItemErrors.push(errorMsg)
       }
       
       if (!itemCreated) {

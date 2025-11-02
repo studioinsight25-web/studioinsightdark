@@ -25,14 +25,21 @@ export interface OrderItem {
 export class DatabaseOrderService {
   static async createOrder(orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt' | 'items'>): Promise<Order | null> {
     try {
-      const id = `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      // Generate UUID for order ID (database expects UUID)
+      const { randomUUID } = await import('crypto')
+      const id = randomUUID()
       
-      console.log(`[DatabaseOrderService] Creating order ${id} for user ${orderData.userId}, status: ${orderData.status}, total: ${orderData.totalAmount}`)
+      // Generate order number (required field)
+      const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+      
+      console.log(`[DatabaseOrderService] Creating order ${id} (${orderNumber}) for user ${orderData.userId}, status: ${orderData.status}, total: ${orderData.totalAmount}`)
       
       // Use snake_case column names as per database schema
+      // Include order_number which is required (NOT NULL)
+      // Note: paid_at doesn't exist in schema, only created_at and updated_at
       const result = await DatabaseService.query(
-        'INSERT INTO orders (id, user_id, status, total_amount, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING id, user_id, status, total_amount, payment_id, created_at, updated_at, paid_at',
-        [id, orderData.userId, orderData.status, orderData.totalAmount]
+        'INSERT INTO orders (id, user_id, order_number, status, total_amount, created_at, updated_at) VALUES ($1::uuid, $2::uuid, $3, $4, $5, NOW(), NOW()) RETURNING id, user_id, status, total_amount, payment_id, created_at, updated_at',
+        [id, orderData.userId, orderNumber, orderData.status, orderData.totalAmount]
       )
 
       if (result.length === 0) {
