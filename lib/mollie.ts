@@ -99,7 +99,8 @@ export class MollieService {
         paid: payment.status === 'paid',
         failed: payment.status === 'failed',
         canceled: payment.status === 'canceled',
-        expired: payment.status === 'expired'
+        expired: payment.status === 'expired',
+        payment: payment // Include full payment object for metadata access
       }
     } catch (error) {
       console.error('Mollie payment status error:', error)

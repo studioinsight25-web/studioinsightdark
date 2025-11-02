@@ -312,7 +312,47 @@ export async function POST(request: NextRequest) {
     })
 
     // Update order with payment ID
-    await OrderService.updateOrderStatus(order.id, 'pending', paymentResult.paymentId)
+    console.log(`[Checkout] 🔄 Updating order ${order.id} with paymentId: ${paymentResult.paymentId}`)
+    try {
+      const updateSuccess = await OrderService.updateOrderStatus(order.id, 'pending', paymentResult.paymentId)
+      if (!updateSuccess) {
+        console.error(`[Checkout] ❌ CRITICAL: updateOrderStatus returned false for order ${order.id}`)
+        // Don't fail the checkout, but log the error
+      } else {
+        console.log(`[Checkout] ✅ Order update call succeeded`)
+        
+        // Verify payment_id was actually saved
+        const { DatabaseService } = await import('@/lib/database-direct')
+        try {
+          let verification
+          try {
+            verification = await DatabaseService.query(
+              'SELECT payment_id, status FROM orders WHERE id = $1::uuid',
+              [order.id]
+            )
+          } catch {
+            verification = await DatabaseService.query(
+              'SELECT payment_id, status FROM orders WHERE id::text = $1',
+              [order.id]
+            )
+          }
+          
+          if (verification.length > 0) {
+            console.log(`[Checkout] ✅ VERIFIED: payment_id in database:`, verification[0].payment_id, `status:`, verification[0].status)
+            if (!verification[0].payment_id) {
+              console.error(`[Checkout] ❌ CRITICAL: payment_id is NULL in database even after update!`)
+            }
+          } else {
+            console.error(`[Checkout] ❌ CRITICAL: Order not found for verification!`)
+          }
+        } catch (verifyError) {
+          console.error(`[Checkout] ⚠️ Could not verify payment_id:`, verifyError)
+        }
+      }
+    } catch (updateError) {
+      console.error(`[Checkout] ❌ CRITICAL ERROR updating order with paymentId:`, updateError)
+      // Still continue, but this is critical
+    }
 
     return NextResponse.json({
       success: true,

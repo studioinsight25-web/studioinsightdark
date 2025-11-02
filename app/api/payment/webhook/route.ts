@@ -27,17 +27,48 @@ export async function POST(request: Request) {
     }
 
     // Find order by payment ID from database
-    console.log('Webhook: Looking for order with paymentId:', paymentId)
-    const order = await OrderService.getOrderByPaymentId(paymentId)
+    console.log('[Webhook] 🔍 Looking for order with paymentId:', paymentId)
+    let order = await OrderService.getOrderByPaymentId(paymentId)
 
     if (!order) {
-      console.error('Webhook: Order not found for paymentId:', paymentId)
-      // Try to find by searching all orders (fallback, but inefficient)
-      // This should not happen in production if payment_id is set correctly
-      return NextResponse.json(
-        { error: 'Order not found for this payment' },
-        { status: 404 }
-      )
+      console.error('[Webhook] ❌ Order not found by paymentId:', paymentId)
+      
+      // Fallback: Try to find order via Mollie metadata
+      try {
+        console.log('[Webhook] 🔄 Trying fallback: fetching payment details from Mollie to get orderId from metadata')
+        // Use MollieService to get payment status which includes metadata
+        const paymentStatusResult = await MollieService.getPaymentStatus(paymentId)
+        if (paymentStatusResult.success && (paymentStatusResult as any).payment) {
+          const molliePayment = (paymentStatusResult as any).payment
+          const metadata = molliePayment?.metadata
+          
+          if (metadata && (metadata as any).orderId) {
+            const orderIdFromMetadata = (metadata as any).orderId
+            console.log('[Webhook] ✅ Found orderId in Mollie metadata:', orderIdFromMetadata)
+            
+            // Get order by ID
+            order = await OrderService.getOrder(orderIdFromMetadata)
+            
+            if (order) {
+              console.log('[Webhook] ✅ Found order via metadata, updating payment_id')
+              // Update the order with the payment_id so future webhooks work
+              await OrderService.updateOrderStatus(order.id, order.status as any, paymentId)
+            }
+          } else {
+            console.log('[Webhook] ⚠️ No orderId found in Mollie metadata:', metadata)
+          }
+        }
+      } catch (fallbackError) {
+        console.error('[Webhook] ❌ Fallback also failed:', fallbackError)
+      }
+      
+      if (!order) {
+        console.error('[Webhook] ❌ CRITICAL: Order not found by paymentId or metadata:', paymentId)
+        return NextResponse.json(
+          { error: 'Order not found for this payment' },
+          { status: 404 }
+        )
+      }
     }
     
     console.log('Webhook: Found order:', order.id, 'current status:', order.status)
