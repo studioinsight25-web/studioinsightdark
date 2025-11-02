@@ -1,4 +1,6 @@
-import { Suspense } from 'react'
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { CheckCircle, ArrowRight, Download, Play } from 'lucide-react'
 import { OrderService } from '@/lib/orders'
@@ -9,7 +11,34 @@ interface SuccessPageProps {
   }
 }
 
-async function SuccessContent({ orderId }: { orderId?: string }) {
+function SuccessContent({ orderId }: { orderId?: string }) {
+  const [order, setOrder] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!orderId) {
+      setLoading(false)
+      return
+    }
+
+    const loadOrder = async () => {
+      try {
+        // Fetch order from API since we're client-side now
+        const response = await fetch(`/api/orders/${orderId}`)
+        if (response.ok) {
+          const orderData = await response.json()
+          setOrder(orderData.order)
+        }
+      } catch (error) {
+        console.error('Error loading order:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadOrder()
+  }, [orderId])
+
   if (!orderId) {
     return (
       <div className="text-center">
@@ -150,6 +179,26 @@ async function SuccessContent({ orderId }: { orderId?: string }) {
 }
 
 export default function PaymentSuccessPage({ searchParams }: SuccessPageProps) {
+  // Clear cart on successful payment
+  useEffect(() => {
+    const clearCart = async () => {
+      try {
+        const response = await fetch('/api/cart/clear', {
+          method: 'POST'
+        })
+        if (response.ok) {
+          console.log('✅ Cart cleared after successful payment')
+          // Dispatch event to update cart count in header
+          window.dispatchEvent(new CustomEvent('cartUpdated'))
+        }
+      } catch (error) {
+        console.error('Error clearing cart:', error)
+      }
+    }
+    
+    clearCart()
+  }, [])
+
   return (
     <main className="min-h-screen bg-background">
       {/* Header */}
@@ -167,14 +216,7 @@ export default function PaymentSuccessPage({ searchParams }: SuccessPageProps) {
       {/* Content */}
       <section className="py-20 bg-background">
         <div className="container mx-auto px-4 max-w-4xl">
-          <Suspense fallback={
-            <div className="text-center">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-text-secondary">Laden...</p>
-            </div>
-          }>
-            <SuccessContent orderId={searchParams.orderId} />
-          </Suspense>
+          <SuccessContent orderId={searchParams.orderId} />
         </div>
       </section>
     </main>

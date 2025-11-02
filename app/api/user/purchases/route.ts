@@ -17,11 +17,19 @@ export async function GET(request: NextRequest) {
     // Get user orders
     const orders = await OrderService.getUserOrders(session.userId)
     
-    // Filter only paid orders (OrderService converts status to lowercase)
+    console.log(`[Purchases] Found ${orders.length} orders for user ${session.userId}`)
+    
+    // Filter only paid orders (check both uppercase and lowercase)
     const paidOrders = orders.filter(order => {
-      const status = typeof order.status === 'string' ? order.status.toLowerCase() : order.status
-      return status === 'paid'
+      const status = typeof order.status === 'string' ? order.status.toLowerCase() : String(order.status).toLowerCase()
+      const isPaid = status === 'paid' || status === 'PAID'
+      if (isPaid) {
+        console.log(`[Purchases] Found PAID order ${order.id} with ${order.items.length} items`)
+      }
+      return isPaid
     })
+    
+    console.log(`[Purchases] Found ${paidOrders.length} paid orders`)
     
     // Collect all purchased product IDs
     const purchasedProductIds = new Set<string>()

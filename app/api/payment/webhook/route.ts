@@ -45,7 +45,17 @@ export async function POST(request: Request) {
     // Update order status based on payment status
     if (paymentStatus.paid) {
       await OrderService.updateOrderStatus(order.id, 'paid', paymentId)
-      console.log(`Order ${order.id} marked as paid`)
+      console.log(`✅ Order ${order.id} marked as PAID`)
+      
+      // Clear user's cart after successful payment
+      try {
+        const { CartService } = await import('@/lib/cart-database')
+        await CartService.clearCart(order.userId)
+        console.log(`✅ Cart cleared for user ${order.userId} after payment`)
+      } catch (cartError) {
+        console.error('⚠️ Error clearing cart after payment:', cartError)
+        // Don't fail the webhook if cart clearing fails
+      }
     } else if (paymentStatus.failed) {
       await OrderService.updateOrderStatus(order.id, 'failed', paymentId)
       console.log(`Order ${order.id} marked as failed`)
