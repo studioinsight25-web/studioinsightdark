@@ -41,11 +41,22 @@ export async function POST(request: NextRequest) {
 
     // Try to get payment info from Mollie if paymentId is provided
     let molliePayment = null
+    let paymentMetadata: any = null
     if (body.paymentId) {
       try {
         const paymentStatus = await MollieService.getPaymentStatus(body.paymentId)
-        if (paymentStatus.success && paymentStatus.paid) {
+        if (paymentStatus.success) {
           molliePayment = paymentStatus
+          // Try to get full payment details including metadata
+          try {
+            const { createMollieClient } = await import('@mollie/api-client')
+            const mollieClient = createMollieClient({ apiKey: process.env.MOLLIE_API_KEY! })
+            const fullPayment = await mollieClient.payments.get(body.paymentId)
+            paymentMetadata = fullPayment.metadata || null
+            console.log('[Recreate Order] Mollie payment metadata:', paymentMetadata)
+          } catch (metaError) {
+            console.log('[Recreate Order] Could not fetch full payment details:', metaError)
+          }
         }
       } catch (error) {
         console.log('[Recreate Order] Could not fetch Mollie payment:', error)
