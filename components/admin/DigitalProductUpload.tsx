@@ -75,6 +75,9 @@ export default function DigitalProductUpload({
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   ]
 
+  // Cloudinary free tier file size limits
+  const CLOUDINARY_FREE_TIER_LIMIT = 10 * 1024 * 1024 // 10MB
+
   const getFileType = (mimeType: string): DigitalProduct['fileType'] => {
     if (mimeType.includes('pdf')) return 'pdf'
     if (mimeType.includes('video')) return 'video'
@@ -107,10 +110,22 @@ export default function DigitalProductUpload({
         throw new Error('Bestandstype niet ondersteund. Toegestaan: PDF, Video, Audio, ZIP, Word')
       }
 
-      // Validate file size (max 100MB)
-      const maxSize = 100 * 1024 * 1024 // 100MB
+      // Validate file size
+      // Note: Cloudinary free tier has a 10MB limit for raw files
+      // For video/audio, limits may be higher, but we'll check both
+      const isRawFile = !file.type.startsWith('video/') && !file.type.startsWith('audio/')
+      const maxSize = isRawFile ? CLOUDINARY_FREE_TIER_LIMIT : 100 * 1024 * 1024 // 10MB for raw, 100MB for video/audio
+      
       if (file.size > maxSize) {
-        throw new Error('Bestand te groot. Maximum grootte is 100MB')
+        if (isRawFile) {
+          const sizeMB = (file.size / (1024 * 1024)).toFixed(2)
+          throw new Error(
+            `Bestand te groot voor Cloudinary free tier. Bestand: ${sizeMB}MB, Maximum: 10MB. ` +
+            `Opties: 1) Upgrade Cloudinary plan, 2) Comprimeer bestand, 3) Splits bestand op`
+          )
+        } else {
+          throw new Error(`Bestand te groot. Maximum grootte is ${maxSize / (1024 * 1024)}MB`)
+        }
       }
 
       console.log('File validation passed, uploading file directly to Cloudinary...')
@@ -160,9 +175,34 @@ export default function DigitalProductUpload({
       )
 
       if (!cloudRes.ok) {
-        const errText = await cloudRes.text()
-        console.error('Cloudinary upload failed:', errText)
-        throw new Error(`Cloudinary upload mislukt: ${errText}`)
+        let errorMessage = 'Cloudinary upload mislukt'
+        try {
+          const errData = await cloudRes.json()
+          
+          // Check for file size limit error
+          if (errData.error?.message?.includes('File size too large') || 
+              errData.error?.message?.includes('Maximum is')) {
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2)
+            errorMessage = `Bestand te groot voor Cloudinary free tier (${sizeMB}MB > 10MB). ` +
+              `Upgrade je Cloudinary plan of comprimeer het bestand.`
+          } else if (errData.error?.message) {
+            errorMessage = `Cloudinary fout: ${errData.error.message}`
+          } else {
+            errorMessage = `Cloudinary upload mislukt (status: ${cloudRes.status})`
+          }
+        } catch {
+          // If JSON parsing fails, use text
+          const errText = await cloudRes.text()
+          if (errText.includes('File size too large') || errText.includes('Maximum is')) {
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2)
+            errorMessage = `Bestand te groot voor Cloudinary free tier (${sizeMB}MB > 10MB). ` +
+              `Upgrade je Cloudinary plan of comprimeer het bestand.`
+          } else {
+            errorMessage = `Cloudinary upload mislukt: ${errText.substring(0, 200)}`
+          }
+        }
+        console.error('Cloudinary upload failed:', errorMessage)
+        throw new Error(errorMessage)
       }
 
       const result = await cloudRes.json()
@@ -303,7 +343,10 @@ export default function DigitalProductUpload({
               <Upload className="w-8 h-8 text-primary mx-auto" />
               <p className="text-white font-medium">Klik om bestand te uploaden</p>
               <p className="text-sm text-text-secondary">
-                PDF, Video, Audio, ZIP, Word documenten (max 100MB)
+                PDF, Video, Audio, ZIP, Word documenten
+              </p>
+              <p className="text-xs text-text-secondary mt-1">
+                ⚠️ PDF/ZIP/Word: max 10MB (Cloudinary free tier) | Video/Audio: max 100MB
               </p>
             </div>
           )}
