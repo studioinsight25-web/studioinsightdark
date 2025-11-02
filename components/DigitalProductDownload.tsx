@@ -317,8 +317,8 @@ export default function DigitalProductDownload({
         <ul className="text-sm text-green-300 space-y-1">
           <li>• Klik op "Download" om het bestand te downloaden</li>
           <li>• Bewaar de bestanden op een veilige locatie</li>
-          <li>• Download links verlopen na 1 uur</li>
-          <li>• Er zijn download limieten per bestand</li>
+          <li>• Download links zijn 30 dagen geldig</li>
+          <li>• Download zoveel je wilt (limieten tijdelijk uitgeschakeld voor testing)</li>
         </ul>
       </div>
     </div>

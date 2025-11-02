@@ -109,16 +109,31 @@ export async function GET(
     await DigitalProductDatabaseService.trackDownload(userId, productId)
 
     // Fetch file from Cloudinary/storage and stream it
+    console.log(`[Download] Attempting to fetch file from URL: ${digitalProduct.fileUrl}`)
+    console.log(`[Download] Digital product details:`, {
+      id: digitalProduct.id,
+      productId: digitalProduct.productId,
+      fileName: digitalProduct.fileName,
+      fileUrl: digitalProduct.fileUrl,
+      fileSize: digitalProduct.fileSize
+    })
+    
     try {
       const fileResponse = await fetch(digitalProduct.fileUrl)
       
       if (!fileResponse.ok) {
-        console.error(`[Download] Failed to fetch file from ${digitalProduct.fileUrl}: ${fileResponse.status}`)
+        console.error(`[Download] Failed to fetch file from ${digitalProduct.fileUrl}:`, {
+          status: fileResponse.status,
+          statusText: fileResponse.statusText,
+          headers: Object.fromEntries(fileResponse.headers.entries())
+        })
         return NextResponse.json(
-          { error: 'File not found in storage' },
+          { error: `File not found in storage. URL: ${digitalProduct.fileUrl.substring(0, 100)}...`, details: 'Check if the file exists in Cloudinary and the URL is correct' },
           { status: 404 }
         )
       }
+      
+      console.log(`[Download] ✅ Successfully fetched file, size: ${fileResponse.headers.get('Content-Length')} bytes`)
 
       // Get file content
       const fileBuffer = await fileResponse.arrayBuffer()
