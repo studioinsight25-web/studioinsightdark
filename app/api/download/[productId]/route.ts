@@ -180,62 +180,95 @@ export async function GET(
       // Continue with original URL
     }
     
+    // For Cloudinary files, try to use Admin API to download directly (works even if blocked)
+    // This is more reliable than signed URLs for blocked files
+    if (isCloudinaryUrl && process.env.CLOUDINARY_API_SECRET) {
+      try {
+        // Extract public_id from URL
+        const cloudinaryMatch = digitalProduct.fileUrl.match(/cloudinary\.com\/[^\/]+\/([^\/]+)\/upload\/(?:v\d+\/|s--[^\/]+--\/v\d+\/)?(.+)$/)
+        if (cloudinaryMatch) {
+          const resourceType = cloudinaryMatch[1]
+          const pathWithExt = cloudinaryMatch[2]
+          // Remove signature and version if present, keep only the path
+          const cleanPath = pathWithExt.replace(/^s--[^\/]+--\/v\d+\//, '').replace(/^v\d+\//, '')
+          const publicId = cleanPath.replace(/\.\w+$/, '')
+          
+          console.log(`[Download] Using Admin API to download file with public_id: ${publicId}, resource_type: ${resourceType}`)
+          
+          // Use Cloudinary Admin API to get the file directly via API (bypasses delivery restrictions)
+          const cloudName = process.env.CLOUDINARY_CLOUD_NAME!
+          const apiKey = process.env.CLOUDINARY_API_KEY!
+          const apiSecret = process.env.CLOUDINARY_API_SECRET!
+          
+          // Generate authentication signature for Admin API
+          const crypto = await import('crypto')
+          const timestamp = Math.floor(Date.now() / 1000)
+          const signatureString = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`
+          const signature = crypto.createHash('sha1').update(signatureString).digest('hex')
+          
+          // Use Admin API endpoint to download the file directly
+          // This works even if file is "Blocked for delivery"
+          const resourceTypeForAPI = resourceType === 'video' ? 'video' : 'raw'
+          const adminApiUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceTypeForAPI}/download?public_id=${encodeURIComponent(publicId)}&api_key=${apiKey}&timestamp=${timestamp}&signature=${signature}`
+          
+          console.log(`[Download] Fetching via Admin API: ${adminApiUrl.substring(0, 150)}...`)
+          
+          const adminResponse = await fetch(adminApiUrl, {
+            method: 'GET',
+          })
+          
+          if (adminResponse.ok) {
+            console.log(`[Download] ✅ Admin API download successful, streaming file`)
+            // Stream the file directly from Admin API response
+            const fileBuffer = await adminResponse.arrayBuffer()
+            
+            // Get product name for filename
+            const { DatabaseProductService } = await import('@/lib/products-database')
+            const product = await DatabaseProductService.getProduct(digitalProduct.productId)
+            
+            const originalFileName = digitalProduct.fileName || 'download'
+            const fileExtension = originalFileName.split('.').pop() || 'pdf'
+            const productName = product ? 
+              product.name.replace(/[^a-z0-9]/gi, '-').toLowerCase() : 
+              'product'
+            const safeFileName = `${productName}-${digitalProduct.productId}.${fileExtension}`
+            
+            // Track download
+            await DigitalProductDatabaseService.trackDownload(userId, productId)
+            
+            // Determine content type
+            const contentType = digitalProduct.fileType || 
+              (fileExtension === 'pdf' ? 'application/pdf' :
+               fileExtension === 'zip' ? 'application/zip' :
+               fileExtension === 'epub' ? 'application/epub+zip' :
+               'application/octet-stream')
+            
+            // Return file with proper headers
+            return new NextResponse(fileBuffer, {
+              status: 200,
+              headers: {
+                'Content-Type': contentType,
+                'Content-Disposition': `attachment; filename="${safeFileName}"; filename*=UTF-8''${encodeURIComponent(safeFileName)}`,
+                'Content-Length': fileBuffer.byteLength.toString(),
+                'Cache-Control': 'no-cache',
+              },
+            })
+          } else {
+            console.error(`[Download] Admin API download failed: ${adminResponse.status} ${adminResponse.statusText}`)
+            // Fall through to try regular signed URL
+          }
+        }
+      } catch (adminError) {
+        console.error(`[Download] Admin API error:`, adminError)
+        // Fall through to try regular fetch
+      }
+    }
+    
+    // Fallback: Try regular fetch with signed URL
     try {
       let fileResponse = await fetch(fileUrl, {
-        // Don't follow redirects - Cloudinary might redirect
         redirect: 'follow'
       })
-      
-      // If signed URL fails (404/403), try using Cloudinary Admin API to stream file directly
-      // This bypasses "Blocked for delivery" restrictions by using Admin API credentials
-      if (!fileResponse.ok && isCloudinaryUrl && process.env.CLOUDINARY_API_SECRET) {
-        console.log(`[Download] Signed URL failed (${fileResponse.status}), trying Cloudinary Admin API stream`)
-        
-        try {
-          // Extract public_id again
-          const cloudinaryMatch = digitalProduct.fileUrl.match(/cloudinary\.com\/[^\/]+\/([^\/]+)\/upload\/v\d+\/(.+)$/)
-          if (cloudinaryMatch) {
-            const resourceType = cloudinaryMatch[1]
-            const pathWithExt = cloudinaryMatch[2]
-            const publicId = pathWithExt.replace(/\.\w+$/, '')
-            
-            console.log(`[Download] Using Admin API to stream file with public_id: ${publicId}`)
-            
-            // Use Cloudinary Admin API to generate a download URL with authentication
-            // This works even for "Blocked for delivery" files
-            const { v2: cloudinary } = await import('cloudinary')
-            cloudinary.config({
-              cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
-              api_key: process.env.CLOUDINARY_API_KEY!,
-              api_secret: process.env.CLOUDINARY_API_SECRET!,
-            })
-            
-            // Generate a signed URL - the SDK handles authentication automatically
-            const resourceTypeForSDK = resourceType === 'video' ? 'video' : 'raw'
-            const signedUrl = cloudinary.url(publicId, {
-              resource_type: resourceTypeForSDK,
-              secure: true,
-              sign_url: true,
-            })
-            
-            console.log(`[Download] Admin API signed URL generated: ${signedUrl.substring(0, 150)}...`)
-            
-            // Try fetching with the signed URL
-            fileResponse = await fetch(signedUrl, {
-              method: 'GET',
-            })
-            
-            if (fileResponse.ok) {
-              console.log(`[Download] ✅ Admin API fetch successful`)
-            } else {
-              console.error(`[Download] Admin API fetch also failed: ${fileResponse.status} ${fileResponse.statusText}`)
-            }
-          }
-        } catch (adminError) {
-          console.error(`[Download] Admin API fallback failed:`, adminError)
-          // Continue to show error to user
-        }
-      }
       
       if (!fileResponse.ok) {
         console.error(`[Download] Failed to fetch file from ${fileUrl}:`, {
