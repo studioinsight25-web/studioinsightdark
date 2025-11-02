@@ -35,22 +35,45 @@ export async function GET(request: NextRequest) {
     console.log(`[Debug Order] Found user: ${user.id}, ${user.email}`)
 
     // Get all orders for this user
-    const ordersResult = await DatabaseService.query(
-      `SELECT 
-        o.id,
-        o.user_id,
-        o.status,
-        o.total_amount,
-        o.payment_id,
-        o.created_at,
-        o.updated_at,
-        o.paid_at
-      FROM orders o
-      WHERE o.user_id = $1
-      ORDER BY o.created_at DESC
-      LIMIT 10`,
-      [user.id]
-    )
+    // Try to get paid_at column, but handle if it doesn't exist
+    let ordersResult
+    try {
+      // Try with paid_at (snake_case)
+      ordersResult = await DatabaseService.query(
+        `SELECT 
+          o.id,
+          o.user_id,
+          o.status,
+          o.total_amount,
+          o.payment_id,
+          o.created_at,
+          o.updated_at,
+          o.paid_at
+        FROM orders o
+        WHERE o.user_id = $1
+        ORDER BY o.created_at DESC
+        LIMIT 10`,
+        [user.id]
+      )
+    } catch (error) {
+      // If paid_at doesn't exist, try without it
+      console.log('[Debug Order] paid_at column not found, trying without it')
+      ordersResult = await DatabaseService.query(
+        `SELECT 
+          o.id,
+          o.user_id,
+          o.status,
+          o.total_amount,
+          o.payment_id,
+          o.created_at,
+          o.updated_at
+        FROM orders o
+        WHERE o.user_id = $1
+        ORDER BY o.created_at DESC
+        LIMIT 10`,
+        [user.id]
+      )
+    }
 
     console.log(`[Debug Order] Found ${ordersResult.length} orders`)
 
