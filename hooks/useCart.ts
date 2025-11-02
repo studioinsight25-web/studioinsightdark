@@ -85,14 +85,13 @@ export function useCart(userId: string) {
 
   const updateQuantity = async (productId: string, quantity: number) => {
     try {
-      // For now, remove and re-add with new quantity
-      // In a real app, you'd have a PUT endpoint for this
       if (quantity <= 0) {
         return await removeFromCart(productId)
       }
 
+      // Use PUT endpoint to update quantity (replaces, doesn't add)
       const response = await fetch('/api/cart', {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -103,7 +102,7 @@ export function useCart(userId: string) {
       })
 
       if (response.ok) {
-        // Reload cart items
+        // Reload cart items to get updated data
         const cartResponse = await fetch('/api/cart')
         if (cartResponse.ok) {
           const data = await cartResponse.json()
@@ -112,7 +111,9 @@ export function useCart(userId: string) {
         setError(null)
         return true
       } else {
-        setError('Failed to update quantity')
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Failed to update quantity:', errorData)
+        setError(errorData.error || 'Failed to update quantity')
         return false
       }
     } catch (err) {

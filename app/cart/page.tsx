@@ -14,6 +14,7 @@ import SessionManager from '@/lib/session'
 export default function CartPage() {
   const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
+  const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set())
   const { 
     cartItems, 
     loading, 
@@ -31,10 +32,25 @@ export default function CartPage() {
   }, [])
 
   const handleQuantityChange = async (productId: string, newQuantity: number) => {
-    if (newQuantity < 1) {
-      await removeFromCart(productId)
-    } else {
-      await updateQuantity(productId, newQuantity)
+    // Prevent multiple simultaneous updates for the same item
+    if (updatingItems.has(productId)) {
+      return
+    }
+
+    setUpdatingItems(prev => new Set(prev).add(productId))
+    
+    try {
+      if (newQuantity < 1) {
+        await removeFromCart(productId)
+      } else {
+        await updateQuantity(productId, newQuantity)
+      }
+    } finally {
+      setUpdatingItems(prev => {
+        const next = new Set(prev)
+        next.delete(productId)
+        return next
+      })
     }
   }
 
@@ -241,17 +257,19 @@ export default function CartPage() {
                           <div className="flex items-center gap-2 bg-dark-card px-2 py-1 rounded-lg border border-dark-border">
                             <button
                               onClick={() => handleQuantityChange(item.productId, item.quantity - 1)}
-                              className="w-8 h-8 bg-dark-section border border-dark-border rounded flex items-center justify-center hover:border-primary hover:bg-primary/10 transition-colors"
+                              disabled={updatingItems.has(item.productId)}
+                              className="w-8 h-8 bg-dark-section border border-dark-border rounded flex items-center justify-center hover:border-primary hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               aria-label="Verlaag aantal"
                             >
                               <Minus className="w-4 h-4 text-white" />
                             </button>
                             <span className="w-10 text-center text-white font-semibold">
-                              {item.quantity}
+                              {updatingItems.has(item.productId) ? '...' : item.quantity}
                             </span>
                             <button
                               onClick={() => handleQuantityChange(item.productId, item.quantity + 1)}
-                              className="w-8 h-8 bg-dark-section border border-dark-border rounded flex items-center justify-center hover:border-primary hover:bg-primary/10 transition-colors"
+                              disabled={updatingItems.has(item.productId)}
+                              className="w-8 h-8 bg-dark-section border border-dark-border rounded flex items-center justify-center hover:border-primary hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               aria-label="Verhoog aantal"
                             >
                               <Plus className="w-4 h-4 text-white" />

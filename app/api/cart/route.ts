@@ -64,6 +64,48 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// PUT /api/cart - Update item quantity in cart
+export async function PUT(request: NextRequest) {
+  try {
+    const session = getSessionFromRequest(request)
+    if (!session || !session.userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { productId, quantity } = body
+    
+    if (!productId) {
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
+    }
+
+    if (quantity === undefined || quantity === null) {
+      return NextResponse.json({ error: 'Quantity is required' }, { status: 400 })
+    }
+
+    if (quantity <= 0) {
+      // Remove item if quantity is 0 or negative
+      const success = await CartService.removeFromCart(session.userId, productId)
+      if (success) {
+        return NextResponse.json({ success: true })
+      } else {
+        return NextResponse.json({ error: 'Failed to remove from cart' }, { status: 500 })
+      }
+    }
+
+    const result = await CartService.updateCartItemQuantity(session.userId, productId, quantity)
+    
+    if (result) {
+      return NextResponse.json({ success: true, cartItem: result })
+    } else {
+      return NextResponse.json({ error: 'Failed to update quantity' }, { status: 500 })
+    }
+  } catch (error) {
+    console.error('Error updating cart quantity:', error)
+    return NextResponse.json({ error: 'Failed to update quantity' }, { status: 500 })
+  }
+}
+
 // DELETE /api/cart - Remove item from cart
 export async function DELETE(request: NextRequest) {
   try {
