@@ -118,73 +118,110 @@ export async function GET(
       fileSize: digitalProduct.fileSize
     })
     
-    // Extract public_id from Cloudinary URL
+    // Extract public_id from Cloudinary URL and generate signed URL if needed
     // Format: https://res.cloudinary.com/cloudname/resource_type/upload/v1234567/folder/public_id.ext
     let fileUrl = digitalProduct.fileUrl
-    let publicId: string | null = null
+    const isCloudinaryUrl = fileUrl.includes('cloudinary.com')
     
     try {
-      // Try to extract public_id from URL
-      const cloudinaryUrlMatch = fileUrl.match(/cloudinary\.com\/[^\/]+\/([^\/]+)\/upload\/v\d+\/(.+)$/)
-      if (cloudinaryUrlMatch) {
-        const resourceType = cloudinaryUrlMatch[1]
-        publicId = cloudinaryUrlMatch[2].replace(/\.\w+$/, '') // Remove extension
-        console.log(`[Download] Extracted public_id: ${publicId}, resource_type: ${resourceType}`)
-        
-        // Generate signed URL if we have API credentials (works even if file is "Blocked for delivery")
+      
+      if (isCloudinaryUrl) {
         const cloudName = process.env.CLOUDINARY_CLOUD_NAME
         const apiKey = process.env.CLOUDINARY_API_KEY
         const apiSecret = process.env.CLOUDINARY_API_SECRET
         
-        if (cloudName && apiKey && apiSecret && publicId) {
-          // Import crypto for signature generation
-          const crypto = await import('crypto')
+        // Extract public_id from URL (includes folder path)
+        // Format: https://res.cloudinary.com/cloudname/resource_type/upload/v1234567/folder/subfolder/file
+        const cloudinaryMatch = fileUrl.match(/cloudinary\.com\/[^\/]+\/([^\/]+)\/upload\/v\d+\/(.+)$/)
+        
+        if (cloudinaryMatch && cloudName && apiKey && apiSecret) {
+          const resourceType = cloudinaryMatch[1] // 'raw', 'video', etc.
+          const pathWithExt = cloudinaryMatch[2] // 'studio-insight/digital-products/product-123/file.pdf'
           
-          // Use Cloudinary SDK to generate signed URL properly
-          // This will work even if file is "Blocked for delivery"
-          const { v2: cloudinary } = await import('cloudinary')
-          cloudinary.config({
-            cloud_name: cloudName,
-            api_key: apiKey,
-            api_secret: apiSecret,
-          })
+          // Extract public_id: remove file extension but keep folder path
+          const publicId = pathWithExt.replace(/\.\w+$/, '') // 'studio-insight/digital-products/product-123/file'
           
-          // Generate signed URL using Cloudinary SDK
-          // This automatically handles signatures and works for blocked files
+          console.log(`[Download] Extracted public_id: ${publicId}, resource_type: ${resourceType}`)
+          
+          // Use Cloudinary SDK to generate signed URL (works even if file is "Blocked for delivery")
           try {
-            const signedUrl = cloudinary.url(publicId, {
-              resource_type: resourceType === 'video' ? 'video' : 'raw',
-              secure: true,
-              sign_url: true,
+            const { v2: cloudinary } = await import('cloudinary')
+            cloudinary.config({
+              cloud_name: cloudName,
+              api_key: apiKey,
+              api_secret: apiSecret,
             })
             
-            console.log(`[Download] ✅ Generated signed URL for blocked file using Cloudinary SDK`)
+            // Generate signed URL using Cloudinary SDK
+            const resourceTypeForSDK = resourceType === 'video' ? 'video' : 'raw'
+            const signedUrl = cloudinary.url(publicId, {
+              resource_type: resourceTypeForSDK,
+              secure: true,
+              sign_url: true,
+              type: 'upload', // Explicitly set to upload type
+            })
+            
+            console.log(`[Download] ✅ Generated signed URL using Cloudinary SDK for public_id: ${publicId}`)
+            console.log(`[Download] Signed URL: ${signedUrl.substring(0, 150)}...`)
             fileUrl = signedUrl
           } catch (sdkError) {
-            console.warn(`[Download] Cloudinary SDK failed, trying manual signature:`, sdkError)
-            // Fallback: Try manual signed URL format
-            const timestamp = Math.floor(Date.now() / 1000)
-            const signatureString = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`
-            const fullSignature = crypto.createHash('sha1').update(signatureString).digest('hex')
-            const shortSignature = fullSignature.substring(0, 8)
-            
-            // Extract original URL parts
-            const urlParts = fileUrl.match(/cloudinary\.com\/[^\/]+\/([^\/]+)\/upload\/(.*)/)
-            if (urlParts && urlParts[2]) {
-              const afterUpload = urlParts[2]
-              const signedPath = afterUpload.replace(/^(v\d+\/)?/, `s--${shortSignature}--/$1`)
-              fileUrl = `https://res.cloudinary.com/${cloudName}/${resourceType}/upload/${signedPath}?timestamp=${timestamp}&api_key=${apiKey}`
-              console.log(`[Download] ✅ Generated signed URL manually for blocked file`)
-            }
+            console.error(`[Download] Cloudinary SDK failed:`, sdkError)
+            // Fallback: Use original URL (may fail if blocked)
+            console.warn(`[Download] Falling back to original URL`)
           }
+        } else {
+          console.warn(`[Download] Could not extract public_id from Cloudinary URL: ${fileUrl}`)
         }
+      } else {
+        console.log(`[Download] Not a Cloudinary URL, using as-is: ${fileUrl.substring(0, 100)}...`)
       }
     } catch (urlError) {
-      console.warn(`[Download] Could not generate signed URL, using original URL:`, urlError)
+      console.error(`[Download] Error processing URL:`, urlError)
+      // Continue with original URL
     }
     
     try {
-      const fileResponse = await fetch(fileUrl)
+      let fileResponse = await fetch(fileUrl, {
+        // Don't follow redirects - Cloudinary might redirect
+        redirect: 'follow'
+      })
+      
+      // If signed URL fails, try using Cloudinary Admin API to fetch the file directly
+      if (!fileResponse.ok && isCloudinaryUrl && process.env.CLOUDINARY_API_SECRET) {
+        console.log(`[Download] Signed URL failed (${fileResponse.status}), trying direct Cloudinary Admin API fetch`)
+        
+        try {
+          // Extract public_id again if we haven't already
+          const cloudinaryMatch = digitalProduct.fileUrl.match(/cloudinary\.com\/[^\/]+\/([^\/]+)\/upload\/v\d+\/(.+)$/)
+          if (cloudinaryMatch) {
+            const resourceType = cloudinaryMatch[1]
+            const pathWithExt = cloudinaryMatch[2]
+            const publicId = pathWithExt.replace(/\.\w+$/, '')
+            
+            // Use Cloudinary Admin API to generate a proper download URL
+            // This works even for blocked files if we have API credentials
+            const { v2: cloudinary } = await import('cloudinary')
+            cloudinary.config({
+              cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+              api_key: process.env.CLOUDINARY_API_KEY,
+              api_secret: process.env.CLOUDINARY_API_SECRET,
+            })
+            
+            // Generate authenticated URL using Admin API
+            const adminUrl = cloudinary.url(publicId, {
+              resource_type: resourceType === 'video' ? 'video' : 'raw',
+              secure: true,
+              sign_url: true,
+              type: 'authenticated', // Use authenticated delivery for blocked files
+            })
+            
+            console.log(`[Download] Trying authenticated Cloudinary URL: ${adminUrl.substring(0, 150)}...`)
+            fileResponse = await fetch(adminUrl)
+          }
+        } catch (adminError) {
+          console.error(`[Download] Admin API fallback also failed:`, adminError)
+        }
+      }
       
       if (!fileResponse.ok) {
         console.error(`[Download] Failed to fetch file from ${fileUrl}:`, {
@@ -192,9 +229,18 @@ export async function GET(
           statusText: fileResponse.statusText,
           headers: Object.fromEntries(fileResponse.headers.entries())
         })
+        
+        // More helpful error message
+        let errorMessage = `File not found in storage (Status: ${fileResponse.status})`
+        if (fileResponse.status === 403 || fileResponse.status === 401) {
+          errorMessage = 'File access denied. File may be blocked in Cloudinary. Please contact support.'
+        } else if (fileResponse.status === 404) {
+          errorMessage = 'File not found in Cloudinary. The file may have been deleted or the URL is incorrect.'
+        }
+        
         return NextResponse.json(
-          { error: `File not found in storage. URL: ${fileUrl.substring(0, 100)}...`, details: 'Check if the file exists in Cloudinary and the URL is correct' },
-          { status: 404 }
+          { error: errorMessage, url: fileUrl.substring(0, 150), details: 'Check Cloudinary console for file access settings' },
+          { status: fileResponse.status || 404 }
         )
       }
       
