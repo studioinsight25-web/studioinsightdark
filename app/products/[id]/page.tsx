@@ -11,7 +11,6 @@ import {
   Clock, 
   Users, 
   Play, 
-  Download, 
   Tag,
   Calendar,
   Eye,
@@ -212,7 +211,7 @@ export default function ProductDetailPage() {
                       {product.type === 'course' ? (
                         <Play className="w-16 h-16 text-text-secondary" />
                       ) : product.type === 'ebook' ? (
-                        <Download className="w-16 h-16 text-text-secondary" />
+                        <Eye className="w-16 h-16 text-text-secondary" />
                       ) : (
                         <Eye className="w-16 h-16 text-text-secondary" />
                       )}
