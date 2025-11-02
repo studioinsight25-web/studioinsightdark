@@ -15,6 +15,88 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const email = searchParams.get('email') || session.email
+    const orderId = searchParams.get('orderId')
+
+    // If orderId is provided, check that specific order
+    if (orderId) {
+      console.log(`[Debug Order] Checking specific order: ${orderId}`)
+      
+      let orderResult
+      try {
+        orderResult = await DatabaseService.query(
+          `SELECT 
+            o.id,
+            o.user_id,
+            o.status,
+            o.total_amount,
+            o.payment_id,
+            o.created_at,
+            o.updated_at,
+            u.email as user_email,
+            u.name as user_name
+          FROM orders o
+          LEFT JOIN users u ON o.user_id = u.id
+          WHERE o.id = $1`,
+          [orderId]
+        )
+      } catch (error) {
+        return NextResponse.json({
+          error: 'Failed to fetch order',
+          details: error instanceof Error ? error.message : 'Unknown error',
+          orderId
+        }, { status: 500 })
+      }
+
+      if (orderResult.length === 0) {
+        return NextResponse.json({
+          error: 'Order not found in database',
+          orderId,
+          note: 'This order exists in Mollie but not in our database. The order was likely never created or was deleted.'
+        })
+      }
+
+      const order = orderResult[0]
+
+      // Get order items
+      const itemsResult = await DatabaseService.query(
+        `SELECT 
+          oi.id,
+          oi.product_id,
+          oi.quantity,
+          oi.price,
+          p.name as product_name,
+          p.type as product_type
+        FROM order_items oi
+        LEFT JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = $1`,
+        [order.id]
+      )
+
+      return NextResponse.json({
+        order: {
+          id: order.id,
+          userId: order.user_id,
+          userEmail: order.user_email,
+          userName: order.user_name,
+          status: order.status,
+          totalAmount: parseFloat(order.total_amount || '0'),
+          paymentId: order.payment_id,
+          createdAt: order.created_at,
+          updatedAt: order.updated_at
+        },
+        items: itemsResult.map((item: any) => ({
+          id: item.id,
+          productId: item.product_id,
+          productName: item.product_name,
+          productType: item.product_type,
+          quantity: parseInt(item.quantity || '1', 10),
+          price: parseFloat(item.price || '0')
+        })),
+        itemsCount: itemsResult.length,
+        isPaid: order.status?.toLowerCase() === 'paid',
+        needsFixing: order.status?.toLowerCase() !== 'paid' || order.user_id !== session.userId
+      })
+    }
 
     console.log(`[Debug Order] Checking orders for email: ${email}`)
 
