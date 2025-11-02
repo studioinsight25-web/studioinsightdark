@@ -39,13 +39,28 @@ export class DigitalProductDatabaseService {
 
   static async getDigitalProductsByProductId(productId: string): Promise<DigitalProduct[]> {
     try {
+      console.log(`[getDigitalProductsByProductId] Searching for digital products with productId: ${productId}`)
+      
       const result = await DatabaseService.query(
         'SELECT * FROM "digitalProducts" WHERE "productId" = $1 ORDER BY "createdAt" DESC',
         [productId]
       )
+      
+      console.log(`[getDigitalProductsByProductId] Found ${result.length} digital products in database for productId: ${productId}`)
+      
+      if (result.length === 0) {
+        // Check if there are any digital products at all
+        const allProducts = await DatabaseService.query('SELECT id, "productId", "fileName" FROM "digitalProducts" LIMIT 10')
+        console.log(`[getDigitalProductsByProductId] Sample digital products in database:`, allProducts.map((p: any) => ({
+          id: p.id,
+          productId: p.productId,
+          fileName: p.fileName
+        })))
+      }
+      
       return result.map(this.convertDbDigitalProduct)
     } catch (error) {
-      console.error('Error fetching digital products by product ID:', error)
+      console.error('[getDigitalProductsByProductId] Error fetching digital products by product ID:', error)
       return []
     }
   }
@@ -268,35 +283,66 @@ export class DigitalProductDatabaseService {
    */
   static async hasUserPurchasedProduct(userId: string, productId: string): Promise<boolean> {
     try {
-      // Try camelCase first, fallback to snake_case
+      console.log(`[hasUserPurchasedProduct] Checking if user ${userId} purchased product ${productId}`)
+      
+      // Try UUID cast for user_id first, then text comparison
+      // Also accept PENDING orders with payment_id (like in purchases endpoint)
       let result
       try {
+        // Try UUID first
         result = await DatabaseService.query(
-          `SELECT o.id 
-           FROM orders o 
-           JOIN "orderItems" oi ON o.id = oi."orderId" 
-           WHERE oi."productId" = $1 
-             AND o."userId" = $2 
-             AND UPPER(o.status) = 'PAID'
-           LIMIT 1`,
-          [productId, userId]
-        )
-      } catch {
-        // Fallback to snake_case (actual database schema)
-        result = await DatabaseService.query(
-          `SELECT o.id 
+          `SELECT o.id, o.status, o.payment_id
            FROM orders o 
            JOIN order_items oi ON o.id = oi.order_id 
            WHERE oi.product_id = $1 
-             AND o.user_id = $2 
-             AND UPPER(o.status) = 'PAID'
+             AND o.user_id = $2::uuid 
+             AND (UPPER(o.status) = 'PAID' OR (o.status = 'PENDING' AND o.payment_id IS NOT NULL))
            LIMIT 1`,
           [productId, userId]
         )
+      } catch (uuidError) {
+        // Fallback to text comparison
+        try {
+          result = await DatabaseService.query(
+            `SELECT o.id, o.status, o.payment_id
+             FROM orders o 
+             JOIN order_items oi ON o.id = oi.order_id 
+             WHERE oi.product_id = $1 
+               AND o.user_id::text = $2 
+               AND (UPPER(o.status) = 'PAID' OR (o.status = 'PENDING' AND o.payment_id IS NOT NULL))
+             LIMIT 1`,
+            [productId, userId]
+          )
+        } catch (textError) {
+          // Last fallback: try camelCase
+          try {
+            result = await DatabaseService.query(
+              `SELECT o.id 
+               FROM orders o 
+               JOIN "orderItems" oi ON o.id = oi."orderId" 
+               WHERE oi."productId" = $1 
+                 AND o."userId" = $2 
+                 AND UPPER(o.status) = 'PAID'
+               LIMIT 1`,
+              [productId, userId]
+            )
+          } catch (camelError) {
+            console.error('[hasUserPurchasedProduct] All query attempts failed:', camelError)
+            return false
+          }
+        }
       }
-      return result.length > 0
+      
+      const hasPurchased = result.length > 0
+      if (hasPurchased) {
+        console.log(`[hasUserPurchasedProduct] ✅ User ${userId} HAS purchased product ${productId}`)
+      } else {
+        console.log(`[hasUserPurchasedProduct] ❌ User ${userId} has NOT purchased product ${productId}`)
+      }
+      
+      return hasPurchased
     } catch (error) {
-      console.error('Error checking product purchase:', error)
+      console.error('[hasUserPurchasedProduct] Error checking product purchase:', error)
       return false
     }
   }

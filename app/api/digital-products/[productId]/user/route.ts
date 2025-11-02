@@ -20,6 +20,8 @@ export async function GET(
 
     const { productId } = await params
     
+    console.log(`[Digital Products API] Request for productId: ${productId}, userId: ${session.userId}`)
+    
     // CRITICAL SECURITY CHECK: Verify user has purchased this product
     const hasPurchased = await DigitalProductDatabaseService.hasUserPurchasedProduct(
       session.userId, 
@@ -27,15 +29,24 @@ export async function GET(
     )
     
     if (!hasPurchased) {
-      console.log(`Access denied: User ${session.userId} attempted to access digital products for unpurchased product ${productId}`)
+      console.log(`[Digital Products API] ❌ Access denied: User ${session.userId} attempted to access digital products for unpurchased product ${productId}`)
       return NextResponse.json(
         { error: 'You have not purchased this product. Access denied.' },
         { status: 403 }
       )
     }
     
+    console.log(`[Digital Products API] ✅ User has access, fetching digital products for productId: ${productId}`)
+    
     // Get digital products for this product ID (only if user has access)
     const products = await DigitalProductDatabaseService.getDigitalProductsByProductId(productId)
+    
+    console.log(`[Digital Products API] Found ${products.length} digital products for productId: ${productId}`)
+    if (products.length > 0) {
+      console.log(`[Digital Products API] Digital products:`, products.map(p => ({ id: p.id, fileName: p.fileName, productId: p.productId })))
+    } else {
+      console.warn(`[Digital Products API] ⚠️ No digital products found for productId: ${productId}`)
+    }
     
     return NextResponse.json(products)
   } catch (error) {
