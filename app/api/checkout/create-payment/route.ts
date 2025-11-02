@@ -203,7 +203,35 @@ export async function POST(request: NextRequest) {
       return product
     }))
 
+    console.log(`[Checkout] Creating order for user ${user.id} (${user.email}) with ${products.length} products`)
     const order = await OrderService.createOrder(user.id, products)
+    
+    if (!order) {
+      console.error('[Checkout] ❌ Order creation returned null - order was not created!')
+      return NextResponse.json(
+        { error: 'Order aanmaken mislukt' },
+        { status: 500 }
+      )
+    }
+    
+    console.log(`[Checkout] ✅ Order created successfully: ${order.id} for user ${user.id}`)
+    
+    // Verify order exists in database (DatabaseService already imported above)
+    const verifyOrder = await DatabaseService.query(
+      'SELECT id, user_id, status FROM orders WHERE id = $1',
+      [order.id]
+    )
+    
+    if (verifyOrder.length === 0) {
+      console.error(`[Checkout] ❌ CRITICAL: Order ${order.id} was created but not found in database!`)
+    } else {
+      console.log(`[Checkout] ✅ Order verified in database:`, {
+        id: verifyOrder[0].id,
+        userId: verifyOrder[0].user_id,
+        status: verifyOrder[0].status,
+        matchesUser: verifyOrder[0].user_id === user.id
+      })
+    }
 
     // Get base URL: prefer env var, fallback to request origin, then production URL
     const getBaseUrl = () => {
