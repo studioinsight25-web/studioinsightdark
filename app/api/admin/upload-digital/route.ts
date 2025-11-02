@@ -4,13 +4,24 @@ import { requireAdminAPI } from '@/lib/admin-auth'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('📤 Digital file upload request received')
+    
     await requireAdminAPI()
+    console.log('✅ Admin authentication passed')
     
     const formData = await request.formData()
     const file = formData.get('file') as File
     const folder = formData.get('folder') as string || 'studio-insight/digital-products'
     
+    console.log('📁 File info:', file ? {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      folder
+    } : 'No file found')
+    
     if (!file) {
+      console.error('❌ No file in request')
       return NextResponse.json(
         { success: false, error: 'Geen bestand geüpload' },
         { status: 400 }

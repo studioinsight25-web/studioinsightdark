@@ -126,8 +126,31 @@ export default function DigitalProductUpload({
       })
 
       if (!uploadResponse.ok) {
-        const uploadError = await uploadResponse.json()
-        throw new Error(uploadError.error || 'Bestand upload mislukt')
+        // Try to parse JSON error, but handle non-JSON responses
+        let errorMessage = 'Bestand upload mislukt'
+        try {
+          const contentType = uploadResponse.headers.get('content-type')
+          if (contentType && contentType.includes('application/json')) {
+            const uploadError = await uploadResponse.json()
+            errorMessage = uploadError.error || uploadError.message || errorMessage
+          } else {
+            // Response is not JSON, get text instead
+            const errorText = await uploadResponse.text()
+            errorMessage = errorText || `Upload mislukt (status: ${uploadResponse.status})`
+          }
+        } catch (parseError) {
+          // If parsing fails, use status text
+          errorMessage = `Upload mislukt: ${uploadResponse.statusText || `Status ${uploadResponse.status}`}`
+        }
+        throw new Error(errorMessage)
+      }
+
+      // Check if response is JSON before parsing
+      const contentType = uploadResponse.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        const responseText = await uploadResponse.text()
+        console.error('Unexpected response type:', contentType, responseText)
+        throw new Error(`Server antwoordde niet met JSON. Status: ${uploadResponse.status}`)
       }
 
       const uploadResult = await uploadResponse.json()
