@@ -69,19 +69,35 @@ export async function GET(request: NextRequest) {
     })))
     
     // Filter only paid orders (check both uppercase and lowercase)
+    // Also accept PENDING orders that have a payment_id (might be paid but webhook hasn't updated yet)
     const paidOrders = dbOrders.filter((order: any) => {
       const status = typeof order.status === 'string' ? order.status.toLowerCase() : String(order.status).toLowerCase()
       const isPaid = status === 'paid'
-      if (!isPaid) {
-        console.log(`[Purchases] ⚠️ Order ${order.id} has status: ${order.status} (${status}) - NOT PAID`)
+      
+      // If order has payment_id, consider it paid even if status is still PENDING
+      // (webhook might not have fired yet, but payment was successful)
+      const hasPaymentId = order.payment_id && order.payment_id !== null
+      const mightBePaid = hasPaymentId && status === 'pending'
+      
+      if (!isPaid && !mightBePaid) {
+        console.log(`[Purchases] ⚠️ Order ${order.id} has status: ${order.status} (${status}), payment_id: ${order.payment_id} - NOT PAID`)
+      } else if (mightBePaid) {
+        console.log(`[Purchases] ⚠️ Order ${order.id} has payment_id but status is PENDING - treating as PAID`)
       }
-      return isPaid
+      
+      return isPaid || mightBePaid
     })
     
     console.log(`[Purchases] Found ${paidOrders.length} PAID orders out of ${dbOrders.length} total`)
     
     if (paidOrders.length === 0) {
       console.log(`[Purchases] ❌ No paid orders found for user ${session.userId}`)
+      console.log(`[Purchases] All orders:`, dbOrders.map((o: any) => ({ 
+        id: o.id, 
+        status: o.status, 
+        payment_id: o.payment_id,
+        created_at: o.created_at 
+      })))
       return NextResponse.json({
         products: [],
         grouped: { courses: [], ebooks: [], reviews: [] },
@@ -92,7 +108,13 @@ export async function GET(request: NextRequest) {
         debug: {
           totalOrders: dbOrders.length,
           paidOrders: 0,
-          orderStatuses: dbOrders.map((o: any) => ({ id: o.id, status: o.status }))
+          orderStatuses: dbOrders.map((o: any) => ({ 
+            id: o.id, 
+            status: o.status, 
+            payment_id: o.payment_id,
+            hasPaymentId: !!o.payment_id 
+          })),
+          message: 'No paid orders found. Check if orders have status=PAID or status=PENDING with payment_id set.'
         }
       })
     }
