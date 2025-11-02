@@ -148,21 +148,23 @@ export default function DigitalProductUpload({
         fileName: file.name
       })
 
+      // Upload via FormData to avoid JSON size limits (Vercel has ~4.5MB limit for JSON)
+      // FormData can handle larger payloads
+      const formData = new FormData()
+      formData.append('fileName', file.name)
+      formData.append('fileType', getFileType(file.type))
+      formData.append('fileSize', file.size.toString())
+      formData.append('fileUrl', '') // Empty URL - using database storage instead
+      formData.append('fileData', base64String) // Base64 encoded file data
+      formData.append('downloadLimit', '5')
+      formData.append('expiresAt', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString())
+
+      console.log('📤 Uploading via FormData to avoid JSON size limits...')
+
       // Upload directly to database API (no Cloudinary needed)
       const response = await fetch(`/api/digital-products/${productId}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fileName: file.name,
-          fileType: getFileType(file.type),
-          fileSize: file.size,
-          fileUrl: '', // Empty URL - using database storage instead
-          fileData: base64String, // Base64 encoded file data for database
-          downloadLimit: 5, // Default download limit
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
-        })
+        body: formData // FormData instead of JSON
       })
 
       if (!response.ok) {

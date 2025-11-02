@@ -29,7 +29,29 @@ export async function POST(
   try {
     await requireAdminAPI()
     const { productId } = await params
-    const body = await request.json()
+    
+    // Support both JSON and FormData
+    let body: any
+    const contentType = request.headers.get('content-type') || ''
+    
+    if (contentType.includes('multipart/form-data')) {
+      // FormData upload (for large files)
+      const formData = await request.formData()
+      body = {
+        fileName: formData.get('fileName') as string,
+        fileType: formData.get('fileType') as string,
+        fileSize: parseInt(formData.get('fileSize') as string || '0', 10),
+        fileUrl: formData.get('fileUrl') as string || '',
+        fileData: formData.get('fileData') as string,
+        downloadLimit: parseInt(formData.get('downloadLimit') as string || '5', 10),
+        expiresAt: formData.get('expiresAt') as string
+      }
+      console.log(`[Digital Products API] Received FormData upload`)
+    } else {
+      // JSON upload (for smaller files)
+      body = await request.json()
+      console.log(`[Digital Products API] Received JSON upload`)
+    }
     
     console.log(`[Digital Products API] POST request for productId: ${productId}`)
     console.log(`[Digital Products API] Request body keys:`, Object.keys(body))
