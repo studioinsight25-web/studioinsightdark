@@ -204,12 +204,29 @@ export async function POST(request: NextRequest) {
     }))
 
     console.log(`[Checkout] Creating order for user ${user.id} (${user.email}) with ${products.length} products`)
-    const order = await OrderService.createOrder(user.id, products)
+    
+    let order
+    try {
+      order = await OrderService.createOrder(user.id, products)
+    } catch (orderError) {
+      console.error('[Checkout] ❌ CRITICAL: Order creation threw an error:', orderError)
+      const errorMessage = orderError instanceof Error ? orderError.message : 'Order aanmaken mislukt'
+      return NextResponse.json(
+        { 
+          error: 'Order aanmaken mislukt',
+          details: errorMessage
+        },
+        { status: 500 }
+      )
+    }
     
     if (!order) {
       console.error('[Checkout] ❌ Order creation returned null - order was not created!')
       return NextResponse.json(
-        { error: 'Order aanmaken mislukt' },
+        { 
+          error: 'Order aanmaken mislukt',
+          details: 'Order creation returned null without throwing an error'
+        },
         { status: 500 }
       )
     }

@@ -26,6 +26,9 @@ export class DatabaseOrderService {
   static async createOrder(orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt' | 'items'>): Promise<Order | null> {
     try {
       const id = `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      
+      console.log(`[DatabaseOrderService] Creating order ${id} for user ${orderData.userId}, status: ${orderData.status}, total: ${orderData.totalAmount}`)
+      
       // Use snake_case column names as per database schema
       const result = await DatabaseService.query(
         'INSERT INTO orders (id, user_id, status, total_amount, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING id, user_id, status, total_amount, payment_id, created_at, updated_at, paid_at',
@@ -33,15 +36,35 @@ export class DatabaseOrderService {
       )
 
       if (result.length === 0) {
+        console.error(`[DatabaseOrderService] ❌ Order INSERT returned no rows for order ${id}`)
         return null
       }
 
-      return {
+      const createdOrder = {
         ...this.convertDbOrder(result[0]),
         items: []
       }
+      
+      console.log(`[DatabaseOrderService] ✅ Order created successfully:`, {
+        id: createdOrder.id,
+        userId: createdOrder.userId,
+        status: createdOrder.status,
+        totalAmount: createdOrder.totalAmount
+      })
+      
+      return createdOrder
     } catch (error) {
-      console.error('Error creating order:', error)
+      console.error('[DatabaseOrderService] ❌ CRITICAL ERROR creating order:', error)
+      if (error instanceof Error) {
+        console.error('[DatabaseOrderService] Error message:', error.message)
+        console.error('[DatabaseOrderService] Error stack:', error.stack)
+      }
+      // Log the order data that failed
+      console.error('[DatabaseOrderService] Failed order data:', {
+        userId: orderData.userId,
+        status: orderData.status,
+        totalAmount: orderData.totalAmount
+      })
       return null
     }
   }

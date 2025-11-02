@@ -20,65 +20,119 @@ const orders: Order[] = []
 export class OrderService {
   // Database methods
   static async createOrder(userId: string, items: Product[]): Promise<Order> {
-    try {
-      const totalAmount = items.reduce((sum, item) => sum + item.price, 0)
-      const { DatabaseOrderService } = await import('./orders-database')
-      const dbOrder = await DatabaseOrderService.createOrder({
-        userId,
-        status: 'PENDING',
-        totalAmount
-      })
+    const totalAmount = items.reduce((sum, item) => sum + item.price, 0)
+    const { DatabaseOrderService } = await import('./orders-database')
+    const { DatabaseService } = await import('@/lib/database-direct')
+    
+    // Create order in database
+    console.log(`[OrderService] Creating order for user ${userId} with ${items.length} items, total: ${totalAmount}`)
+    const dbOrder = await DatabaseOrderService.createOrder({
+      userId,
+      status: 'PENDING',
+      totalAmount
+    })
+    
+    if (!dbOrder) {
+      console.error(`[OrderService] ❌ CRITICAL: Order creation returned null for user ${userId}`)
+      throw new Error('Failed to create order in database - order was not saved')
+    }
+    
+    console.log(`[OrderService] ✅ Order created in database: ${dbOrder.id}`)
+    
+    // Verify order exists in database before proceeding
+    const verifyOrder = await DatabaseService.query(
+      'SELECT id, user_id, status FROM orders WHERE id = $1',
+      [dbOrder.id]
+    )
+    
+    if (verifyOrder.length === 0) {
+      console.error(`[OrderService] ❌ CRITICAL: Order ${dbOrder.id} was created but not found in database!`)
+      throw new Error(`Order ${dbOrder.id} was created but not found in database - database transaction may have failed`)
+    }
+    
+    console.log(`[OrderService] ✅ Order verified in database: ${verifyOrder[0].id}, userId: ${verifyOrder[0].user_id}`)
+    
+    // Create order items - use snake_case as per database schema
+    const orderItemErrors: string[] = []
+    for (const item of items) {
+      const itemId = `order-item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      let itemCreated = false
       
-      if (!dbOrder) {
-        throw new Error('Failed to create order')
-      }
-
-      // Create order items - use snake_case as per database schema
-      const { DatabaseService } = await import('@/lib/database-direct')
-      for (const item of items) {
-        const itemId = `order-item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-        // Try camelCase first, fallback to snake_case
+      // Try camelCase first, fallback to snake_case
+      try {
+        await DatabaseService.query(
+          'INSERT INTO "orderItems" (id, "orderId", "productId", quantity, price, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, NOW(), NOW())',
+          [itemId, dbOrder.id, item.id, 1, item.price]
+        )
+        itemCreated = true
+        console.log(`[OrderService] ✅ Order item created (camelCase): ${item.id} for order ${dbOrder.id}`)
+      } catch (camelCaseError) {
+        // Fallback to snake_case (actual database schema)
         try {
-          await DatabaseService.query(
-            'INSERT INTO "orderItems" (id, "orderId", "productId", quantity, price, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, NOW(), NOW())',
-            [itemId, dbOrder.id, item.id, 1, item.price]
-          )
-        } catch {
-          // Fallback to snake_case (actual database schema)
           await DatabaseService.query(
             'INSERT INTO order_items (id, order_id, product_id, quantity, price, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
             [itemId, dbOrder.id, item.id, 1, item.price]
           )
+          itemCreated = true
+          console.log(`[OrderService] ✅ Order item created (snake_case): ${item.id} for order ${dbOrder.id}`)
+        } catch (snakeCaseError) {
+          const errorMsg = `Failed to create order item for product ${item.id}: ${snakeCaseError instanceof Error ? snakeCaseError.message : 'Unknown error'}`
+          console.error(`[OrderService] ❌ ${errorMsg}`)
+          orderItemErrors.push(errorMsg)
         }
       }
-
-      return {
-        id: dbOrder.id,
-        userId: dbOrder.userId,
-        items,
-        totalAmount: dbOrder.totalAmount,
-        currency: 'EUR',
-        status: dbOrder.status.toLowerCase() as Order['status'],
-        createdAt: dbOrder.createdAt,
-        paidAt: dbOrder.paidAt
-      }
-    } catch (error) {
-      console.error('Error creating order:', error)
-      // Fallback to in-memory storage
-      const totalAmount = items.reduce((sum, item) => sum + item.price, 0)
       
-      const order: Order = {
-        id: uuidv4(),
-        userId,
-        items,
-        totalAmount,
-        currency: 'EUR',
-        status: 'pending',
-        createdAt: new Date().toISOString()
+      if (!itemCreated) {
+        // If we can't create order items, we should clean up the order
+        // But we'll log it and continue - order exists but without items
+        console.error(`[OrderService] ⚠️ WARNING: Order item for product ${item.id} could not be created for order ${dbOrder.id}`)
       }
+    }
+    
+    // If critical order items failed, throw error
+    if (orderItemErrors.length === items.length) {
+      console.error(`[OrderService] ❌ CRITICAL: All order items failed to create for order ${dbOrder.id}`)
+      // Note: We could delete the order here, but let's keep it and log the error
+      // The admin can fix it later using the fix-order endpoint
+      throw new Error(`Failed to create any order items: ${orderItemErrors.join('; ')}`)
+    }
+    
+    if (orderItemErrors.length > 0) {
+      console.error(`[OrderService] ⚠️ WARNING: ${orderItemErrors.length} of ${items.length} order items failed to create`)
+    }
+    
+    // Verify order items were created
+    const verifyItems = await DatabaseService.query(
+      `SELECT COUNT(*) as count FROM order_items WHERE order_id = $1`,
+      [dbOrder.id]
+    ).catch(async () => {
+      // Fallback to camelCase
+      try {
+        return await DatabaseService.query(
+          `SELECT COUNT(*) as count FROM "orderItems" WHERE "orderId" = $1`,
+          [dbOrder.id]
+        )
+      } catch {
+        return [{ count: '0' }]
+      }
+    })
+    
+    const itemsCount = parseInt(verifyItems[0]?.count || '0', 10)
+    console.log(`[OrderService] ✅ Verified ${itemsCount} order items in database for order ${dbOrder.id}`)
+    
+    if (itemsCount === 0 && items.length > 0) {
+      console.error(`[OrderService] ⚠️ WARNING: Order ${dbOrder.id} has 0 items in database but expected ${items.length}`)
+    }
 
-      orders.push(order)
-      return order
+    return {
+      id: dbOrder.id,
+      userId: dbOrder.userId,
+      items,
+      totalAmount: dbOrder.totalAmount,
+      currency: 'EUR',
+      status: dbOrder.status.toLowerCase() as Order['status'],
+      createdAt: dbOrder.createdAt,
+      paidAt: dbOrder.paidAt
     }
   }
 
