@@ -86,17 +86,19 @@ export default function MyCoursesPage() {
       <section className="py-12">
         <div className="container mx-auto px-6 max-w-6xl">
           {courses.length === 0 ? (
-            <div className="bg-dark-card rounded-xl p-12 border border-dark-border text-center">
-              <BookOpen className="w-16 h-16 text-text-secondary mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Nog geen cursussen gekocht</h3>
-              <p className="text-text-secondary mb-6">
-                Begin met het bekijken van onze cursussen!
+            <div className="bg-gradient-to-br from-dark-card to-dark-section rounded-xl p-12 border border-dark-border text-center max-w-md mx-auto">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <BookOpen className="w-10 h-10 text-blue-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-3">Nog geen cursussen gekocht</h3>
+              <p className="text-text-secondary mb-8 leading-relaxed">
+                Ontdek onze uitgebreide collectie cursussen en begin vandaag met leren!
               </p>
               <Link
                 href="/cursussen"
-                className="bg-primary text-black px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
+                className="bg-gradient-to-r from-primary to-primary/90 text-black px-8 py-3.5 rounded-xl font-bold hover:from-primary/90 hover:to-primary/80 transition-all duration-300 inline-flex items-center gap-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]"
               >
-                <BookOpen className="w-4 h-4" />
+                <BookOpen className="w-5 h-5" />
                 Bekijk Cursussen
               </Link>
             </div>
