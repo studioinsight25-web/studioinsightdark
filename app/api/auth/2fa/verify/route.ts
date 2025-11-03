@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
     }
 
     const secret = result[0].totp_secret as string
-    // Allow small time drift (±1 timestep) to reduce false negatives
-    authenticator.options = { step: 30, window: 1 }
+    // Allow clock drift (±2 timesteps ≈ ±60s) to reduce false negatives
+    authenticator.options = { step: 30, window: [2, 2] }
     const isValid = authenticator.verify({ token, secret })
     if (!isValid) return NextResponse.json({ error: 'Invalid code' }, { status: 400 })
 
