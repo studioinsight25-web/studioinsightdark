@@ -68,28 +68,22 @@ export async function GET(request: NextRequest) {
       created_at: o.created_at
     })))
     
-    // Filter only paid orders - STRICT: Only PAID status or PENDING with payment_id (payment successful but webhook delayed)
-    // Orders in cart without payment are PENDING without payment_id - these are NOT paid and should NOT be shown
+    // Filter only paid orders - ULTRA STRICT: ONLY 'PAID' status is accepted
+    // NO EXCEPTIONS: PENDING orders (even with payment_id) are NOT considered paid until status is explicitly 'PAID'
+    // This ensures only confirmed, paid orders are shown in dashboard
     const paidOrders = dbOrders.filter((order: any) => {
-      const status = typeof order.status === 'string' ? order.status.toLowerCase() : String(order.status).toLowerCase()
-      const hasPaymentId = order.payment_id && order.payment_id !== null && order.payment_id.trim() !== ''
+      const status = typeof order.status === 'string' ? order.status.toUpperCase().trim() : String(order.status).toUpperCase().trim()
       
-      // Only accept: status = 'paid' OR (status = 'pending' AND has payment_id)
-      // This excludes cart items that are PENDING without payment_id
-      const isPaid = status === 'paid'
-      const isPendingWithPayment = status === 'pending' && hasPaymentId
+      // ONLY accept status = 'PAID' (uppercase comparison for strict matching)
+      const isPaid = status === 'PAID'
       
-      const isPaidOrder = isPaid || isPendingWithPayment
-      
-      if (!isPaidOrder) {
-        console.log(`[Purchases] ⚠️ Order ${order.id} REJECTED - status: ${order.status}, payment_id: ${order.payment_id ? 'exists' : 'missing'} - NOT PAID (cart item or unpaid order)`)
-      } else if (isPendingWithPayment) {
-        console.log(`[Purchases] ✅ Order ${order.id} ACCEPTED - PENDING but has payment_id (webhook may be delayed)`)
+      if (!isPaid) {
+        console.log(`[Purchases] ❌ Order ${order.id} REJECTED - status: "${order.status}" (normalized: "${status}") - ONLY 'PAID' status accepted. Payment ID: ${order.payment_id ? 'exists' : 'missing'}`)
       } else {
-        console.log(`[Purchases] ✅ Order ${order.id} ACCEPTED - status: PAID`)
+        console.log(`[Purchases] ✅ Order ${order.id} ACCEPTED - status: PAID (confirmed payment)`)
       }
       
-      return isPaidOrder
+      return isPaid
     })
     
     console.log(`[Purchases] Found ${paidOrders.length} PAID orders out of ${dbOrders.length} total`)

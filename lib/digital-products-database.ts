@@ -284,25 +284,25 @@ export class DigitalProductDatabaseService {
       const digitalProduct = await this.getDigitalProduct(digitalProductId)
       if (!digitalProduct) return false
 
-      // Check if user has purchased the product (by checking orders)
-      // Accept both PAID orders and PENDING orders with payment_id
+      // ULTRA STRICT: ONLY PAID orders allow downloads - NO exceptions for PENDING orders
+      // This ensures downloads are only available after confirmed payment
       console.log(`[canUserDownload] Checking if user ${userId} can download digital product ${digitalProductId} (productId: ${digitalProduct.productId})`)
       
       let productResult
       try {
-        // Try UUID first
+        // Try UUID first - ONLY check for PAID status
         productResult = await DatabaseService.query(
           `SELECT o.id, o.status, o.payment_id, oi.product_id as "productId" 
            FROM orders o 
            JOIN order_items oi ON o.id = oi.order_id 
            WHERE oi.product_id = $1 
              AND o.user_id = $2::uuid 
-             AND (UPPER(o.status) = 'PAID' OR (o.status = 'PENDING' AND o.payment_id IS NOT NULL))
+             AND UPPER(TRIM(o.status)) = 'PAID'
            LIMIT 1`,
           [digitalProduct.productId, userId]
         )
       } catch (uuidError) {
-        // Fallback to text comparison
+        // Fallback to text comparison - ONLY check for PAID status
         try {
           productResult = await DatabaseService.query(
             `SELECT o.id, o.status, o.payment_id, oi.product_id as "productId" 
@@ -310,7 +310,7 @@ export class DigitalProductDatabaseService {
              JOIN order_items oi ON o.id = oi.order_id 
              WHERE oi.product_id = $1 
                AND o.user_id::text = $2 
-               AND (UPPER(o.status) = 'PAID' OR (o.status = 'PENDING' AND o.payment_id IS NOT NULL))
+               AND UPPER(TRIM(o.status)) = 'PAID'
              LIMIT 1`,
             [digitalProduct.productId, userId]
           )
@@ -375,23 +375,23 @@ export class DigitalProductDatabaseService {
     try {
       console.log(`[hasUserPurchasedProduct] Checking if user ${userId} purchased product ${productId}`)
       
-      // Try UUID cast for user_id first, then text comparison
-      // Also accept PENDING orders with payment_id (like in purchases endpoint)
+      // ULTRA STRICT: ONLY 'PAID' status accepted - no exceptions for PENDING orders
+      // This ensures downloads are only available for confirmed, paid orders
       let result
       try {
-        // Try UUID first
+        // Try UUID first - ONLY check for PAID status
         result = await DatabaseService.query(
           `SELECT o.id, o.status, o.payment_id
            FROM orders o 
            JOIN order_items oi ON o.id = oi.order_id 
            WHERE oi.product_id = $1 
              AND o.user_id = $2::uuid 
-             AND (UPPER(o.status) = 'PAID' OR (o.status = 'PENDING' AND o.payment_id IS NOT NULL))
+             AND UPPER(TRIM(o.status)) = 'PAID'
            LIMIT 1`,
           [productId, userId]
         )
       } catch (uuidError) {
-        // Fallback to text comparison
+        // Fallback to text comparison - ONLY check for PAID status
         try {
           result = await DatabaseService.query(
             `SELECT o.id, o.status, o.payment_id
@@ -399,7 +399,7 @@ export class DigitalProductDatabaseService {
              JOIN order_items oi ON o.id = oi.order_id 
              WHERE oi.product_id = $1 
                AND o.user_id::text = $2 
-               AND (UPPER(o.status) = 'PAID' OR (o.status = 'PENDING' AND o.payment_id IS NOT NULL))
+               AND UPPER(TRIM(o.status)) = 'PAID'
              LIMIT 1`,
             [productId, userId]
           )
