@@ -214,13 +214,23 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className="text-center">
-            <Link
-              href="/registreren"
-              className="text-sm text-text-secondary hover:text-primary transition-colors duration-200"
-            >
-              Nog geen account? Registreer hier
-            </Link>
+          <div className="space-y-2">
+            <div className="text-center">
+              <Link
+                href="/registreren"
+                className="text-sm text-text-secondary hover:text-primary transition-colors duration-200"
+              >
+                Nog geen account? Registreer hier
+              </Link>
+            </div>
+            <div className="text-center">
+              <Link
+                href="/wachtwoord-vergeten"
+                className="text-sm text-text-secondary hover:text-primary transition-colors duration-200"
+              >
+                Wachtwoord vergeten?
+              </Link>
+            </div>
           </div>
 
           <div className="text-center">
