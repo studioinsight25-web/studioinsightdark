@@ -10,10 +10,10 @@ export default function FeaturedEbooks() {
   
   // Prefer featured e‑books; if none, fallback to the most recent active e‑books
   const allActiveEbooks = products
-    .filter(p => p.type === 'ebook' && p.isActive)
+    .filter(p => p.type === 'ebook' && p.isActive && !p.comingSoon)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-  const featured = allActiveEbooks.filter(p => p.featured)
+  const featured = allActiveEbooks.filter(p => p.featured && !p.comingSoon)
   const featuredEbooks = (featured.length > 0 ? featured : allActiveEbooks).slice(0, 2)
 
   if (loading) {
