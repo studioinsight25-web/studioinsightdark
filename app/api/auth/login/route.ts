@@ -55,7 +55,8 @@ export async function POST(request: NextRequest) {
         name: user.name,
         role: user.role,
         twoFactorEnabled: require2FA,
-        twoFactorVerified: user.two_factor_verified === true
+        // Force 2FA verification on every admin login when 2FA is required
+        twoFactorVerified: require2FA ? false : user.two_factor_verified === true
       }
     })
 

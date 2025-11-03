@@ -43,7 +43,8 @@ export default function LoginPage() {
           name: result.user.name || '',
           role: result.user.role,
           twoFactorRequired: result.user.twoFactorEnabled === true,
-          twoFactorVerified: result.user.twoFactorVerified === true,
+          // Always require fresh verification on login when 2FA is enabled for admin
+          twoFactorVerified: result.user.twoFactorEnabled === true ? false : result.user.twoFactorVerified === true,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
         })
 

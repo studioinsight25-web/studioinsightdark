@@ -46,7 +46,8 @@ export default function AdminLoginPage() {
           // Verified flag will be set to true after /api/auth/2fa/verify
           // Middleware will enforce these flags for /admin routes
           twoFactorRequired: result.user.twoFactorEnabled === true,
-          twoFactorVerified: result.user.twoFactorVerified === true,
+          // Always require fresh verification on login when 2FA is enabled
+          twoFactorVerified: result.user.twoFactorEnabled === true ? false : result.user.twoFactorVerified === true,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
         })
 
