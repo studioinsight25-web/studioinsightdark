@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/session-server'
 import { OrderService } from '@/lib/orders'
 import { DatabaseProductService } from '@/lib/products-database'
+import { MollieService } from '@/lib/mollie'
 
 export async function GET(request: NextRequest) {
   try {
@@ -259,12 +260,22 @@ export async function GET(request: NextRequest) {
     
     // DOUBLE VERIFICATION: Verify each productId has a confirmed PAID order before including
     // This ensures NO product appears in dashboard unless payment is 100% confirmed
+    // Check per product, including Mollie verification for PENDING orders
     const verifiedProductIds = new Set<string>()
     
     for (const productId of purchasedProductIds) {
+      // Get product type for better logging
+      let productInfo: any = null
+      try {
+        const productResult = await DatabaseProductService.getProductById(productId)
+        productInfo = productResult
+      } catch (err) {
+        // Ignore, just for logging
+      }
+      const productType = productInfo?.type || 'unknown'
+      
       // Double-check: Query orders again to verify this product has a confirmed paid order
-      // Accept: status = 'PAID' OR (has payment_id AND status != 'PENDING'/'FAILED'/'REFUNDED')
-      // REJECT: PENDING status (even with payment_id, means payment not confirmed)
+      // First try: status = 'PAID' OR (has payment_id AND status != 'PENDING'/'FAILED'/'REFUNDED')
       let verificationResult
       try {
         verificationResult = await DatabaseService.query(
@@ -273,11 +284,7 @@ export async function GET(request: NextRequest) {
            JOIN order_items oi ON o.id = oi.order_id 
            WHERE oi.product_id = $1 
              AND o.user_id = $2::uuid 
-             AND (
-               UPPER(TRIM(o.status)) = 'PAID' 
-               OR (o.payment_id IS NOT NULL AND o.payment_id != '' AND UPPER(TRIM(o.status)) NOT IN ('PENDING', 'FAILED', 'REFUNDED'))
-             )
-           LIMIT 1`,
+           ORDER BY o.created_at DESC`,
           [productId, session.userId]
         )
       } catch (error) {
@@ -289,16 +296,55 @@ export async function GET(request: NextRequest) {
              JOIN order_items oi ON o.id = oi.order_id 
              WHERE oi.product_id = $1 
                AND o.user_id::text = $2 
-               AND (
-                 UPPER(TRIM(o.status)) = 'PAID' 
-                 OR (o.payment_id IS NOT NULL AND o.payment_id != '' AND UPPER(TRIM(o.status)) NOT IN ('PENDING', 'FAILED', 'REFUNDED'))
-               )
-             LIMIT 1`,
+             ORDER BY o.created_at DESC`,
             [productId, session.userId]
           )
         } catch (fallbackError) {
-          console.error(`[Purchases] ❌ Verification query failed for product ${productId}:`, fallbackError)
+          console.error(`[Purchases] ❌ Verification query failed for product ${productId} (${productType}):`, fallbackError)
           verificationResult = []
+        }
+      }
+      
+      console.log(`[Purchases] 🔍 Verifying product ${productId} (${productType}) - found ${verificationResult?.length || 0} orders`)
+      
+      // Check all orders for this product
+      let isVerified = false
+      for (const orderRow of verificationResult || []) {
+        const orderStatus = orderRow.status || ''
+        const status = typeof orderStatus === 'string' ? orderStatus.trim().toUpperCase() : String(orderStatus).trim().toUpperCase()
+        const paymentId = orderRow.payment_id
+        
+        const hasPaymentId = !!(paymentId && String(paymentId).trim() !== '' && String(paymentId).trim().toLowerCase() !== 'null')
+        const isStatusPaid = status === 'PAID'
+        const isConfirmedPayment = hasPaymentId && status !== 'PENDING' && status !== 'FAILED' && status !== 'REFUNDED'
+        
+        console.log(`[Purchases]   Order ${orderRow.id}: status="${orderStatus}" (${status}), payment_id=${paymentId ? 'exists' : 'missing'}`)
+        
+        if (isStatusPaid || isConfirmedPayment) {
+          console.log(`[Purchases] ✅ Product ${productId} (${productType}) VERIFIED via order ${orderRow.id} - status: ${status}`)
+          isVerified = true
+          break
+        }
+        
+        // If PENDING with payment_id, check Mollie
+        if (status === 'PENDING' && hasPaymentId) {
+          console.log(`[Purchases] 🔍 Product ${productId} (${productType}) has PENDING order ${orderRow.id} with payment_id - checking Mollie...`)
+          try {
+            const mollieStatus = await MollieService.getPaymentStatus(String(paymentId))
+            if (mollieStatus.success && mollieStatus.paid) {
+              console.log(`[Purchases] ✅ Product ${productId} (${productType}) VERIFIED via Mollie - payment is PAID, updating order status`)
+              // Update order status in background
+              OrderService.updateOrderStatus(orderRow.id, 'paid', String(paymentId)).catch(err => {
+                console.error(`[Purchases] ⚠️ Failed to update order ${orderRow.id} status:`, err)
+              })
+              isVerified = true
+              break
+            } else {
+              console.log(`[Purchases] ❌ Product ${productId} (${productType}) NOT verified - Mollie status: ${mollieStatus.status || 'unknown'}`)
+            }
+          } catch (mollieError) {
+            console.error(`[Purchases] ⚠️ Error checking Mollie for product ${productId} (${productType}):`, mollieError)
+          }
         }
       }
       
