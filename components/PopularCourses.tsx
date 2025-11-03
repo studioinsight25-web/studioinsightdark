@@ -9,8 +9,13 @@ import { useProducts } from '@/hooks/useProducts'
 export default function PopularCourses() {
   const { products, loading } = useProducts()
   
-  // Get featured courses from the centralized product service
-  const featuredCourses = products.filter(product => product.type === 'course' && product.featured && product.isActive)
+  // Select 1 available course: prefer featured; fallback to newest active
+  const allActiveCourses = products
+    .filter(p => p.type === 'course' && p.isActive && !p.comingSoon)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+  const featured = allActiveCourses.filter(p => p.featured)
+  const featuredCourses = (featured.length > 0 ? featured : allActiveCourses).slice(0, 1)
 
   if (loading) {
     return (
@@ -31,7 +36,7 @@ export default function PopularCourses() {
         </h2>
         
         {featuredCourses.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 gap-8 max-w-3xl mx-auto">
             {featuredCourses.map((course) => (
               <div
                 key={course.id}
