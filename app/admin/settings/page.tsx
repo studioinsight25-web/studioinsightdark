@@ -12,15 +12,15 @@ export default function AdminSettings() {
 
   const handleEnable2FA = async () => {
     try {
-      const res = await fetch('/api/auth/2fa/enroll', { method: 'POST' })
+      const res = await fetch('/api/auth/2fa/enroll', { method: 'POST', credentials: 'same-origin' })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'Enroll failed')
+      if (!res.ok) throw new Error(data?.error || data?.details || 'Enroll failed')
       setQr(data.qr)
       setTwoFaModalOpen(true)
       setTwoFaStatus('enrolled')
     } catch (e) {
       setTwoFaStatus('error')
-      alert('2FA inschakelen mislukt. Probeer later opnieuw.')
+      alert('2FA inschakelen mislukt. ' + (e instanceof Error ? e.message : 'Probeer later opnieuw.'))
     }
   }
 
@@ -29,10 +29,11 @@ export default function AdminSettings() {
       const res = await fetch('/api/auth/2fa/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({ token })
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'Verify failed')
+      if (!res.ok) throw new Error(data?.error || data?.details || 'Verify failed')
       setTwoFaStatus('verified')
       alert('2FA geverifieerd en ingeschakeld!')
       setTwoFaModalOpen(false)

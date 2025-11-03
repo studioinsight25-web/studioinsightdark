@@ -23,14 +23,15 @@ export async function POST(request: NextRequest) {
 
     // Mark session that 2FA required from now on
     const updated = { ...session, twoFactorRequired: true, twoFactorVerified: false }
-    const cookie = `studio-insight-session=${encodeURIComponent(JSON.stringify(updated))}; Path=/; Max-Age=${24 * 60 * 60}; SameSite=Lax; ${request.nextUrl.protocol === 'https:' ? 'Secure' : ''}`
+    const cookie = `studio-insight-session=${encodeURIComponent(JSON.stringify(updated))}; Path=/; Max-Age=${24 * 60 * 60}; SameSite=Lax; Secure`
 
     return new NextResponse(JSON.stringify({ otpauth, qr }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', 'Set-Cookie': cookie }
     })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to enroll 2FA' }, { status: 500 })
+    console.error('[2FA Enroll] Error:', error)
+    return NextResponse.json({ error: 'Failed to enroll 2FA', details: error instanceof Error ? error.message : String(error) }, { status: 500 })
   }
 }
 

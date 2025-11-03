@@ -27,14 +27,15 @@ export async function POST(request: NextRequest) {
     )
 
     const updated = { ...session, twoFactorRequired: true, twoFactorVerified: true }
-    const cookie = `studio-insight-session=${encodeURIComponent(JSON.stringify(updated))}; Path=/; Max-Age=${24 * 60 * 60}; SameSite=Lax; ${request.nextUrl.protocol === 'https:' ? 'Secure' : ''}`
+    const cookie = `studio-insight-session=${encodeURIComponent(JSON.stringify(updated))}; Path=/; Max-Age=${24 * 60 * 60}; SameSite=Lax; Secure`
 
     return new NextResponse(JSON.stringify({ verified: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', 'Set-Cookie': cookie }
     })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to verify 2FA' }, { status: 500 })
+    console.error('[2FA Verify] Error:', error)
+    return NextResponse.json({ error: 'Failed to verify 2FA', details: error instanceof Error ? error.message : String(error) }, { status: 500 })
   }
 }
 
