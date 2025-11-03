@@ -9,7 +9,10 @@ export async function POST(request: NextRequest) {
     const session = JSON.parse(sessionCookie.value)
     if (session.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-    const { token } = await request.json()
+    let { token } = await request.json()
+    if (typeof token === 'string') {
+      token = token.replace(/\s+/g, '')
+    }
     if (!token) return NextResponse.json({ error: 'Token required' }, { status: 400 })
 
     const result = await DatabaseService.query('SELECT totp_secret FROM users WHERE id = $1', [session.userId])
@@ -18,7 +21,9 @@ export async function POST(request: NextRequest) {
     }
 
     const secret = result[0].totp_secret as string
-    const isValid = authenticator.check(token, secret)
+    // Allow small time drift (±1 timestep) to reduce false negatives
+    authenticator.options = { step: 30, window: 1 }
+    const isValid = authenticator.verify({ token, secret })
     if (!isValid) return NextResponse.json({ error: 'Invalid code' }, { status: 400 })
 
     await DatabaseService.query(
