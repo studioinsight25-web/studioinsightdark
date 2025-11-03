@@ -77,7 +77,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
+            value: 'strict-origin-when-cross-origin',
           },
           {
             key: 'Permissions-Policy',
@@ -89,7 +89,7 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://www.googletagmanager.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "img-src 'self' data: https://images.unsplash.com https://www.google-analytics.com https://res.cloudinary.com",
+              "img-src 'self' data: https://images.unsplash.com https://www.google-analytics.com https://www.googletagmanager.com https://res.cloudinary.com",
               "font-src 'self' https://fonts.gstatic.com",
               "connect-src 'self' https://vitals.vercel-insights.com https://www.google-analytics.com https://api.mollie.com https://api.cloudinary.com",
               "frame-src 'none'",
