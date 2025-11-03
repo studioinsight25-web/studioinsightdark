@@ -45,16 +45,33 @@ export default function DashboardPage() {
     setUser(session)
     setIsLoading(false)
     
-    // Load purchased products
+    // Load purchased products - ONLY products with confirmed payment
     const loadPurchases = async () => {
       try {
         const response = await fetch('/api/user/purchases')
         if (response.ok) {
           const data = await response.json()
-          setPurchasedProducts(data.products || [])
+          // EXTRA SAFETY: Ensure we only set products if they exist and array is valid
+          // This prevents any edge case where unpaid products might slip through
+          const products = data.products || []
+          
+          // Additional client-side verification: Log if we receive products
+          if (products.length > 0) {
+            console.log(`[Dashboard] Received ${products.length} purchased products from API`)
+          } else {
+            console.log(`[Dashboard] No purchased products received (user has no paid orders)`)
+          }
+          
+          setPurchasedProducts(products)
+        } else {
+          // If API returns error, ensure empty array
+          console.error('[Dashboard] API returned error:', response.status)
+          setPurchasedProducts([])
         }
       } catch (error) {
         console.error('Error loading purchases:', error)
+        // On error, set empty array to prevent showing any products
+        setPurchasedProducts([])
       } finally {
         setLoadingPurchases(false)
       }

@@ -202,9 +202,56 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    // Get full product details for purchased products
+    // DOUBLE VERIFICATION: Verify each productId has a confirmed PAID order before including
+    // This ensures NO product appears in dashboard unless payment is 100% confirmed
+    const verifiedProductIds = new Set<string>()
+    
+    for (const productId of purchasedProductIds) {
+      // Double-check: Query orders again to verify this product has a PAID order
+      let verificationResult
+      try {
+        verificationResult = await DatabaseService.query(
+          `SELECT o.id, o.status, oi.product_id
+           FROM orders o 
+           JOIN order_items oi ON o.id = oi.order_id 
+           WHERE oi.product_id = $1 
+             AND o.user_id = $2::uuid 
+             AND UPPER(TRIM(o.status)) = 'PAID'
+           LIMIT 1`,
+          [productId, session.userId]
+        )
+      } catch (error) {
+        // Fallback to text comparison
+        try {
+          verificationResult = await DatabaseService.query(
+            `SELECT o.id, o.status, oi.product_id
+             FROM orders o 
+             JOIN order_items oi ON o.id = oi.order_id 
+             WHERE oi.product_id = $1 
+               AND o.user_id::text = $2 
+               AND UPPER(TRIM(o.status)) = 'PAID'
+             LIMIT 1`,
+            [productId, session.userId]
+          )
+        } catch (fallbackError) {
+          console.error(`[Purchases] ❌ Verification query failed for product ${productId}:`, fallbackError)
+          verificationResult = []
+        }
+      }
+      
+      if (verificationResult && verificationResult.length > 0) {
+        verifiedProductIds.add(productId)
+        console.log(`[Purchases] ✅ Product ${productId} VERIFIED - has confirmed PAID order`)
+      } else {
+        console.log(`[Purchases] ❌ Product ${productId} REJECTED - no confirmed PAID order found during verification`)
+      }
+    }
+    
+    console.log(`[Purchases] Verified product IDs: ${verifiedProductIds.size} out of ${purchasedProductIds.size} initial products`)
+    
+    // Get full product details ONLY for verified purchased products
     const purchasedProducts = await Promise.all(
-      Array.from(purchasedProductIds).map(async (productId) => {
+      Array.from(verifiedProductIds).map(async (productId) => {
         try {
           const product = await DatabaseProductService.getProduct(productId)
           if (product) {
@@ -222,7 +269,7 @@ export async function GET(request: NextRequest) {
     
     // Filter out null products and group by type
     const validProducts = purchasedProducts.filter(p => p !== null)
-    console.log(`[Purchases] Valid products after filtering: ${validProducts.length}`)
+    console.log(`[Purchases] Final valid products after double verification: ${validProducts.length}`)
     
     const grouped = {
       courses: validProducts.filter(p => p.type === 'course'),
