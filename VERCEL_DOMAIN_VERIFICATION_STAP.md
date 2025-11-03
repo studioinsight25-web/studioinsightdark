@@ -3,6 +3,10 @@
 ## Probleem
 Domain status: **"Verification Needed"** - Domein is gekoppeld aan een ander Vercel account.
 
+## ✅ Status Update
+- `studio-insight.nl` → ✅ **Valid Configuration** (opgelost!)
+- `www.studio-insight.nl` → ⚠️ Nog verificatie nodig
+
 ## ✅ Oplossing: TXT Record Toevoegen
 
 ### Stap 1: Kopieer de TXT Record Waarden uit Vercel
