@@ -211,6 +211,27 @@ export default function Header() {
     if (isMenuOpen) setIsMenuOpen(false)
   }, [pathname])
 
+  // Lock body scroll when menu is open and add extra safety listeners
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const body = document.body
+    if (isMenuOpen) {
+      body.style.overflow = 'hidden'
+    } else {
+      body.style.overflow = ''
+    }
+    const handleVisibility = () => setIsMenuOpen(false)
+    window.addEventListener('beforeunload', handleVisibility)
+    window.addEventListener('pagehide', handleVisibility)
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      body.style.overflow = ''
+      window.removeEventListener('beforeunload', handleVisibility)
+      window.removeEventListener('pagehide', handleVisibility)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [isMenuOpen])
+
   const handleLogout = async () => {
     try {
       // Clear session
@@ -379,11 +400,11 @@ export default function Header() {
           <>
             {/* Backdrop */}
             <div 
-              className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-in fade-in"
+              className="lg:hidden fixed inset-0 bg-black/60 z-40 animate-in fade-in"
               onClick={() => setIsMenuOpen(false)}
             />
             {/* Menu */}
-            <div className="lg:hidden fixed left-0 right-0 top-20 border-t border-dark-border/50 bg-dark-section/98 backdrop-blur-xl z-50 animate-in slide-in-from-top-5 shadow-2xl max-h-[calc(100vh-5rem)] overflow-y-auto">
+            <div className="lg:hidden fixed left-0 right-0 top-20 border-t border-dark-border/50 bg-dark-section/98 z-50 animate-in slide-in-from-top-5 shadow-2xl max-h-[calc(100vh-5rem)] overflow-y-auto">
               <nav className="py-6 space-y-2 px-6 max-h-[calc(100vh-5rem)] overflow-y-auto">
                 {navigation.map((item) => (
                 <Link
