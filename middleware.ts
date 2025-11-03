@@ -29,8 +29,8 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/admin/login', request.url))
       }
 
-      // Enforce 2FA if enabled for account
-      if (session.twoFactorRequired === true && session.twoFactorVerified !== true) {
+      // Mandatory 2FA for all admins: require verified flag before accessing /admin
+      if (session.twoFactorVerified !== true) {
         const url = new URL('/admin/login', request.url)
         url.searchParams.set('2fa', 'required')
         return NextResponse.redirect(url)
