@@ -68,19 +68,22 @@ export async function GET(request: NextRequest) {
       created_at: o.created_at
     })))
     
-    // Filter only paid orders - ULTRA STRICT: ONLY 'PAID' status is accepted
-    // NO EXCEPTIONS: PENDING orders (even with payment_id) are NOT considered paid until status is explicitly 'PAID'
+    // Filter only paid orders - STRICT but case-insensitive
+    // Accept 'PAID', 'paid', 'Paid', etc. but REJECT 'PENDING', 'CANCELLED', 'FAILED', etc.
+    // PENDING orders are NOT considered paid even if they have payment_id
     // This ensures only confirmed, paid orders are shown in dashboard
     const paidOrders = dbOrders.filter((order: any) => {
-      const status = typeof order.status === 'string' ? order.status.toUpperCase().trim() : String(order.status).toUpperCase().trim()
+      const statusRaw = order.status || ''
+      const status = typeof statusRaw === 'string' ? statusRaw.trim().toUpperCase() : String(statusRaw).trim().toUpperCase()
       
-      // ONLY accept status = 'PAID' (uppercase comparison for strict matching)
+      // Accept ONLY 'PAID' status (case-insensitive matching)
+      // Reject: PENDING, CANCELLED, FAILED, REFUNDED, etc.
       const isPaid = status === 'PAID'
       
       if (!isPaid) {
-        console.log(`[Purchases] ❌ Order ${order.id} REJECTED - status: "${order.status}" (normalized: "${status}") - ONLY 'PAID' status accepted. Payment ID: ${order.payment_id ? 'exists' : 'missing'}`)
+        console.log(`[Purchases] ❌ Order ${order.id} REJECTED - status: "${statusRaw}" (normalized: "${status}") - Only 'PAID' status accepted. Payment ID: ${order.payment_id ? 'exists' : 'missing'}`)
       } else {
-        console.log(`[Purchases] ✅ Order ${order.id} ACCEPTED - status: PAID (confirmed payment)`)
+        console.log(`[Purchases] ✅ Order ${order.id} ACCEPTED - status: "${statusRaw}" → "${status}" (confirmed payment)`)
       }
       
       return isPaid
@@ -90,11 +93,14 @@ export async function GET(request: NextRequest) {
     
     if (paidOrders.length === 0) {
       console.log(`[Purchases] ❌ No paid orders found for user ${session.userId}`)
-      console.log(`[Purchases] All orders:`, dbOrders.map((o: any) => ({ 
+      console.log(`[Purchases] All orders for debugging:`, dbOrders.map((o: any) => ({ 
         id: o.id, 
         status: o.status, 
-        payment_id: o.payment_id,
-        created_at: o.created_at 
+        status_type: typeof o.status,
+        status_normalized: typeof o.status === 'string' ? o.status.trim().toUpperCase() : String(o.status).trim().toUpperCase(),
+        payment_id: o.payment_id ? 'exists' : 'missing',
+        created_at: o.created_at,
+        is_paid_check: typeof o.status === 'string' ? o.status.trim().toUpperCase() === 'PAID' : String(o.status).trim().toUpperCase() === 'PAID'
       })))
       return NextResponse.json({
         products: [],
@@ -207,7 +213,7 @@ export async function GET(request: NextRequest) {
     const verifiedProductIds = new Set<string>()
     
     for (const productId of purchasedProductIds) {
-      // Double-check: Query orders again to verify this product has a PAID order
+      // Double-check: Query orders again to verify this product has a PAID order (case-insensitive)
       let verificationResult
       try {
         verificationResult = await DatabaseService.query(
@@ -247,7 +253,12 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    console.log(`[Purchases] Verified product IDs: ${verifiedProductIds.size} out of ${purchasedProductIds.size} initial products`)
+      console.log(`[Purchases] Verified product IDs: ${verifiedProductIds.size} out of ${purchasedProductIds.size} initial products`)
+      
+      if (verifiedProductIds.size < purchasedProductIds.size) {
+        const rejected = Array.from(purchasedProductIds).filter(id => !verifiedProductIds.has(id))
+        console.log(`[Purchases] ⚠️ Rejected product IDs (no confirmed PAID order):`, rejected)
+      }
     
     // Get full product details ONLY for verified purchased products
     const purchasedProducts = await Promise.all(
