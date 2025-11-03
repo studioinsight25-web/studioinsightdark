@@ -5,6 +5,8 @@ export interface Session {
   name?: string
   role: string
   expiresAt?: string
+  twoFactorRequired?: boolean
+  twoFactorVerified?: boolean
 }
 
 class SessionManager {
