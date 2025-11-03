@@ -369,10 +369,10 @@ export async function GET(request: NextRequest) {
       }
     }
     
-      console.log(`[Purchases] Verified product IDs: ${verifiedProductIds.size} out of ${purchasedProductIds.size} initial products`)
+      console.log(`[Purchases] Verified product IDs: ${verifiedProductIds.size} out of ${allProductIds.size} initial products`)
       
-      if (verifiedProductIds.size < purchasedProductIds.size) {
-        const rejected = Array.from(purchasedProductIds).filter(id => !verifiedProductIds.has(id))
+      if (verifiedProductIds.size < allProductIds.size) {
+        const rejected = Array.from(allProductIds.keys()).filter(id => !verifiedProductIds.has(id))
         console.log(`[Purchases] ⚠️ Rejected product IDs (no confirmed PAID order):`, rejected)
       }
     
