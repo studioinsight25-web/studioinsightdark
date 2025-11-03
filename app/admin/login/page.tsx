@@ -51,12 +51,30 @@ export default function AdminLoginPage() {
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
         })
 
-        // Als 2FA vereist is en nog niet verified: toon alleen code-invoer (geen QR opnieuw)
-        if (result.user.twoFactorEnabled === true && result.user.twoFactorVerified !== true) {
-          setQr('')
-          setTwoFaOpen(true)
-          setIsLoading(false)
-          return
+        // 2FA flow:
+        // - Als 2FA al is ingeschakeld → alleen code-invoer tonen (geen QR)
+        // - Als 2FA nog NIET is ingeschakeld voor deze admin → enrollment starten en QR tonen
+        if (result.user.twoFactorVerified !== true) {
+          if (result.user.twoFactorEnabled === true) {
+            setQr('')
+            setTwoFaOpen(true)
+            setIsLoading(false)
+            return
+          } else if (result.user.role === 'ADMIN') {
+            try {
+              const enroll = await fetch('/api/auth/2fa/enroll', { method: 'POST', credentials: 'same-origin' })
+              const data = await enroll.json()
+              if (!enroll.ok) throw new Error(data?.error || data?.details || '2FA enroll failed')
+              setQr(data.qr)
+              setTwoFaOpen(true)
+              setIsLoading(false)
+              return
+            } catch (e) {
+              setError(e instanceof Error ? e.message : '2FA inschakelen mislukt')
+              setIsLoading(false)
+              return
+            }
+          }
         }
 
         // Zonder 2FA vereiste → redirect naar admin
