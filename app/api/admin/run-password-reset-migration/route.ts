@@ -61,4 +61,21 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Lightweight diagnostics without touching the database
+export async function GET(request: NextRequest) {
+  const secretHeader = request.headers.get('x-migration-secret') || ''
+  const expected = process.env.ADMIN_MIGRATION_SECRET || ''
+  const hasDbUrl = Boolean(process.env.DATABASE_URL)
+
+  if (!expected) {
+    return NextResponse.json({ ready: false, reason: 'ADMIN_MIGRATION_SECRET missing in server env', hasDbUrl })
+  }
+
+  if (secretHeader !== expected) {
+    return NextResponse.json({ ready: false, reason: 'Unauthorized (bad secret)', hasDbUrl })
+  }
+
+  return NextResponse.json({ ready: true, hasDbUrl })
+}
+
 
