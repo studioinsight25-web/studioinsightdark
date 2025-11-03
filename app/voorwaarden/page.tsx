@@ -94,10 +94,29 @@ export default function VoorwaardenPage() {
                   </p>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">Terugbetaling</h3>
+                  <h3 className="text-lg font-semibold text-white mb-2">Terugbetaling en Herroepingsrecht</h3>
                   <p className="text-text-secondary">
-                    Terugbetalingen zijn mogelijk binnen 14 dagen na aankoop, mits de cursus of e-book nog niet 
-                    volledig is gebruikt. Neem contact met ons op via het contactformulier.
+                    Voor digitale content (cursussen en e-books) geldt een uitzondering op het herroepingsrecht. 
+                    Zodra je toegang hebt gekregen tot de digitale content of de download hebt voltooid, vervalt je 
+                    recht op terugbetaling, behalve bij technische storingen die de toegang verhinderen.
+                  </p>
+                  <p className="text-text-secondary mt-2">
+                    Terugbetaling is alleen mogelijk bij technische problemen die het downloaden of toegang verkrijgen 
+                    tot de aangekochte digitale content onmogelijk maken. Neem in dat geval binnen 14 dagen na aankoop 
+                    contact met ons op via het contactformulier.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">Intellectueel Eigendom en Illegale Verkoop</h3>
+                  <p className="text-text-secondary">
+                    Alle digitale content (cursussen, e-books, reviews) is beschermd door auteursrecht en intellectueel 
+                    eigendomsrecht. Het is ten strengste verboden om aangekochte content te kopiëren, te delen, te 
+                    verspreiden of commercieel te verkopen zonder expliciete schriftelijke toestemming van Studio Insight.
+                  </p>
+                  <p className="text-text-secondary mt-2">
+                    Illegale verkoop, verspreiding of commerciële exploitatie van onze digitale content is strafbaar 
+                    en kan leiden tot juridische stappen en schadevergoeding. Wij behouden ons het recht voor om 
+                    juridische maatregelen te nemen tegen personen die onze content illegaal verspreiden of verkopen.
                   </p>
                 </div>
                 <div>
@@ -131,8 +150,23 @@ export default function VoorwaardenPage() {
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">Verboden Handelingen</h3>
                   <p className="text-text-secondary">
-                    Het is verboden om onze content te kopiëren, te verspreiden of commercieel te gebruiken 
-                    zonder toestemming.
+                    Het is ten strengste verboden om onze digitale content (cursussen, e-books, reviews) te kopiëren, 
+                    te verspreiden, te delen, commercieel te exploiteren of te verkopen zonder expliciete schriftelijke 
+                    toestemming van Studio Insight. Dit geldt ook voor het uploaden van onze content naar platforms zoals 
+                    Udemy, Skillshare of andere online marketplaces.
+                  </p>
+                  <p className="text-text-secondary mt-2">
+                    Ongeautoriseerde verspreiding of verkoop van onze content is een schending van het auteursrecht en 
+                    intellectueel eigendomsrecht en kan leiden tot juridische stappen, schadevergoeding en strafrechtelijke 
+                    vervolging.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">Account Delen</h3>
+                  <p className="text-text-secondary">
+                    Je account is persoonlijk en mag niet worden gedeeld met anderen. Het delen van toegangsgegevens 
+                    of het toegang verlenen aan derden is verboden en kan leiden tot permanente blokkering van je account 
+                    zonder terugbetaling.
                   </p>
                 </div>
               </div>
@@ -192,9 +226,8 @@ export default function VoorwaardenPage() {
                 Voor vragen over deze voorwaarden kun je contact met ons opnemen:
               </p>
               <div className="space-y-2 text-text-secondary">
-                <p>E-mail: info@studioinsight.nl</p>
-                <p>Telefoon: +31 6 1234 5678</p>
-                <p>Adres: Keizersgracht 123, 1015 CJ Amsterdam</p>
+                <p>E-mail: info@studio-insight.nl</p>
+                <p>Adres: De Veken 122b, 1716 KG Opmeer</p>
               </div>
               <div className="mt-6">
                 <Link

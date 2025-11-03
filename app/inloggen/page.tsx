@@ -233,14 +233,6 @@ export default function LoginPage() {
             </Link>
           </div>
         </form>
-
-        <div className="mt-8 p-4 bg-dark-card rounded-lg border border-dark-border">
-          <h3 className="text-sm font-medium text-white mb-2">Demo Accounts:</h3>
-          <div className="text-xs text-text-secondary space-y-1">
-            <p><strong>Admin:</strong> admin@studio-insight.nl / Kaasboer19792014@</p>
-            <p><strong>Gebruiker:</strong> demo@studioinsight.nl / demo123</p>
-          </div>
-        </div>
       </div>
     </main>
   )

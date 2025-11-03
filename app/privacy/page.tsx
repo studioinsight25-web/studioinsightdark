@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Shield, Eye, Database, Lock, Mail, Phone, Calendar, User } from 'lucide-react'
+import { Shield, Eye, Database, Lock, Mail, Calendar, User } from 'lucide-react'
 
 export default function PrivacyPage() {
   return (
@@ -42,9 +42,8 @@ export default function PrivacyPage() {
                   <User className="w-5 h-5 text-primary mt-1" />
                   <div>
                     <h3 className="text-lg font-semibold text-white mb-2">Studio Insight</h3>
-                    <p className="text-text-secondary">Keizersgracht 123, 1015 CJ Amsterdam</p>
-                    <p className="text-text-secondary">E-mail: info@studioinsight.nl</p>
-                    <p className="text-text-secondary">Telefoon: +31 6 1234 5678</p>
+                    <p className="text-text-secondary">E-mail: info@studio-insight.nl</p>
+                    <p className="text-text-secondary">Adres: De Veken 122b, 1716 KG Opmeer</p>
                   </div>
                 </div>
               </div>
@@ -283,15 +282,11 @@ export default function PrivacyPage() {
               <div className="space-y-2 text-text-secondary mb-6">
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-primary" />
-                  <span>E-mail: privacy@studioinsight.nl</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-primary" />
-                  <span>Telefoon: +31 6 1234 5678</span>
+                  <span>E-mail: info@studio-insight.nl</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-primary" />
-                  <span>Adres: Keizersgracht 123, 1015 CJ Amsterdam</span>
+                  <span>Adres: De Veken 122b, 1716 KG Opmeer</span>
                 </div>
               </div>
               <div className="flex gap-4">

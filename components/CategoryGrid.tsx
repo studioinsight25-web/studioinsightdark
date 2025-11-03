@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { GraduationCap, Book, Star, Users } from 'lucide-react'
+import { GraduationCap, Book, Star } from 'lucide-react'
 
 const categories = [
   { 
@@ -20,19 +20,13 @@ const categories = [
     description: 'Product beoordelingen',
     href: '/reviews' 
   },
-  { 
-    icon: Users, 
-    title: 'Community', 
-    description: 'Sluit je aan bij anderen',
-    href: '/community' 
-  },
 ]
 
 export default function CategoryGrid() {
   return (
     <section className="py-20 bg-dark-section" aria-label="Product categorieën">
       <div className="container mx-auto px-4 max-w-6xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories.map((category, index) => (
             <Link
               key={index}

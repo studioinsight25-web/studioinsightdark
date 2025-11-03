@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { Target, Award, Heart, CheckCircle } from 'lucide-react'
 
 const values = [
@@ -58,12 +59,12 @@ export default function OverOnsPage() {
                 impact kunnen vergroten.
               </p>
               <div className="flex flex-wrap gap-4">
-                <button className="bg-primary text-black px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-300">
+                <Link href="/cursussen" className="bg-primary text-black px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-300">
                   Bekijk onze cursussen
-                </button>
-                <button className="bg-transparent border border-primary text-primary px-6 py-3 rounded-lg font-semibold hover:bg-primary hover:text-black transition-colors duration-300">
+                </Link>
+                <Link href="/ebooks" className="bg-transparent border border-primary text-primary px-6 py-3 rounded-lg font-semibold hover:bg-primary hover:text-black transition-colors duration-300">
                   Bekijk onze e-books
-                </button>
+                </Link>
               </div>
             </div>
             <div className="relative">
@@ -115,14 +116,14 @@ export default function OverOnsPage() {
             Ontdek onze praktische cursussen en e-books die je helpen groeien als ondernemer.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-primary text-black px-8 py-4 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/25 flex items-center justify-center gap-2">
+            <Link href="/cursussen" className="bg-primary text-black px-8 py-4 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/25 flex items-center justify-center gap-2">
               <CheckCircle className="w-4 h-4" />
               Bekijk cursussen
-            </button>
-            <button className="bg-transparent border border-primary text-primary px-8 py-4 rounded-lg font-semibold hover:bg-primary hover:text-black transition-all duration-300 flex items-center justify-center gap-2">
+            </Link>
+            <Link href="/ebooks" className="bg-transparent border border-primary text-primary px-8 py-4 rounded-lg font-semibold hover:bg-primary hover:text-black transition-all duration-300 flex items-center justify-center gap-2">
               <CheckCircle className="w-4 h-4" />
               Bekijk e-books
-            </button>
+            </Link>
           </div>
         </div>
       </section>

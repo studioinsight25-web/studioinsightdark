@@ -13,9 +13,14 @@ export default function CommunityTestimonial() {
             <p className="text-text-secondary mb-6">
               Verbind met andere ondernemers en deel je ervaringen in onze actieve Discord community.
             </p>
-            <button className="bg-primary text-black px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-300 hover:scale-105">
+            <a 
+              href="https://discord.gg/studioinsight" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-block bg-primary text-black px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-300 hover:scale-105"
+            >
               Toegang via Discord
-            </button>
+            </a>
           </div>
 
           {/* Testimonial */}

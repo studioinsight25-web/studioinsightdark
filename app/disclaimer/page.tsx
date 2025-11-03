@@ -237,9 +237,8 @@ export default function DisclaimerPage() {
                 Voor vragen over deze disclaimer:
               </p>
               <div className="space-y-2 text-text-secondary mb-6">
-                <p>E-mail: info@studioinsight.nl</p>
-                <p>Telefoon: +31 6 1234 5678</p>
-                <p>Adres: Keizersgracht 123, 1015 CJ Amsterdam</p>
+                <p>E-mail: info@studio-insight.nl</p>
+                <p>Adres: De Veken 122b, 1716 KG Opmeer</p>
               </div>
               <div className="flex gap-4">
                 <Link
