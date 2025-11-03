@@ -8,8 +8,13 @@ import { useProducts } from '@/hooks/useProducts'
 export default function FeaturedEbooks() {
   const { products, loading } = useProducts()
   
-  // Get featured ebooks from the centralized product service
-  const featuredEbooks = products.filter(product => product.type === 'ebook' && product.featured && product.isActive)
+  // Prefer featured e‑books; if none, fallback to the most recent active e‑books
+  const allActiveEbooks = products
+    .filter(p => p.type === 'ebook' && p.isActive)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+  const featured = allActiveEbooks.filter(p => p.featured)
+  const featuredEbooks = (featured.length > 0 ? featured : allActiveEbooks).slice(0, 2)
 
   if (loading) {
     return (
