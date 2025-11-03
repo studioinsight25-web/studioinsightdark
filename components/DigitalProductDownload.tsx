@@ -248,78 +248,140 @@ export default function DigitalProductDownload({
   }
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      <div>
-        <h3 className="text-lg font-semibold text-white mb-2">📁 Downloadbare Bestanden</h3>
-        <p className="text-sm text-text-secondary">
-          Download de digitale bestanden die bij dit product horen
-        </p>
+    <div className={`space-y-6 ${className}`}>
+      {/* Header Section */}
+      <div className="flex items-start gap-3">
+        <div className="p-2.5 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl border border-primary/30">
+          <File className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold text-white mb-1.5">Downloadbare Bestanden</h3>
+          <p className="text-sm text-text-secondary leading-relaxed">
+            Download de digitale bestanden die bij dit product horen
+          </p>
+        </div>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-400" />
-            <span className="text-red-400 font-semibold">Download Fout</span>
+        <div className="bg-gradient-to-r from-red-900/30 to-red-800/20 border border-red-500/40 rounded-xl p-4 shadow-lg shadow-red-500/10">
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="p-1.5 bg-red-500/20 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-red-400" />
+            </div>
+            <span className="text-red-400 font-semibold text-sm uppercase tracking-wide">Download Fout</span>
           </div>
-          <p className="text-red-300 text-sm mt-1">{error}</p>
+          <p className="text-red-300 text-sm pl-7">{error}</p>
         </div>
       )}
 
       {/* Digital Products List */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {digitalProducts.map((product) => (
           <div
             key={product.id}
-            className="flex items-center justify-between p-4 bg-dark-card rounded-lg border border-dark-border hover:border-primary transition-colors"
+            className="group relative overflow-hidden bg-gradient-to-br from-dark-card via-dark-card/95 to-dark-section rounded-xl border border-dark-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 p-5"
           >
-            <div className="flex items-center gap-3">
-              {getFileIcon(product.fileType)}
-              <div>
-                <p className="font-medium text-white">{product.fileName}</p>
-                <div className="flex items-center gap-4 text-sm text-text-secondary">
-                  {product.fileSize && <span>{formatFileSize(product.fileSize)}</span>}
-                  {product.fileType && <span>{product.fileType.toUpperCase()}</span>}
-                  {product.downloadLimit && (
-                    <span>Max {product.downloadLimit} downloads</span>
-                  )}
+            {/* Background gradient effect on hover */}
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/0 to-primary/0 group-hover:from-primary/5 group-hover:via-primary/5 group-hover:to-primary/5 transition-all duration-500 opacity-0 group-hover:opacity-100" />
+            
+            <div className="relative flex flex-col sm:flex-row sm:items-center gap-4">
+              {/* File Info Section */}
+              <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
+                {/* File Icon with enhanced styling */}
+                <div className="flex-shrink-0 p-3 bg-gradient-to-br from-dark-section to-dark-card rounded-xl border border-dark-border/50 group-hover:border-primary/30 transition-all duration-300 group-hover:scale-105">
+                  {getFileIcon(product.fileType)}
+                </div>
+                
+                {/* File Details */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-white mb-2 truncate group-hover:text-primary transition-colors duration-300">
+                    {product.fileName}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-3 text-xs">
+                    {product.fileSize && (
+                      <span className="px-2.5 py-1 bg-dark-section/50 rounded-md text-text-secondary border border-dark-border/50">
+                        {formatFileSize(product.fileSize)}
+                      </span>
+                    )}
+                    {product.fileType && (
+                      <span className="px-2.5 py-1 bg-primary/10 text-primary rounded-md border border-primary/20 font-medium">
+                        {product.fileType.toUpperCase()}
+                      </span>
+                    )}
+                    {product.downloadLimit && (
+                      <span className="px-2.5 py-1 bg-blue-500/10 text-blue-400 rounded-md border border-blue-500/20">
+                        Max {product.downloadLimit} downloads
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* Download Button - Enhanced Design */}
+              <button
+                onClick={() => handleDownload(product.id, product.fileName)}
+                disabled={downloading === product.id}
+                className="group/btn relative flex-shrink-0 px-6 py-3.5 bg-gradient-to-r from-primary via-primary to-primary/90 text-black font-bold rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg overflow-hidden hover:scale-105 active:scale-95"
+              >
+                {/* Animated background on hover */}
+                <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/95 to-primary opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                
+                {/* Button Content */}
+                <span className="relative flex items-center gap-2.5">
+                  {downloading === product.id ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      <span className="text-sm">Downloaden...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-5 h-5 group-hover/btn:animate-bounce" />
+                      <span className="text-sm">Download</span>
+                    </>
+                  )}
+                </span>
+                
+                {/* Shine effect on hover */}
+                <div className="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              </button>
             </div>
-            <button
-              onClick={() => handleDownload(product.id, product.fileName)}
-              disabled={downloading === product.id}
-              className="bg-primary text-black px-4 py-2 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {downloading === product.id ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                  Downloaden...
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4" />
-                  Download
-                </>
-              )}
-            </button>
           </div>
         ))}
       </div>
 
-      {/* Help Text */}
-      <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <CheckCircle className="w-4 h-4 text-green-400" />
-          <h4 className="font-medium text-green-400">✅ Download Tips</h4>
+      {/* Enhanced Help/Info Section */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-green-900/20 via-green-800/15 to-green-900/10 border border-green-500/30 rounded-xl p-5 shadow-lg shadow-green-500/5">
+        {/* Decorative background pattern */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-green-400/5 rounded-full blur-2xl" />
+        
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-green-500/20 rounded-lg border border-green-500/30">
+              <CheckCircle className="w-5 h-5 text-green-400" />
+            </div>
+            <h4 className="font-bold text-green-400 text-base">Download Tips & Beveiliging</h4>
+          </div>
+          <ul className="text-sm text-green-300/90 space-y-2.5 pl-1">
+            <li className="flex items-start gap-2.5">
+              <span className="text-green-400 mt-0.5">✓</span>
+              <span>Klik op "Download" om het bestand veilig te downloaden</span>
+            </li>
+            <li className="flex items-start gap-2.5">
+              <span className="text-green-400 mt-0.5">✓</span>
+              <span>Bewaar de bestanden op een veilige locatie (versleutelde drive aanbevolen)</span>
+            </li>
+            <li className="flex items-start gap-2.5">
+              <span className="text-green-400 mt-0.5">✓</span>
+              <span>Download links zijn <strong className="text-green-200">30 dagen geldig</strong> voor beveiliging</span>
+            </li>
+            <li className="flex items-start gap-2.5">
+              <span className="text-green-400 mt-0.5">✓</span>
+              <span>Bestanden worden versleuteld en beveiligd gedownload</span>
+            </li>
+          </ul>
         </div>
-        <ul className="text-sm text-green-300 space-y-1">
-          <li>• Klik op "Download" om het bestand te downloaden</li>
-          <li>• Bewaar de bestanden op een veilige locatie</li>
-          <li>• Download links zijn 30 dagen geldig</li>
-          <li>• Download zoveel je wilt (limieten tijdelijk uitgeschakeld voor testing)</li>
-        </ul>
       </div>
     </div>
   )
