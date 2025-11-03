@@ -19,34 +19,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Run migration statements idempotently
-    const statements: string[] = [
-      'CREATE EXTENSION IF NOT EXISTS pgcrypto;',
-      `CREATE TABLE IF NOT EXISTS "password_reset_tokens" (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-          token VARCHAR(255) NOT NULL UNIQUE,
-          expires_at TIMESTAMP NOT NULL,
-          used BOOLEAN DEFAULT FALSE,
-          created_at TIMESTAMP DEFAULT NOW(),
-          updated_at TIMESTAMP DEFAULT NOW()
-        );`,
-      'CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_token ON "password_reset_tokens"(token);',
-      'CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON "password_reset_tokens"(user_id);',
-      'CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_expires_at ON "password_reset_tokens"(expires_at);'
-    ]
+    // Run migration statements idempotently with detailed diagnostics
+    const diagnostics: any[] = []
 
-    for (const sql of statements) {
-      await DatabaseService.query(sql)
+    async function run(label: string, sql: string) {
+      try {
+        await DatabaseService.query(sql)
+        diagnostics.push({ step: label, ok: true })
+      } catch (e: any) {
+        diagnostics.push({ step: label, ok: false, error: e?.message || String(e) })
+      }
     }
 
-    return NextResponse.json({ success: true })
+    // Basic connectivity check
+    await run('connect_test', 'SELECT NOW() as now;')
+
+    await run('create_extension_pgcrypto', 'CREATE EXTENSION IF NOT EXISTS pgcrypto;')
+
+    await run('create_table_password_reset_tokens', `
+      CREATE TABLE IF NOT EXISTS "password_reset_tokens" (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token VARCHAR(255) NOT NULL UNIQUE,
+        expires_at TIMESTAMP NOT NULL,
+        used BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `)
+
+    await run('index_token', 'CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_token ON "password_reset_tokens"(token);')
+    await run('index_user', 'CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON "password_reset_tokens"(user_id);')
+    await run('index_expires', 'CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_expires_at ON "password_reset_tokens"(expires_at);')
+
+    const hasFailure = diagnostics.some(d => !d.ok)
+    return NextResponse.json({ success: !hasFailure, diagnostics })
   } catch (error) {
     console.error('[Migration] Error:', error)
-    return NextResponse.json(
-      { error: 'Migration failed', details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
-    )
+    // Return as 200 with detailed error to avoid Invoke-RestMethod masking body
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : String(error) })
   }
 }
 
