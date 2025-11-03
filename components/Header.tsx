@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import { Menu, X, User, LogOut, LayoutDashboard, ShoppingCart } from 'lucide-react'
 // Removed direct database import - using API routes instead
 import SessionManager from '@/lib/session'
@@ -15,6 +16,7 @@ interface User {
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const pathname = usePathname()
   const [user, setUser] = useState<User | null>(null)
   const userRef = useRef<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -204,6 +206,11 @@ export default function Header() {
     }
   }, [])
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    if (isMenuOpen) setIsMenuOpen(false)
+  }, [pathname])
+
   const handleLogout = async () => {
     try {
       // Clear session
@@ -376,7 +383,7 @@ export default function Header() {
               onClick={() => setIsMenuOpen(false)}
             />
             {/* Menu */}
-            <div className="md:hidden border-t border-dark-border/50 bg-dark-section/98 backdrop-blur-xl z-50 animate-in slide-in-from-top-5 shadow-2xl">
+            <div className="md:hidden fixed left-0 right-0 top-20 border-t border-dark-border/50 bg-dark-section/98 backdrop-blur-xl z-50 animate-in slide-in-from-top-5 shadow-2xl max-h-[calc(100vh-5rem)] overflow-y-auto">
               <nav className="py-6 space-y-2 px-6 max-h-[calc(100vh-5rem)] overflow-y-auto">
                 {navigation.map((item) => (
                 <Link
