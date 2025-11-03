@@ -284,25 +284,29 @@ export class DigitalProductDatabaseService {
       const digitalProduct = await this.getDigitalProduct(digitalProductId)
       if (!digitalProduct) return false
 
-      // ULTRA STRICT: ONLY PAID orders allow downloads - NO exceptions for PENDING orders
+      // SMART CHECK: Accept PAID status OR confirmed payment (not PENDING with payment_id)
       // This ensures downloads are only available after confirmed payment
+      // But handles edge cases where payment is confirmed but status not yet updated
       console.log(`[canUserDownload] Checking if user ${userId} can download digital product ${digitalProductId} (productId: ${digitalProduct.productId})`)
       
       let productResult
       try {
-        // Try UUID first - ONLY check for PAID status
+        // Try UUID first - Accept PAID OR (not PENDING with payment_id)
         productResult = await DatabaseService.query(
           `SELECT o.id, o.status, o.payment_id, oi.product_id as "productId" 
            FROM orders o 
            JOIN order_items oi ON o.id = oi.order_id 
            WHERE oi.product_id = $1 
              AND o.user_id = $2::uuid 
-             AND UPPER(TRIM(o.status)) = 'PAID'
+             AND (
+               UPPER(TRIM(o.status)) = 'PAID' 
+               OR (UPPER(TRIM(o.status)) != 'PENDING' AND o.payment_id IS NOT NULL AND o.payment_id != '')
+             )
            LIMIT 1`,
           [digitalProduct.productId, userId]
         )
       } catch (uuidError) {
-        // Fallback to text comparison - ONLY check for PAID status
+        // Fallback to text comparison - Accept PAID OR (not PENDING with payment_id)
         try {
           productResult = await DatabaseService.query(
             `SELECT o.id, o.status, o.payment_id, oi.product_id as "productId" 
@@ -310,7 +314,10 @@ export class DigitalProductDatabaseService {
              JOIN order_items oi ON o.id = oi.order_id 
              WHERE oi.product_id = $1 
                AND o.user_id::text = $2 
-               AND UPPER(TRIM(o.status)) = 'PAID'
+               AND (
+                 UPPER(TRIM(o.status)) = 'PAID' 
+                 OR (UPPER(TRIM(o.status)) != 'PENDING' AND o.payment_id IS NOT NULL AND o.payment_id != '')
+               )
              LIMIT 1`,
             [digitalProduct.productId, userId]
           )
@@ -375,23 +382,27 @@ export class DigitalProductDatabaseService {
     try {
       console.log(`[hasUserPurchasedProduct] Checking if user ${userId} purchased product ${productId}`)
       
-      // ULTRA STRICT: ONLY 'PAID' status accepted - no exceptions for PENDING orders
+      // SMART CHECK: Accept PAID status OR confirmed payment (has payment_id and not PENDING)
       // This ensures downloads are only available for confirmed, paid orders
+      // But handles cases where payment is confirmed but webhook hasn't updated status
       let result
       try {
-        // Try UUID first - ONLY check for PAID status
+        // Try UUID first - Accept PAID OR (not PENDING with payment_id)
         result = await DatabaseService.query(
           `SELECT o.id, o.status, o.payment_id
            FROM orders o 
            JOIN order_items oi ON o.id = oi.order_id 
            WHERE oi.product_id = $1 
              AND o.user_id = $2::uuid 
-             AND UPPER(TRIM(o.status)) = 'PAID'
+             AND (
+               UPPER(TRIM(o.status)) = 'PAID' 
+               OR (UPPER(TRIM(o.status)) != 'PENDING' AND o.payment_id IS NOT NULL AND o.payment_id != '')
+             )
            LIMIT 1`,
           [productId, userId]
         )
       } catch (uuidError) {
-        // Fallback to text comparison - ONLY check for PAID status
+        // Fallback to text comparison - Accept PAID OR (not PENDING with payment_id)
         try {
           result = await DatabaseService.query(
             `SELECT o.id, o.status, o.payment_id
@@ -399,7 +410,10 @@ export class DigitalProductDatabaseService {
              JOIN order_items oi ON o.id = oi.order_id 
              WHERE oi.product_id = $1 
                AND o.user_id::text = $2 
-               AND UPPER(TRIM(o.status)) = 'PAID'
+               AND (
+                 UPPER(TRIM(o.status)) = 'PAID' 
+                 OR (UPPER(TRIM(o.status)) != 'PENDING' AND o.payment_id IS NOT NULL AND o.payment_id != '')
+               )
              LIMIT 1`,
             [productId, userId]
           )

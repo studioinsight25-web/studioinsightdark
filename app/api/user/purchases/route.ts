@@ -68,22 +68,31 @@ export async function GET(request: NextRequest) {
       created_at: o.created_at
     })))
     
-    // Filter only paid orders - STRICT but case-insensitive
-    // Accept 'PAID', 'paid', 'Paid', etc. but REJECT 'PENDING', 'CANCELLED', 'FAILED', etc.
-    // PENDING orders are NOT considered paid even if they have payment_id
-    // This ensures only confirmed, paid orders are shown in dashboard
+    // Filter paid orders - SMART CHECK: 
+    // 1. Primary: Status must be 'PAID' (case-insensitive)
+    // 2. Fallback: If status is not PENDING and has payment_id, consider it paid (payment confirmed but status may not be updated)
+    // This handles edge cases where payment is confirmed but webhook hasn't updated status yet
+    // But still REJECTS orders that are PENDING without payment (cart items)
     const paidOrders = dbOrders.filter((order: any) => {
       const statusRaw = order.status || ''
       const status = typeof statusRaw === 'string' ? statusRaw.trim().toUpperCase() : String(statusRaw).trim().toUpperCase()
+      const hasPaymentId = order.payment_id && order.payment_id.trim && order.payment_id.trim() !== '' || (order.payment_id && String(order.payment_id).trim() !== '')
       
-      // Accept ONLY 'PAID' status (case-insensitive matching)
-      // Reject: PENDING, CANCELLED, FAILED, REFUNDED, etc.
-      const isPaid = status === 'PAID'
+      // Primary check: Status is 'PAID' (case-insensitive)
+      const isStatusPaid = status === 'PAID'
+      
+      // Fallback check: Not PENDING and has payment_id (payment confirmed via payment provider)
+      // This handles cases where payment is confirmed but webhook hasn't updated status
+      const isConfirmedPayment = status !== 'PENDING' && status !== 'FAILED' && status !== 'REFUNDED' && hasPaymentId
+      
+      const isPaid = isStatusPaid || isConfirmedPayment
       
       if (!isPaid) {
-        console.log(`[Purchases] ❌ Order ${order.id} REJECTED - status: "${statusRaw}" (normalized: "${status}") - Only 'PAID' status accepted. Payment ID: ${order.payment_id ? 'exists' : 'missing'}`)
+        console.log(`[Purchases] ❌ Order ${order.id} REJECTED - status: "${statusRaw}" (normalized: "${status}"), payment_id: ${order.payment_id ? 'exists' : 'missing'} - Not a confirmed paid order`)
+      } else if (isStatusPaid) {
+        console.log(`[Purchases] ✅ Order ${order.id} ACCEPTED - status: "${statusRaw}" → "${status}" (confirmed PAID)`)
       } else {
-        console.log(`[Purchases] ✅ Order ${order.id} ACCEPTED - status: "${statusRaw}" → "${status}" (confirmed payment)`)
+        console.log(`[Purchases] ✅ Order ${order.id} ACCEPTED - status: "${statusRaw}" with payment_id (payment confirmed, status may be pending webhook update)`)
       }
       
       return isPaid
@@ -213,16 +222,20 @@ export async function GET(request: NextRequest) {
     const verifiedProductIds = new Set<string>()
     
     for (const productId of purchasedProductIds) {
-      // Double-check: Query orders again to verify this product has a PAID order (case-insensitive)
+      // Double-check: Query orders again to verify this product has a confirmed paid order
+      // Accept: status = 'PAID' OR (status != 'PENDING' AND has payment_id)
       let verificationResult
       try {
         verificationResult = await DatabaseService.query(
-          `SELECT o.id, o.status, oi.product_id
+          `SELECT o.id, o.status, o.payment_id, oi.product_id
            FROM orders o 
            JOIN order_items oi ON o.id = oi.order_id 
            WHERE oi.product_id = $1 
              AND o.user_id = $2::uuid 
-             AND UPPER(TRIM(o.status)) = 'PAID'
+             AND (
+               UPPER(TRIM(o.status)) = 'PAID' 
+               OR (UPPER(TRIM(o.status)) != 'PENDING' AND o.payment_id IS NOT NULL AND o.payment_id != '')
+             )
            LIMIT 1`,
           [productId, session.userId]
         )
@@ -230,12 +243,15 @@ export async function GET(request: NextRequest) {
         // Fallback to text comparison
         try {
           verificationResult = await DatabaseService.query(
-            `SELECT o.id, o.status, oi.product_id
+            `SELECT o.id, o.status, o.payment_id, oi.product_id
              FROM orders o 
              JOIN order_items oi ON o.id = oi.order_id 
              WHERE oi.product_id = $1 
                AND o.user_id::text = $2 
-               AND UPPER(TRIM(o.status)) = 'PAID'
+               AND (
+                 UPPER(TRIM(o.status)) = 'PAID' 
+                 OR (UPPER(TRIM(o.status)) != 'PENDING' AND o.payment_id IS NOT NULL AND o.payment_id != '')
+               )
              LIMIT 1`,
             [productId, session.userId]
           )
