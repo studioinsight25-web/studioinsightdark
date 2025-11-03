@@ -284,14 +284,14 @@ export class DigitalProductDatabaseService {
       const digitalProduct = await this.getDigitalProduct(digitalProductId)
       if (!digitalProduct) return false
 
-      // SMART CHECK: Accept PAID status OR confirmed payment (not PENDING with payment_id)
+      // RELAXED CHECK: Accept PAID status OR any order with payment_id (not FAILED/REFUNDED)
       // This ensures downloads are only available after confirmed payment
-      // But handles edge cases where payment is confirmed but status not yet updated
+      // Payment_id presence indicates payment was processed successfully
       console.log(`[canUserDownload] Checking if user ${userId} can download digital product ${digitalProductId} (productId: ${digitalProduct.productId})`)
       
       let productResult
       try {
-        // Try UUID first - Accept PAID OR (not PENDING with payment_id)
+        // Try UUID first - Accept PAID OR (has payment_id AND not FAILED/REFUNDED)
         productResult = await DatabaseService.query(
           `SELECT o.id, o.status, o.payment_id, oi.product_id as "productId" 
            FROM orders o 
@@ -300,13 +300,13 @@ export class DigitalProductDatabaseService {
              AND o.user_id = $2::uuid 
              AND (
                UPPER(TRIM(o.status)) = 'PAID' 
-               OR (UPPER(TRIM(o.status)) != 'PENDING' AND o.payment_id IS NOT NULL AND o.payment_id != '')
+               OR (o.payment_id IS NOT NULL AND o.payment_id != '' AND UPPER(TRIM(o.status)) NOT IN ('FAILED', 'REFUNDED'))
              )
            LIMIT 1`,
           [digitalProduct.productId, userId]
         )
       } catch (uuidError) {
-        // Fallback to text comparison - Accept PAID OR (not PENDING with payment_id)
+        // Fallback to text comparison - Accept PAID OR (has payment_id AND not FAILED/REFUNDED)
         try {
           productResult = await DatabaseService.query(
             `SELECT o.id, o.status, o.payment_id, oi.product_id as "productId" 
@@ -316,7 +316,7 @@ export class DigitalProductDatabaseService {
                AND o.user_id::text = $2 
                AND (
                  UPPER(TRIM(o.status)) = 'PAID' 
-                 OR (UPPER(TRIM(o.status)) != 'PENDING' AND o.payment_id IS NOT NULL AND o.payment_id != '')
+                 OR (o.payment_id IS NOT NULL AND o.payment_id != '' AND UPPER(TRIM(o.status)) NOT IN ('FAILED', 'REFUNDED'))
                )
              LIMIT 1`,
             [digitalProduct.productId, userId]
@@ -382,12 +382,12 @@ export class DigitalProductDatabaseService {
     try {
       console.log(`[hasUserPurchasedProduct] Checking if user ${userId} purchased product ${productId}`)
       
-      // SMART CHECK: Accept PAID status OR confirmed payment (has payment_id and not PENDING)
+      // RELAXED CHECK: Accept PAID status OR any order with payment_id (not FAILED/REFUNDED)
       // This ensures downloads are only available for confirmed, paid orders
-      // But handles cases where payment is confirmed but webhook hasn't updated status
+      // Payment_id presence indicates payment was processed successfully
       let result
       try {
-        // Try UUID first - Accept PAID OR (not PENDING with payment_id)
+        // Try UUID first - Accept PAID OR (has payment_id AND not FAILED/REFUNDED)
         result = await DatabaseService.query(
           `SELECT o.id, o.status, o.payment_id
            FROM orders o 
@@ -396,13 +396,13 @@ export class DigitalProductDatabaseService {
              AND o.user_id = $2::uuid 
              AND (
                UPPER(TRIM(o.status)) = 'PAID' 
-               OR (UPPER(TRIM(o.status)) != 'PENDING' AND o.payment_id IS NOT NULL AND o.payment_id != '')
+               OR (o.payment_id IS NOT NULL AND o.payment_id != '' AND UPPER(TRIM(o.status)) NOT IN ('FAILED', 'REFUNDED'))
              )
            LIMIT 1`,
           [productId, userId]
         )
       } catch (uuidError) {
-        // Fallback to text comparison - Accept PAID OR (not PENDING with payment_id)
+        // Fallback to text comparison - Accept PAID OR (has payment_id AND not FAILED/REFUNDED)
         try {
           result = await DatabaseService.query(
             `SELECT o.id, o.status, o.payment_id
@@ -412,7 +412,7 @@ export class DigitalProductDatabaseService {
                AND o.user_id::text = $2 
                AND (
                  UPPER(TRIM(o.status)) = 'PAID' 
-                 OR (UPPER(TRIM(o.status)) != 'PENDING' AND o.payment_id IS NOT NULL AND o.payment_id != '')
+                 OR (o.payment_id IS NOT NULL AND o.payment_id != '' AND UPPER(TRIM(o.status)) NOT IN ('FAILED', 'REFUNDED'))
                )
              LIMIT 1`,
             [productId, userId]

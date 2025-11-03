@@ -68,31 +68,41 @@ export async function GET(request: NextRequest) {
       created_at: o.created_at
     })))
     
-    // Filter paid orders - SMART CHECK: 
-    // 1. Primary: Status must be 'PAID' (case-insensitive)
-    // 2. Fallback: If status is not PENDING and has payment_id, consider it paid (payment confirmed but status may not be updated)
-    // This handles edge cases where payment is confirmed but webhook hasn't updated status yet
-    // But still REJECTS orders that are PENDING without payment (cart items)
+    // Filter paid orders - RELAXED CHECK: 
+    // 1. Primary: Status is 'PAID' (case-insensitive) → ACCEPT
+    // 2. Secondary: Has payment_id AND status is not FAILED/REFUNDED → ACCEPT (payment confirmed)
+    // 3. REJECT: Only orders without payment_id AND status = PENDING (cart items)
+    // This ensures all paid orders are shown while blocking unpaid cart items
     const paidOrders = dbOrders.filter((order: any) => {
       const statusRaw = order.status || ''
       const status = typeof statusRaw === 'string' ? statusRaw.trim().toUpperCase() : String(statusRaw).trim().toUpperCase()
-      const hasPaymentId = order.payment_id && order.payment_id.trim && order.payment_id.trim() !== '' || (order.payment_id && String(order.payment_id).trim() !== '')
+      
+      // Check if payment_id exists and is not empty/null
+      const paymentIdValue = order.payment_id
+      const hasPaymentId = !!(
+        paymentIdValue && 
+        paymentIdValue !== null && 
+        paymentIdValue !== undefined &&
+        String(paymentIdValue).trim() !== '' && 
+        String(paymentIdValue).trim().toLowerCase() !== 'null' &&
+        String(paymentIdValue).trim() !== 'undefined'
+      )
       
       // Primary check: Status is 'PAID' (case-insensitive)
       const isStatusPaid = status === 'PAID'
       
-      // Fallback check: Not PENDING and has payment_id (payment confirmed via payment provider)
-      // This handles cases where payment is confirmed but webhook hasn't updated status
-      const isConfirmedPayment = status !== 'PENDING' && status !== 'FAILED' && status !== 'REFUNDED' && hasPaymentId
+      // Secondary check: Has payment_id (means payment was processed) AND status is not explicitly failed/refunded
+      // This accepts orders with payment_id even if status is PENDING (webhook may not have updated yet)
+      const isConfirmedPayment = hasPaymentId && status !== 'FAILED' && status !== 'REFUNDED'
       
       const isPaid = isStatusPaid || isConfirmedPayment
       
       if (!isPaid) {
-        console.log(`[Purchases] ❌ Order ${order.id} REJECTED - status: "${statusRaw}" (normalized: "${status}"), payment_id: ${order.payment_id ? 'exists' : 'missing'} - Not a confirmed paid order`)
+        console.log(`[Purchases] ❌ Order ${order.id} REJECTED - status: "${statusRaw}" (normalized: "${status}"), payment_id: ${paymentIdValue || 'MISSING'} - No payment confirmed`)
       } else if (isStatusPaid) {
         console.log(`[Purchases] ✅ Order ${order.id} ACCEPTED - status: "${statusRaw}" → "${status}" (confirmed PAID)`)
       } else {
-        console.log(`[Purchases] ✅ Order ${order.id} ACCEPTED - status: "${statusRaw}" with payment_id (payment confirmed, status may be pending webhook update)`)
+        console.log(`[Purchases] ✅ Order ${order.id} ACCEPTED - has payment_id: "${paymentIdValue}" (payment confirmed via payment provider, status: "${statusRaw}")`)
       }
       
       return isPaid
@@ -223,7 +233,7 @@ export async function GET(request: NextRequest) {
     
     for (const productId of purchasedProductIds) {
       // Double-check: Query orders again to verify this product has a confirmed paid order
-      // Accept: status = 'PAID' OR (status != 'PENDING' AND has payment_id)
+      // Accept: status = 'PAID' OR (has payment_id AND status != 'FAILED'/'REFUNDED')
       let verificationResult
       try {
         verificationResult = await DatabaseService.query(
@@ -234,7 +244,7 @@ export async function GET(request: NextRequest) {
              AND o.user_id = $2::uuid 
              AND (
                UPPER(TRIM(o.status)) = 'PAID' 
-               OR (UPPER(TRIM(o.status)) != 'PENDING' AND o.payment_id IS NOT NULL AND o.payment_id != '')
+               OR (o.payment_id IS NOT NULL AND o.payment_id != '' AND UPPER(TRIM(o.status)) NOT IN ('FAILED', 'REFUNDED'))
              )
            LIMIT 1`,
           [productId, session.userId]
@@ -250,7 +260,7 @@ export async function GET(request: NextRequest) {
                AND o.user_id::text = $2 
                AND (
                  UPPER(TRIM(o.status)) = 'PAID' 
-                 OR (UPPER(TRIM(o.status)) != 'PENDING' AND o.payment_id IS NOT NULL AND o.payment_id != '')
+                 OR (o.payment_id IS NOT NULL AND o.payment_id != '' AND UPPER(TRIM(o.status)) NOT IN ('FAILED', 'REFUNDED'))
                )
              LIMIT 1`,
             [productId, session.userId]
