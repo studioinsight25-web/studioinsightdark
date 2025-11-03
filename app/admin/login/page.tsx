@@ -51,21 +51,12 @@ export default function AdminLoginPage() {
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
         })
 
-        // Als 2FA vereist is en nog niet verified: start 2FA flow (QR + code)
+        // Als 2FA vereist is en nog niet verified: toon alleen code-invoer (geen QR opnieuw)
         if (result.user.twoFactorEnabled === true && result.user.twoFactorVerified !== true) {
-          try {
-            const enroll = await fetch('/api/auth/2fa/enroll', { method: 'POST', credentials: 'same-origin' })
-            const data = await enroll.json()
-            if (!enroll.ok) throw new Error(data?.error || data?.details || '2FA enroll failed')
-            setQr(data.qr)
-            setTwoFaOpen(true)
-            setIsLoading(false)
-            return
-          } catch (e) {
-            setError(e instanceof Error ? e.message : '2FA inschakelen mislukt')
-            setIsLoading(false)
-            return
-          }
+          setQr('')
+          setTwoFaOpen(true)
+          setIsLoading(false)
+          return
         }
 
         // Zonder 2FA vereiste → redirect naar admin
@@ -194,7 +185,7 @@ export default function AdminLoginPage() {
           <div className="absolute inset-0 bg-black/60" />
           <div className="relative z-10 w-full max-w-md bg-dark-card border border-dark-border rounded-xl p-6">
             <h3 className="text-xl font-semibold text-white mb-4">2FA Verificatie</h3>
-            <p className="text-sm text-text-secondary mb-4">Scan de QR‑code met je authenticator app en vul de 6‑cijferige code in.</p>
+            <p className="text-sm text-text-secondary mb-4">Voer de 6‑cijferige code uit je authenticator app in.</p>
             {qr && <img src={qr} alt="2FA QR" className="w-56 h-56 mx-auto mb-4 rounded" />}
             <input
               type="text"
