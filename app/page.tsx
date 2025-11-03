@@ -1,7 +1,6 @@
 import Hero from '@/components/Hero'
 import CategoryGrid from '@/components/CategoryGrid'
-import FeaturedEbooks from '@/components/FeaturedEbooks'
-import PopularCourses from '@/components/PopularCourses'
+import FeaturedRow from '@/components/FeaturedRow'
 import RecentReviews from '@/components/RecentReviews'
 import Footer from '@/components/Footer'
 
@@ -10,8 +9,7 @@ export default function Home() {
     <main>
       <Hero />
       <CategoryGrid />
-      <FeaturedEbooks />
-      <PopularCourses />
+      <FeaturedRow />
       <RecentReviews />
       <Footer />
     </main>
