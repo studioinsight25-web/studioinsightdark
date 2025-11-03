@@ -229,19 +229,30 @@ export async function GET(request: NextRequest) {
       orderItems.forEach((item: any) => {
         const productId = item.product_id || item.productId
         if (productId) {
-          purchasedProductIds.add(productId)
-          console.log(`[Purchases] ✅ Adding product ID to purchased set: ${productId}`)
+          // Store product with its order info - we'll verify each product separately later
+          // If product appears in multiple orders, we'll check all of them
+          if (!allProductIds.has(productId)) {
+            allProductIds.set(productId, { 
+              orderId: order.id, 
+              orderStatus: order.status,
+              paymentId: order.payment_id 
+            })
+            console.log(`[Purchases] 📦 Found product ${productId} in order ${order.id} (status: ${order.status})`)
+          } else {
+            // Product already found in another order - keep the info but we'll check all orders later
+            console.log(`[Purchases] 📦 Product ${productId} also exists in other order(s) - will check all orders`)
+          }
         } else {
           console.error(`[Purchases] ⚠️ Order item ${item.id} has no product_id:`, item)
         }
       })
     }
     
-    console.log(`[Purchases] Total unique purchased product IDs: ${purchasedProductIds.size}`)
-    console.log(`[Purchases] Product IDs:`, Array.from(purchasedProductIds))
+    console.log(`[Purchases] Total unique product IDs found: ${allProductIds.size}`)
+    console.log(`[Purchases] Product IDs:`, Array.from(allProductIds.keys()))
     
-    if (purchasedProductIds.size === 0) {
-      console.log(`[Purchases] ❌ No product IDs found in paid orders`)
+    if (allProductIds.size === 0) {
+      console.log(`[Purchases] ❌ No product IDs found in any orders`)
       return NextResponse.json({
         products: [],
         grouped: { courses: [], ebooks: [], reviews: [] },
@@ -252,18 +263,18 @@ export async function GET(request: NextRequest) {
         debug: {
           totalOrders: dbOrders.length,
           paidOrders: paidOrders.length,
-          orderIds: paidOrders.map((o: any) => o.id),
+          orderIds: [],
           message: 'No product IDs found in order items'
         }
       })
     }
     
-    // DOUBLE VERIFICATION: Verify each productId has a confirmed PAID order before including
-    // This ensures NO product appears in dashboard unless payment is 100% confirmed
+    // PER-PRODUCT VERIFICATION: Verify each productId individually
+    // This allows ebook in PAID order to show while course in PENDING order doesn't
     // Check per product, including Mollie verification for PENDING orders
     const verifiedProductIds = new Set<string>()
     
-    for (const productId of purchasedProductIds) {
+    for (const [productId, orderInfo] of allProductIds.entries()) {
       // Get product type for better logging
       let productInfo: any = null
       try {
@@ -274,12 +285,12 @@ export async function GET(request: NextRequest) {
       }
       const productType = productInfo?.type || 'unknown'
       
-      // Double-check: Query orders again to verify this product has a confirmed paid order
-      // First try: status = 'PAID' OR (has payment_id AND status != 'PENDING'/'FAILED'/'REFUNDED')
+      // Query ALL orders for this specific product (not just the first one found)
+      // This allows us to check if product is in ANY paid order, even if also in pending orders
       let verificationResult
       try {
         verificationResult = await DatabaseService.query(
-          `SELECT o.id, o.status, o.payment_id, oi.product_id
+          `SELECT o.id, o.status, o.payment_id, oi.product_id, o.created_at
            FROM orders o 
            JOIN order_items oi ON o.id = oi.order_id 
            WHERE oi.product_id = $1 
