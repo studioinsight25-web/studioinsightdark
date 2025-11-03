@@ -44,4 +44,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Friendly response for accidental GET visits (instead of 405 page)
+export async function GET() {
+  return NextResponse.json({
+    message: 'Use POST with JSON { token: "123456" } to verify 2FA. Open de 2FA-verify pagina niet rechtstreeks; gebruik de knop Verifiëren in de app.'
+  })
+}
+
 
