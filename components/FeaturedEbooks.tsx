@@ -64,7 +64,7 @@ export default function FeaturedEbooks() {
                   href={`/ebooks/${ebook.id}`}
                   className="bg-primary text-black px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-300 hover:scale-105 inline-block"
                 >
-                  {ebook.price === 0 ? 'Gratis Download' : 'Download PDF'}
+                  Bekijk e-book
                 </Link>
               </div>
             ))}
