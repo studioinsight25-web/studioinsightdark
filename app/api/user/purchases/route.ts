@@ -68,13 +68,15 @@ export async function GET(request: NextRequest) {
       created_at: o.created_at
     })))
     
-    // Filter paid orders - STRICT CHECK: 
+    // Filter paid orders - SMART CHECK with Mollie verification: 
     // 1. Primary: Status is 'PAID' (case-insensitive) → ACCEPT
     // 2. Secondary: Has payment_id AND status is NOT PENDING (not FAILED/REFUNDED) → ACCEPT
-    // 3. REJECT: Status is PENDING (even with payment_id, means payment not confirmed yet)
+    // 3. Tertiary: Has payment_id AND status is PENDING → Check Mollie, if paid → ACCEPT and update status
     // 4. REJECT: No payment_id AND status is PENDING (cart items)
-    // This ensures only confirmed paid orders are shown, while blocking unpaid cart items AND unconfirmed payment attempts
-    const paidOrders = dbOrders.filter((order: any) => {
+    // This ensures all paid orders are shown while blocking unpaid cart items
+    const paidOrders: any[] = []
+    
+    for (const order of dbOrders) {
       const statusRaw = order.status || ''
       const status = typeof statusRaw === 'string' ? statusRaw.trim().toUpperCase() : String(statusRaw).trim().toUpperCase()
       
@@ -93,25 +95,48 @@ export async function GET(request: NextRequest) {
       const isStatusPaid = status === 'PAID'
       
       // Secondary check: Has payment_id AND status is NOT PENDING (means payment was processed and confirmed)
-      // BUT: If status is PENDING, reject even if payment_id exists (payment started but not confirmed)
       const isConfirmedPayment = hasPaymentId && status !== 'PENDING' && status !== 'FAILED' && status !== 'REFUNDED'
       
-      const isPaid = isStatusPaid || isConfirmedPayment
+      let isPaid = isStatusPaid || isConfirmedPayment
+      
+      // Tertiary check: If PENDING with payment_id, verify with Mollie
+      if (!isPaid && status === 'PENDING' && hasPaymentId) {
+        console.log(`[Purchases] 🔍 Order ${order.id} has payment_id but status is PENDING - checking Mollie status...`)
+        try {
+          const mollieStatus = await MollieService.getPaymentStatus(String(paymentIdValue))
+          if (mollieStatus.success && mollieStatus.paid) {
+            console.log(`[Purchases] ✅ Mollie confirms payment is PAID for order ${order.id} - updating status and accepting order`)
+            // Update order status to PAID in background (don't await to avoid blocking)
+            OrderService.updateOrderStatus(order.id, 'paid', String(paymentIdValue)).catch(err => {
+              console.error(`[Purchases] ⚠️ Failed to update order ${order.id} status to PAID:`, err)
+            })
+            isPaid = true
+          } else {
+            console.log(`[Purchases] ❌ Mollie confirms payment is NOT paid for order ${order.id} (status: ${mollieStatus.status || 'unknown'})`)
+          }
+        } catch (mollieError) {
+          console.error(`[Purchases] ⚠️ Error checking Mollie status for order ${order.id}:`, mollieError)
+          // If we can't check Mollie, reject to be safe
+        }
+      }
       
       if (!isPaid) {
         if (status === 'PENDING') {
-          console.log(`[Purchases] ❌ Order ${order.id} REJECTED - status: "${statusRaw}" (PENDING - payment not confirmed yet), payment_id: ${paymentIdValue || 'MISSING'}`)
+          console.log(`[Purchases] ❌ Order ${order.id} REJECTED - status: "${statusRaw}" (PENDING - payment not confirmed), payment_id: ${paymentIdValue || 'MISSING'}`)
         } else {
           console.log(`[Purchases] ❌ Order ${order.id} REJECTED - status: "${statusRaw}" (normalized: "${status}"), payment_id: ${paymentIdValue || 'MISSING'} - No payment confirmed`)
         }
       } else if (isStatusPaid) {
         console.log(`[Purchases] ✅ Order ${order.id} ACCEPTED - status: "${statusRaw}" → "${status}" (confirmed PAID)`)
+        paidOrders.push(order)
+      } else if (status === 'PENDING' && hasPaymentId) {
+        console.log(`[Purchases] ✅ Order ${order.id} ACCEPTED - Mollie verified as PAID (will update status to PAID)`)
+        paidOrders.push(order)
       } else {
-        console.log(`[Purchases] ✅ Order ${order.id} ACCEPTED - has payment_id: "${paymentIdValue}", status: "${statusRaw}" (payment confirmed, status updated by webhook)`)
+        console.log(`[Purchases] ✅ Order ${order.id} ACCEPTED - has payment_id: "${paymentIdValue}", status: "${statusRaw}" (payment confirmed)`)
+        paidOrders.push(order)
       }
-      
-      return isPaid
-    })
+    }
     
     console.log(`[Purchases] Found ${paidOrders.length} PAID orders out of ${dbOrders.length} total`)
     
