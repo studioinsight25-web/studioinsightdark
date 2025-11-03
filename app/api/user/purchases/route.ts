@@ -280,7 +280,7 @@ export async function GET(request: NextRequest) {
       // Get product type for better logging
       let productInfo: any = null
       try {
-        const productResult = await DatabaseProductService.getProductById(productId)
+        const productResult = await DatabaseProductService.getProduct(productId)
         productInfo = productResult
       } catch (err) {
         // Ignore, just for logging
