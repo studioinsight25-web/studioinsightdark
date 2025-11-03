@@ -37,6 +37,11 @@ export default function AdminLoginPage() {
           email: result.user.email,
           name: result.user.name || '',
           role: result.user.role,
+          // If 2FA is enabled for the account, require verification
+          // Verified flag will be set to true after /api/auth/2fa/verify
+          // Middleware will enforce these flags for /admin routes
+          twoFactorRequired: result.user.twoFactorEnabled === true,
+          twoFactorVerified: result.user.twoFactorVerified === true,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
         })
 

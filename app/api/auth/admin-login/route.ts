@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     // Get user from database
     const result = await DatabaseService.query(
-      'SELECT id, email, name, password, role FROM users WHERE email = $1',
+      'SELECT id, email, name, password, role, two_factor_enabled, two_factor_verified FROM users WHERE email = $1',
       [email]
     )
 
@@ -52,13 +52,15 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Admin login successful for:', email)
 
-    // Return user data (without password)
+    // Return user data (without password) + 2FA flags
     return NextResponse.json({
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: user.role,
+        twoFactorEnabled: user.two_factor_enabled === true,
+        twoFactorVerified: user.two_factor_verified === true
       }
     })
 
