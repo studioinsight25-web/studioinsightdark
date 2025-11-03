@@ -8,11 +8,6 @@ export function middleware(request: NextRequest) {
       return NextResponse.next()
     }
 
-    // TEMPORARILY BYPASS AUTH FOR DEVELOPMENT/TESTING
-    // Allow access to all admin routes without authentication
-    return NextResponse.next()
-
-    /* Original auth check code (commented out for now)
     // Check for session cookie or authorization header
     const sessionCookie = request.cookies.get('studio-insight-session')
     
@@ -34,13 +29,19 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/admin/login', request.url))
       }
 
+      // Enforce 2FA if enabled for account
+      if (session.twoFactorRequired === true && session.twoFactorVerified !== true) {
+        const url = new URL('/admin/login', request.url)
+        url.searchParams.set('2fa', 'required')
+        return NextResponse.redirect(url)
+      }
+
       // Allow access
       return NextResponse.next()
     } catch (error) {
       // Invalid session
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
-    */
   }
 
   return NextResponse.next()
