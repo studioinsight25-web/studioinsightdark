@@ -46,6 +46,8 @@ export async function POST(request: NextRequest) {
 
     // 2FA verplicht indien ADMIN en (enabled of secret aanwezig)
     const require2FA = (user.role === 'ADMIN') && ((user.two_factor_enabled === true) || (user.totp_secret && user.totp_secret !== null))
+    // Check if TOTP secret already exists (needed to determine if we should show QR)
+    const hasTotpSecret = !!(user.totp_secret && user.totp_secret !== null)
 
     // Create/update session cookie so subsequent 2FA endpoints can read role/id
     const session = {
@@ -69,7 +71,8 @@ export async function POST(request: NextRequest) {
           name: user.name,
           role: user.role,
           twoFactorEnabled: require2FA,
-          twoFactorVerified: session.twoFactorVerified
+          twoFactorVerified: session.twoFactorVerified,
+          hasTotpSecret // Indicates if enrollment has happened (QR was shown before)
         }
       }),
       { status: 200, headers: { 'Content-Type': 'application/json', 'Set-Cookie': cookie } }

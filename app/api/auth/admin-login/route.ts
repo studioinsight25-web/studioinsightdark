@@ -56,6 +56,8 @@ export async function POST(request: NextRequest) {
     // - Required if explicitly enabled
     // - Also required when a TOTP secret exists but verification is niet afgerond
     const require2FA = (user.two_factor_enabled === true) || (user.totp_secret && user.totp_secret !== null)
+    // Check if TOTP secret already exists (needed to determine if we should show QR)
+    const hasTotpSecret = !!(user.totp_secret && user.totp_secret !== null)
 
     // Create/update session cookie for 2FA endpoints
     const session = {
@@ -78,7 +80,8 @@ export async function POST(request: NextRequest) {
           name: user.name,
           role: user.role,
           twoFactorEnabled: require2FA,
-          twoFactorVerified: session.twoFactorVerified
+          twoFactorVerified: session.twoFactorVerified,
+          hasTotpSecret // Indicates if enrollment has happened (QR was shown before)
         }
       }),
       { status: 200, headers: { 'Content-Type': 'application/json', 'Set-Cookie': cookie } }

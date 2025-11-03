@@ -48,16 +48,12 @@ export default function LoginPage() {
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
         })
 
-        // ADMIN 2FA flow:
-        // - Als 2FA al ingeschakeld → alleen code-invoer
-        // - Als 2FA nog niet ingeschakeld → enrollment starten met QR
-        if (result.user.role === 'ADMIN' && result.user.twoFactorVerified !== true) {
-          if (result.user.twoFactorEnabled === true) {
-            setQr('')
-            setTwoFaOpen(true)
-            setIsLoading(false)
-            return
-          } else {
+        // ADMIN 2FA flow geoptimaliseerd:
+        // - Als er GEEN totp_secret bestaat (eerste keer) → automatisch enrollment en QR tonen
+        // - Als er WEL een totp_secret bestaat → alleen code-invoer tonen (geen QR)
+        if (result.user.role === 'ADMIN' && result.user.twoFactorEnabled === true && result.user.twoFactorVerified !== true) {
+          if (result.user.hasTotpSecret === false || result.user.hasTotpSecret === undefined) {
+            // Eerste keer: start enrollment en toon QR
             try {
               const enroll = await fetch('/api/auth/2fa/enroll', { method: 'POST', credentials: 'same-origin' })
               const data = await enroll.json()
@@ -71,6 +67,12 @@ export default function LoginPage() {
               setIsLoading(false)
               return
             }
+          } else {
+            // Secret bestaat al: alleen code-invoer (geen QR)
+            setQr('')
+            setTwoFaOpen(true)
+            setIsLoading(false)
+            return
           }
         }
 
@@ -284,25 +286,31 @@ export default function LoginPage() {
           <div className="absolute inset-0 bg-black/60" />
           <div className="relative z-10 w-full max-w-md bg-dark-card border border-dark-border rounded-xl p-6">
             <h3 className="text-xl font-semibold text-white mb-4">2FA Verificatie</h3>
-            <p className="text-sm text-text-secondary mb-4">Voer de 6‑cijferige code uit je authenticator app in.</p>
-            {qr && <img src={qr} alt="2FA QR" className="w-56 h-56 mx-auto mb-4 rounded" />}
-            {!qr && (
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    const enroll = await fetch('/api/auth/2fa/enroll', { method: 'POST', credentials: 'same-origin' })
-                    const data = await enroll.json()
-                    if (!enroll.ok) throw new Error(data?.error || data?.details || '2FA enroll failed')
-                    setQr(data.qr)
-                  } catch (e) {
-                    alert(e instanceof Error ? e.message : '2FA inschakelen mislukt')
-                  }
-                }}
-                className="mb-4 text-sm text-primary hover:underline"
-              >
-                QR opnieuw koppelen / voor het eerst koppelen
-              </button>
+            {qr ? (
+              <>
+                <p className="text-sm text-text-secondary mb-4">Scan de QR‑code met je authenticator app en voer daarna de 6‑cijferige code in.</p>
+                <img src={qr} alt="2FA QR" className="w-56 h-56 mx-auto mb-4 rounded" />
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-text-secondary mb-4">Voer de 6‑cijferige code uit je authenticator app in.</p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const enroll = await fetch('/api/auth/2fa/enroll', { method: 'POST', credentials: 'same-origin' })
+                      const data = await enroll.json()
+                      if (!enroll.ok) throw new Error(data?.error || data?.details || '2FA enroll failed')
+                      setQr(data.qr)
+                    } catch (e) {
+                      alert(e instanceof Error ? e.message : '2FA inschakelen mislukt')
+                    }
+                  }}
+                  className="mb-4 text-sm text-primary hover:underline"
+                >
+                  QR opnieuw koppelen
+                </button>
+              </>
             )}
             <input
               type="text"
