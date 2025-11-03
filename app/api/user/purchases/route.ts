@@ -348,11 +348,11 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      if (verificationResult && verificationResult.length > 0) {
+      if (isVerified) {
         verifiedProductIds.add(productId)
-        console.log(`[Purchases] ✅ Product ${productId} VERIFIED - has confirmed PAID order`)
+        console.log(`[Purchases] ✅ Product ${productId} (${productType}) ADDED to verified list`)
       } else {
-        console.log(`[Purchases] ❌ Product ${productId} REJECTED - no confirmed PAID order found during verification`)
+        console.log(`[Purchases] ❌ Product ${productId} (${productType}) NOT VERIFIED - no confirmed paid order found`)
       }
     }
     
