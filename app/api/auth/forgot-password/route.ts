@@ -1,6 +1,7 @@
 // API endpoint to request password reset
 import { NextRequest, NextResponse } from 'next/server'
 import { DatabaseService } from '@/lib/database-direct'
+import { brevoSendEmail } from '@/lib/brevo'
 import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
@@ -57,12 +58,38 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studioinsightdark.vercel.app'
     const resetLink = `${baseUrl}/wachtwoord-resetten?token=${resetToken}`
 
-    // TODO: Send email with reset link
-    // For now, log it (in production, use email service like SendGrid, Resend, etc.)
-    console.log(`[Forgot Password] Reset link for ${user.email}: ${resetLink}`)
-    
-    // In development/production, send actual email:
-    // await sendPasswordResetEmail(user.email, user.name, resetLink)
+    // Send email via Brevo
+    const userName: string = user.name || user.email.split('@')[0]
+    const subject = 'Reset je wachtwoord – Studio Insight'
+    const htmlContent = `
+      <div style="font-family: Inter, Arial, sans-serif; max-width: 660px; margin: 0 auto; background: #0b0f17; color: #e6e9ef; border-radius: 12px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #10b981, #22d3ee); padding: 28px 32px;">
+          <h1 style="margin: 0; font-size: 22px; line-height: 1.3;">Wachtwoord resetten</h1>
+          <p style="margin: 8px 0 0; opacity: 0.9;">Hi ${userName}, we hebben een verzoek ontvangen om je wachtwoord te resetten.</p>
+        </div>
+
+        <div style="padding: 28px 32px;">
+          <p style="margin: 0 0 16px;">Klik op de knop hieronder om je wachtwoord te wijzigen. Deze link is 60 minuten geldig.</p>
+          <div style="margin: 20px 0; text-align: center;">
+            <a href="${resetLink}" style="background:#10b981; color:#0b0f17; text-decoration:none; padding:12px 22px; border-radius:10px; display:inline-block; font-weight:600;">Reset wachtwoord</a>
+          </div>
+          <p style="margin: 16px 0 0; font-size: 12px; opacity: .75;">Heb jij dit niet aangevraagd? Negeer deze e‑mail – je wachtwoord blijft ongewijzigd.</p>
+        </div>
+
+        <div style="padding: 18px 32px; border-top: 1px solid #1b2333; font-size: 12px; opacity: .75;">
+          Studio Insight • ${new Date().getFullYear()}
+        </div>
+      </div>
+    `
+
+    const emailResult = await brevoSendEmail(user.email, subject, htmlContent, userName)
+
+    if (!emailResult.sent) {
+      // Niet falen voor de gebruiker om enumeratie te voorkomen; wel loggen voor diagnose
+      console.error('[Forgot Password] Failed to send Brevo email', emailResult)
+    } else {
+      console.log('[Forgot Password] Reset email sent via Brevo', { messageId: emailResult.messageId })
+    }
 
     return NextResponse.json({
       success: true,
