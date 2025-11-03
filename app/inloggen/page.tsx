@@ -292,25 +292,7 @@ export default function LoginPage() {
                 <img src={qr} alt="2FA QR" className="w-56 h-56 mx-auto mb-4 rounded" />
               </>
             ) : (
-              <>
-                <p className="text-sm text-text-secondary mb-4">Voer de 6‑cijferige code uit je authenticator app in.</p>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      const enroll = await fetch('/api/auth/2fa/enroll', { method: 'POST', credentials: 'same-origin' })
-                      const data = await enroll.json()
-                      if (!enroll.ok) throw new Error(data?.error || data?.details || '2FA enroll failed')
-                      setQr(data.qr)
-                    } catch (e) {
-                      alert(e instanceof Error ? e.message : '2FA inschakelen mislukt')
-                    }
-                  }}
-                  className="mb-4 text-sm text-primary hover:underline"
-                >
-                  QR opnieuw koppelen
-                </button>
-              </>
+              <p className="text-sm text-text-secondary mb-4">Voer de 6‑cijferige code uit je authenticator app in.</p>
             )}
             <input
               type="text"
