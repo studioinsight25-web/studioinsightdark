@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     // Get user from database
     const result = await DatabaseService.query(
-      'SELECT id, email, name, password, role, two_factor_enabled, two_factor_verified FROM users WHERE email = $1',
+      'SELECT id, email, name, password, role, two_factor_enabled, two_factor_verified, totp_secret FROM users WHERE email = $1',
       [email]
     )
 
@@ -52,6 +52,11 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Admin login successful for:', email)
 
+    // Compute 2FA requirement:
+    // - Required if explicitly enabled
+    // - Also required when a TOTP secret exists but verification is niet afgerond
+    const require2FA = (user.two_factor_enabled === true) || (user.totp_secret && user.totp_secret !== null)
+
     // Return user data (without password) + 2FA flags
     return NextResponse.json({
       user: {
@@ -59,7 +64,7 @@ export async function POST(request: NextRequest) {
         email: user.email,
         name: user.name,
         role: user.role,
-        twoFactorEnabled: user.two_factor_enabled === true,
+        twoFactorEnabled: require2FA,
         twoFactorVerified: user.two_factor_verified === true
       }
     })
