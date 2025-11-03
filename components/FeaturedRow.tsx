@@ -61,6 +61,14 @@ export default function FeaturedRow() {
               >
                 Bekijk e-book
               </Link>
+              <div className="mt-3">
+                <Link
+                  href="/ebooks"
+                  className="text-primary hover:text-primary/80 text-sm font-semibold"
+                >
+                  Bekijk alle e‑books →
+                </Link>
+              </div>
             </div>
           )}
 
