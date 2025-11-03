@@ -47,18 +47,33 @@ export async function POST(request: NextRequest) {
     // 2FA verplicht indien ADMIN en (enabled of secret aanwezig)
     const require2FA = (user.role === 'ADMIN') && ((user.two_factor_enabled === true) || (user.totp_secret && user.totp_secret !== null))
 
+    // Create/update session cookie so subsequent 2FA endpoints can read role/id
+    const session = {
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      twoFactorRequired: require2FA,
+      twoFactorVerified: require2FA ? false : user.two_factor_verified === true,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    }
+
+    const cookie = `studio-insight-session=${encodeURIComponent(JSON.stringify(session))}; Path=/; Max-Age=${24 * 60 * 60}; SameSite=Lax; Secure`
+
     // Return user data (without password)
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        twoFactorEnabled: require2FA,
-        // Force 2FA verification on every admin login when 2FA is required
-        twoFactorVerified: require2FA ? false : user.two_factor_verified === true
-      }
-    })
+    return new NextResponse(
+      JSON.stringify({
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          twoFactorEnabled: require2FA,
+          twoFactorVerified: session.twoFactorVerified
+        }
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json', 'Set-Cookie': cookie } }
+    )
 
   } catch (error) {
     console.error('❌ Login error:', error)

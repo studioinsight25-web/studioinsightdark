@@ -57,18 +57,32 @@ export async function POST(request: NextRequest) {
     // - Also required when a TOTP secret exists but verification is niet afgerond
     const require2FA = (user.two_factor_enabled === true) || (user.totp_secret && user.totp_secret !== null)
 
+    // Create/update session cookie for 2FA endpoints
+    const session = {
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      twoFactorRequired: require2FA,
+      twoFactorVerified: require2FA ? false : user.two_factor_verified === true,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    }
+    const cookie = `studio-insight-session=${encodeURIComponent(JSON.stringify(session))}; Path=/; Max-Age=${24 * 60 * 60}; SameSite=Lax; Secure`
+
     // Return user data (without password) + 2FA flags
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        twoFactorEnabled: require2FA,
-        // Force 2FA verification on every login when 2FA is required
-        twoFactorVerified: require2FA ? false : user.two_factor_verified === true
-      }
-    })
+    return new NextResponse(
+      JSON.stringify({
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          twoFactorEnabled: require2FA,
+          twoFactorVerified: session.twoFactorVerified
+        }
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json', 'Set-Cookie': cookie } }
+    )
 
   } catch (error) {
     console.error('Admin login error:', error)
