@@ -54,21 +54,7 @@ export default function FeaturedRow() {
                 </div>
                 <span className="text-2xl font-bold text-primary">{formatPrice(ebook.price)}</span>
               </div>
-              <p className="text-text-secondary mb-6">{truncate(ebook.description || '', 140)}</p>
-              <Link
-                href={`/products/${ebook.id}`}
-                className="bg-primary text-black px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-300 inline-block"
-              >
-                Bekijk e-book
-              </Link>
-              <div className="mt-3">
-                <Link
-                  href="/ebooks"
-                  className="text-primary hover:text-primary/80 text-sm font-semibold"
-                >
-                  Bekijk alle e‑books →
-                </Link>
-              </div>
+              <p className="text-text-secondary">{truncate(ebook.description || '', 140)}</p>
             </div>
           )}
 
@@ -84,13 +70,7 @@ export default function FeaturedRow() {
                 </div>
                 <span className="text-2xl font-bold text-primary">{formatPrice(course.price)}</span>
               </div>
-              <p className="text-text-secondary mb-6">{truncate(course.description || '', 140)}</p>
-              <Link
-                href={`/products/${course.id}`}
-                className="bg-transparent border border-primary text-primary px-6 py-3 rounded-lg font-semibold hover:bg-primary hover:text-black transition-all duration-300 inline-block"
-              >
-                Bekijk cursus
-              </Link>
+              <p className="text-text-secondary">{truncate(course.description || '', 140)}</p>
             </div>
           )}
         </div>
