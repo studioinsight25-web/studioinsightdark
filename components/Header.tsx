@@ -365,9 +365,9 @@ export default function Header() {
             })()}
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile/Tablet menu button */}
           <button
-            className="md:hidden p-2 text-white hover:text-primary transition-colors duration-300 rounded-lg hover:bg-dark-card/50"
+            className="lg:hidden p-2 text-white hover:text-primary transition-colors duration-300 rounded-lg hover:bg-dark-card/50"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -379,11 +379,11 @@ export default function Header() {
           <>
             {/* Backdrop */}
             <div 
-              className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-in fade-in"
+              className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-in fade-in"
               onClick={() => setIsMenuOpen(false)}
             />
             {/* Menu */}
-            <div className="md:hidden fixed left-0 right-0 top-20 border-t border-dark-border/50 bg-dark-section/98 backdrop-blur-xl z-50 animate-in slide-in-from-top-5 shadow-2xl max-h-[calc(100vh-5rem)] overflow-y-auto">
+            <div className="lg:hidden fixed left-0 right-0 top-20 border-t border-dark-border/50 bg-dark-section/98 backdrop-blur-xl z-50 animate-in slide-in-from-top-5 shadow-2xl max-h-[calc(100vh-5rem)] overflow-y-auto">
               <nav className="py-6 space-y-2 px-6 max-h-[calc(100vh-5rem)] overflow-y-auto">
                 {navigation.map((item) => (
                 <Link
