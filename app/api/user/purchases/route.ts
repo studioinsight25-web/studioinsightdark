@@ -173,11 +173,13 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    // Get order items directly from database for paid orders
-    const purchasedProductIds = new Set<string>()
+    // Get order items from ALL orders (not just paid) - we'll verify each product separately
+    // This allows ebook in PAID order to show while course in PENDING order doesn't
+    const allProductIds = new Map<string, { orderId: string, orderStatus: string, paymentId: string | null }>()
     
-    for (const order of paidOrders) {
-      console.log(`[Purchases] Processing PAID order ${order.id}`)
+    // Loop through ALL orders to collect all products, then verify each product individually
+    for (const order of dbOrders) {
+      console.log(`[Purchases] Processing order ${order.id} (status: ${order.status}, payment_id: ${order.payment_id || 'none'})`)
       
       // Get order items from database
       let orderItems
@@ -230,7 +232,7 @@ export async function GET(request: NextRequest) {
         const productId = item.product_id || item.productId
         if (productId) {
           // Store product with its order info - we'll verify each product separately later
-          // If product appears in multiple orders, we'll check all of them
+          // If product appears in multiple orders, we'll check all of them during verification
           if (!allProductIds.has(productId)) {
             allProductIds.set(productId, { 
               orderId: order.id, 
@@ -239,8 +241,8 @@ export async function GET(request: NextRequest) {
             })
             console.log(`[Purchases] 📦 Found product ${productId} in order ${order.id} (status: ${order.status})`)
           } else {
-            // Product already found in another order - keep the info but we'll check all orders later
-            console.log(`[Purchases] 📦 Product ${productId} also exists in other order(s) - will check all orders`)
+            // Product already found in another order - we'll check all orders during verification
+            console.log(`[Purchases] 📦 Product ${productId} also exists in other order(s) - will check all orders during verification`)
           }
         } else {
           console.error(`[Purchases] ⚠️ Order item ${item.id} has no product_id:`, item)
