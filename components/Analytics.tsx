@@ -27,10 +27,13 @@ export default function Analytics({ gaId }: AnalyticsProps) {
           
           // Use typeof checks to ensure window/document exist (SSR-safe)
           if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+            // Configure GA cookies safely for current host and modern browsers
             gtag('config', '${measurementId}', {
               page_title: document.title,
               page_location: window.location.href,
-              send_page_view: true
+              send_page_view: true,
+              cookie_domain: 'auto',
+              cookie_flags: 'SameSite=None;Secure'
             });
             
             // Send initial page view
