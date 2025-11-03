@@ -14,7 +14,7 @@ export default function FeaturedEbooks() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   const featured = allActiveEbooks.filter(p => p.featured && !p.comingSoon)
-  const featuredEbooks = (featured.length > 0 ? featured : allActiveEbooks).slice(0, 2)
+  const featuredEbooks = (featured.length > 0 ? featured : allActiveEbooks).slice(0, 1)
 
   if (loading) {
     return (
