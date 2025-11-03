@@ -56,7 +56,7 @@ export default function FeaturedRow() {
               </div>
               <p className="text-text-secondary mb-6">{truncate(ebook.description || '', 140)}</p>
               <Link
-                href={`/ebooks/${ebook.id}`}
+                href={`/products/${ebook.id}`}
                 className="bg-primary text-black px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-300 inline-block"
               >
                 Bekijk e-book
@@ -78,7 +78,7 @@ export default function FeaturedRow() {
               </div>
               <p className="text-text-secondary mb-6">{truncate(course.description || '', 140)}</p>
               <Link
-                href={`/courses/${course.id}`}
+                href={`/products/${course.id}`}
                 className="bg-transparent border border-primary text-primary px-6 py-3 rounded-lg font-semibold hover:bg-primary hover:text-black transition-all duration-300 inline-block"
               >
                 Bekijk cursus
