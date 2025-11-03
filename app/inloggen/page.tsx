@@ -13,6 +13,10 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  // 2FA modal
+  const [twoFaOpen, setTwoFaOpen] = useState(false)
+  const [qr, setQr] = useState<string>('')
+  const [token, setToken] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,6 +29,7 @@ export default function LoginPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'same-origin',
         body: JSON.stringify({ email, password }),
       })
 
@@ -37,8 +42,27 @@ export default function LoginPage() {
           email: result.user.email,
           name: result.user.name || '',
           role: result.user.role,
+          twoFactorRequired: result.user.twoFactorEnabled === true,
+          twoFactorVerified: result.user.twoFactorVerified === true,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
         })
+
+        // Als ADMIN en 2FA vereist maar nog niet verified → start 2FA flow
+        if (result.user.role === 'ADMIN' && result.user.twoFactorEnabled === true && result.user.twoFactorVerified !== true) {
+          try {
+            const enroll = await fetch('/api/auth/2fa/enroll', { method: 'POST', credentials: 'same-origin' })
+            const data = await enroll.json()
+            if (!enroll.ok) throw new Error(data?.error || data?.details || '2FA enroll failed')
+            setQr(data.qr)
+            setTwoFaOpen(true)
+            setIsLoading(false)
+            return
+          } catch (e) {
+            setError(e instanceof Error ? e.message : '2FA inschakelen mislukt')
+            setIsLoading(false)
+            return
+          }
+        }
 
         // Verify session was saved and redirect
         if (typeof window !== 'undefined') {
@@ -244,6 +268,48 @@ export default function LoginPage() {
           </div>
         </form>
       </div>
+
+      {twoFaOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="relative z-10 w-full max-w-md bg-dark-card border border-dark-border rounded-xl p-6">
+            <h3 className="text-xl font-semibold text-white mb-4">2FA Verificatie</h3>
+            <p className="text-sm text-text-secondary mb-4">Scan de QR‑code met je authenticator app en vul de 6‑cijferige code in.</p>
+            {qr && <img src={qr} alt="2FA QR" className="w-56 h-56 mx-auto mb-4 rounded" />}
+            <input
+              type="text"
+              inputMode="numeric"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="6‑cijferige code"
+              className="w-full px-3 py-2 bg-dark-section border border-dark-border rounded-lg text-white placeholder-text-secondary focus:outline-none focus:border-primary mb-4"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/auth/2fa/verify', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      credentials: 'same-origin',
+                      body: JSON.stringify({ token })
+                    })
+                    const data = await res.json()
+                    if (!res.ok) throw new Error(data?.error || data?.details || 'Verificatie mislukt')
+                    setTwoFaOpen(false)
+                    window.location.href = '/admin'
+                  } catch (e) {
+                    alert(e instanceof Error ? e.message : 'Verificatie mislukt')
+                  }
+                }}
+                className="px-4 py-2 rounded-lg bg-primary text-black font-semibold hover:bg-primary/90"
+              >
+                Verifiëren
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

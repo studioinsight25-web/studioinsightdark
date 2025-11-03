@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     // Get user from database
     const result = await DatabaseService.query(
-      'SELECT id, email, name, password, role, created_at, updated_at FROM users WHERE email = $1',
+      'SELECT id, email, name, password, role, two_factor_enabled, two_factor_verified, totp_secret, created_at, updated_at FROM users WHERE email = $1',
       [email]
     )
 
@@ -44,13 +44,18 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Login successful for:', email)
 
+    // 2FA verplicht indien ADMIN en (enabled of secret aanwezig)
+    const require2FA = (user.role === 'ADMIN') && ((user.two_factor_enabled === true) || (user.totp_secret && user.totp_secret !== null))
+
     // Return user data (without password)
     return NextResponse.json({
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: user.role,
+        twoFactorEnabled: require2FA,
+        twoFactorVerified: user.two_factor_verified === true
       }
     })
 
