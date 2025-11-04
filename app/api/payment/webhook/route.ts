@@ -87,6 +87,20 @@ export async function POST(request: Request) {
         console.error('⚠️ Error clearing cart after payment:', cartError)
         // Don't fail the webhook if cart clearing fails
       }
+      
+      // Send invoice emails to customer and admin
+      try {
+        const { sendInvoiceEmails } = await import('@/lib/invoice')
+        const invoiceResult = await sendInvoiceEmails(order.id)
+        if (invoiceResult.customerSent && invoiceResult.adminSent && invoiceResult.customerCopySent) {
+          console.log(`✅ Invoice emails sent for order ${order.id} (customer, customer copy, and admin)`)
+        } else {
+          console.warn(`⚠️ Invoice emails partially sent for order ${order.id}:`, invoiceResult)
+        }
+      } catch (invoiceError) {
+        console.error('⚠️ Error sending invoice emails:', invoiceError)
+        // Don't fail the webhook if invoice emails fail
+      }
     } else if (paymentStatus.failed) {
       await OrderService.updateOrderStatus(order.id, 'failed', paymentId)
       console.log(`Order ${order.id} marked as failed`)
