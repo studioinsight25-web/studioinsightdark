@@ -3,7 +3,7 @@ import { brevoSendEmail } from './brevo'
 import { DatabaseService } from './database-direct'
 import { UserService } from './user-database'
 
-// Fetch logo and convert to base64 for inline embedding
+// Fetch logo and convert to base64 for inline embedding (optimized for email clients)
 async function getLogoAsBase64(logoUrl?: string): Promise<string | null> {
   if (!logoUrl) return null
   
@@ -24,11 +24,23 @@ async function getLogoAsBase64(logoUrl?: string): Promise<string | null> {
     const base64 = Buffer.from(buffer).toString('base64')
     const contentType = response.headers.get('content-type') || 'image/png'
     
+    // For better email client compatibility, use proper data URI format
+    // Some email clients need this exact format
     return `data:${contentType};base64,${base64}`
   } catch (error) {
     console.error('[Invoice] Error fetching logo:', error)
     return null
   }
+}
+
+// Get logo URL for fallback (for email clients that don't support base64)
+function getLogoUrl(logoUrl?: string): string | null {
+  if (!logoUrl) return null
+  // Return URL as-is if it's not a data URL
+  if (!logoUrl.startsWith('data:')) {
+    return logoUrl
+  }
+  return null
 }
 
 // Generate PDF from HTML using external API (lightweight, no build dependencies)
@@ -178,10 +190,13 @@ function formatDate(date: string | Date): string {
 }
 
 // Generate invoice HTML for customer
-export function generateCustomerInvoiceHTML(data: InvoiceData, logoBase64?: string | null): string {
+export function generateCustomerInvoiceHTML(data: InvoiceData, logoSrc?: string | null, logoUrl?: string | null): string {
   const company = getCompanyDetails()
   const subtotalFormatted = formatPrice(data.subtotal)
   const totalFormatted = formatPrice(data.total)
+  
+  // Prefer URL over base64 for email client compatibility
+  const finalLogoSrc = logoUrl || logoSrc || ''
   
   return `
     <!DOCTYPE html>
@@ -196,9 +211,21 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, logoBase64?: stri
         <!-- Header with Logo and Company Info -->
         <div style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: white; padding: 40px 30px;">
           <div style="margin-bottom: 20px;">
-            ${logoBase64 ? `
+            ${finalLogoSrc ? `
               <div style="text-align: center; margin-bottom: 20px;">
-                <img src="${logoBase64}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <!-- Outlook conditional comment for better compatibility -->
+                <!--[if mso]>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                  <tr>
+                    <td align="center" style="padding: 15px;">
+                      <img src="${logoUrl || finalLogoSrc}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
+                    </td>
+                  </tr>
+                </table>
+                <![endif]-->
+                <!--[if !mso]><!-->
+                <img src="${finalLogoSrc}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
+                <!--<![endif]-->
               </div>
             ` : ''}
             <div style="text-align: center;">
@@ -285,10 +312,13 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, logoBase64?: stri
 }
 
 // Generate invoice HTML for administration/internal use
-export function generateAdminInvoiceHTML(data: InvoiceData, logoBase64?: string | null): string {
+export function generateAdminInvoiceHTML(data: InvoiceData, logoSrc?: string | null, logoUrl?: string | null): string {
   const company = getCompanyDetails()
   const subtotalFormatted = formatPrice(data.subtotal)
   const totalFormatted = formatPrice(data.total)
+  
+  // Prefer URL over base64 for email client compatibility
+  const finalLogoSrc = logoUrl || logoSrc || ''
   
   return `
     <!DOCTYPE html>
@@ -303,9 +333,21 @@ export function generateAdminInvoiceHTML(data: InvoiceData, logoBase64?: string 
         <!-- Header with Logo and Company Info -->
         <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 40px 30px;">
           <div style="margin-bottom: 20px;">
-            ${logoBase64 ? `
+            ${finalLogoSrc ? `
               <div style="text-align: center; margin-bottom: 20px;">
-                <img src="${logoBase64}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <!-- Outlook conditional comment for better compatibility -->
+                <!--[if mso]>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                  <tr>
+                    <td align="center" style="padding: 15px;">
+                      <img src="${logoUrl || finalLogoSrc}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
+                    </td>
+                  </tr>
+                </table>
+                <![endif]-->
+                <!--[if !mso]><!-->
+                <img src="${finalLogoSrc}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
+                <!--<![endif]-->
               </div>
             ` : ''}
             <div style="text-align: center;">
@@ -490,17 +532,34 @@ export async function sendInvoiceEmails(orderId: string): Promise<{ customerSent
     const company = getCompanyDetails()
     const adminEmail = company.email
 
-    // Fetch logo as base64 for inline embedding
-    const logoBase64 = await getLogoAsBase64(company.logoUrl)
-    if (logoBase64) {
-      console.log(`[Invoice] Logo fetched and converted to base64`)
+    // For email clients, use URL instead of base64 (better compatibility)
+    // Only use base64 as fallback if URL is not available
+    let logoBase64: string | null = null
+    let logoUrl: string | null = null
+    
+    // If logo URL is provided and accessible, use it directly (best for email clients)
+    if (company.logoUrl && !company.logoUrl.startsWith('data:')) {
+      logoUrl = company.logoUrl
+      // Also try to fetch as base64 for modern email clients that support it
+      try {
+        logoBase64 = await getLogoAsBase64(company.logoUrl)
+      } catch (error) {
+        console.warn(`[Invoice] Could not fetch logo as base64, using URL only`)
+      }
+    } else if (company.logoUrl && company.logoUrl.startsWith('data:')) {
+      // Already a data URL
+      logoBase64 = company.logoUrl
+    }
+    
+    if (logoUrl || logoBase64) {
+      console.log(`[Invoice] Logo available - URL: ${!!logoUrl}, Base64: ${!!logoBase64}`)
     } else {
-      console.warn(`[Invoice] Logo not available or could not be fetched`)
+      console.warn(`[Invoice] Logo not available`)
     }
 
-    // Generate HTML with inline logo
-    const customerHtml = generateCustomerInvoiceHTML(invoiceData, logoBase64)
-    const adminHtml = generateAdminInvoiceHTML(invoiceData, logoBase64)
+    // Generate HTML with logo (prefer URL over base64 for email compatibility)
+    const customerHtml = generateCustomerInvoiceHTML(invoiceData, logoUrl || logoBase64, logoUrl)
+    const adminHtml = generateAdminInvoiceHTML(invoiceData, logoUrl || logoBase64, logoUrl)
 
     // Generate PDF from customer invoice HTML (using external API - lightweight)
     const pdfBuffer = await generatePDFFromHTML(customerHtml)
