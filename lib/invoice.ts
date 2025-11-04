@@ -279,14 +279,16 @@ export async function getInvoiceData(orderId: string): Promise<InvoiceData | nul
       return null
     }
 
-    const items = itemsResult.map((item: any) => ({
+    type InvoiceItem = { name: string; quantity: number; price: number; subtotal: number }
+    
+    const items: InvoiceItem[] = itemsResult.map((item: any) => ({
       name: item.product_name || 'Onbekend product',
       quantity: parseInt(item.quantity || '1', 10),
       price: parseFloat(item.price || '0'),
       subtotal: parseFloat(item.price || '0') * parseInt(item.quantity || '1', 10)
     }))
 
-    const subtotal = items.reduce((sum: number, item) => sum + item.subtotal, 0)
+    const subtotal = items.reduce((sum: number, item: InvoiceItem) => sum + item.subtotal, 0)
     const total = parseFloat(order.total_amount || '0')
 
     return {
