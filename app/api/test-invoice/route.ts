@@ -115,13 +115,14 @@ export async function POST(request: NextRequest) {
       paymentId: 'test_payment_' + Date.now()
     }
 
-    // Get logo and generate HTML with inline logo
+    // Get logo - use URL for better email client compatibility
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
     const logoUrl = process.env.INVOICE_LOGO_URL || `${baseUrl}/logo.png`
-    const logoBase64 = await getLogoAsBase64(logoUrl)
+    // Use URL directly (better for email clients) instead of base64
+    const logoBase64 = await getLogoAsBase64(logoUrl) // Keep as fallback
     
-    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoBase64)
-    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoBase64)
+    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoUrl || logoBase64, logoUrl)
+    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoUrl || logoBase64, logoUrl)
 
     // Generate PDF
     const pdfBuffer = await generatePDFFromHTML(customerHtml)
@@ -223,13 +224,14 @@ export async function GET(request: NextRequest) {
       paymentId: 'test_payment_' + Date.now()
     }
 
-    // Get logo and generate HTML with inline logo
+    // Get logo - use URL for better email client compatibility
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
     const logoUrl = process.env.INVOICE_LOGO_URL || `${baseUrl}/logo.png`
-    const logoBase64 = await getLogoAsBase64(logoUrl)
+    // Use URL directly (better for email clients) instead of base64
+    const logoBase64 = await getLogoAsBase64(logoUrl) // Keep as fallback
     
-    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoBase64)
-    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoBase64)
+    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoUrl || logoBase64, logoUrl)
+    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoUrl || logoBase64, logoUrl)
 
     // Generate PDF
     const pdfBuffer = await generatePDFFromHTML(customerHtml)
