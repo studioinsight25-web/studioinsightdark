@@ -1,6 +1,6 @@
 // app/api/test-invoice/route.ts - Test Invoice Endpoint
 import { NextRequest, NextResponse } from 'next/server'
-import { generateCustomerInvoiceHTML, generateAdminInvoiceHTML, InvoiceData, getInvoiceData } from '@/lib/invoice'
+import { generateCustomerInvoiceHTML, generateAdminInvoiceHTML, InvoiceData } from '@/lib/invoice'
 import { brevoSendEmail } from '@/lib/brevo'
 
 // Helper functions from invoice.ts (duplicated for test endpoint)
