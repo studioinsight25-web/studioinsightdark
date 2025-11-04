@@ -215,42 +215,41 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, logoUrl?: string 
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Factuur ${data.orderNumber}</title>
     </head>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
-      <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
-        <!-- Header with Logo and Company Info - Using table structure for maximum compatibility -->
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.4; color: #333; margin: 0; padding: 0; background: white;">
+      <div style="max-width: 210mm; margin: 0 auto; background: white; padding: 15mm;">
+        <!-- Header with Logo and Company Info - Compact for A4 -->
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0ea5e9; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);">
           <!--[if mso]>
           <tr>
-            <td bgcolor="#0ea5e9" style="padding: 40px 30px;">
+            <td bgcolor="#0ea5e9" style="padding: 15px 20px;">
           <![endif]-->
           <tr>
-            <td style="padding: 40px 30px; color: white;">
-              ${finalLogoUrl ? `
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                  <tr>
-                    <td align="center" style="padding: 0 0 20px 0;">
-                      <img src="${finalLogoUrl}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; width: 250px; height: auto; border: 0;">
-                    </td>
-                  </tr>
-                </table>
-              ` : ''}
+            <td style="padding: 15px 20px; color: white;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td align="center" style="padding: 0 0 20px 0;">
-                    <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: 700; color: white;">Factuur</h1>
-                    <p style="margin: 0; font-size: 16px; color: white;">Factuurnummer: ${data.orderNumber}</p>
+                  <td style="width: 50%; vertical-align: top;">
+                    ${finalLogoUrl ? `
+                      <img src="${finalLogoUrl}" alt="${company.name}" width="120" style="background: white; padding: 8px; border-radius: 8px; display: block; max-width: 120px; width: 120px; height: auto; border: 0;">
+                    ` : ''}
+                  </td>
+                  <td style="width: 50%; vertical-align: top; text-align: right;">
+                    <h1 style="margin: 0 0 5px 0; font-size: 24px; font-weight: 700; color: white;">Factuur</h1>
+                    <p style="margin: 0; font-size: 13px; color: white;">${data.orderNumber}</p>
                   </td>
                 </tr>
               </table>
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 12px;">
                 <tr>
-                  <td style="background-color: rgba(255,255,255,0.2); padding: 20px; border-radius: 8px;">
-                    <p style="margin: 0 0 8px 0; font-weight: 600; font-size: 18px; color: white;">${company.name}</p>
-                    ${company.address ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">${company.address}</p>` : ''}
-                    ${company.postcode && company.city ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">${company.postcode} ${company.city}</p>` : ''}
-                    ${company.country ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">${company.country}</p>` : ''}
-                    ${company.email ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">E-mail: ${company.email}</p>` : ''}
-                    ${company.phone ? `<p style="margin: 0; font-size: 14px; color: white;">Telefoon: ${company.phone}</p>` : ''}
+                  <td style="background-color: rgba(255,255,255,0.2); padding: 12px; border-radius: 6px;">
+                    <p style="margin: 0 0 4px 0; font-weight: 600; font-size: 14px; color: white;">${company.name}</p>
+                    <p style="margin: 0 0 2px 0; font-size: 11px; color: white; line-height: 1.3;">
+                      ${company.address ? `${company.address}, ` : ''}${company.postcode && company.city ? `${company.postcode} ${company.city}` : ''}${company.country ? `, ${company.country}` : ''}
+                    </p>
+                    ${company.email || company.phone ? `
+                      <p style="margin: 2px 0 0 0; font-size: 11px; color: white;">
+                        ${company.email ? `${company.email}` : ''}${company.email && company.phone ? ' • ' : ''}${company.phone ? `${company.phone}` : ''}
+                      </p>
+                    ` : ''}
                   </td>
                 </tr>
               </table>
@@ -262,79 +261,84 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, logoUrl?: string 
           <![endif]-->
         </table>
       
-      <div style="padding: 40px 30px;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
-          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; border-left: 4px solid #0ea5e9;">
-            <h3 style="margin-top: 0; margin-bottom: 15px; color: #111827; font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Factuurgegevens</h3>
-            <p style="margin: 8px 0; color: #374151;"><strong>Factuurnummer:</strong><br>${data.orderNumber}</p>
-            <p style="margin: 8px 0; color: #374151;"><strong>Orderdatum:</strong><br>${formatDate(data.orderDate)}</p>
-            <p style="margin: 8px 0; color: #374151;"><strong>Betaaldatum:</strong><br>${formatDate(data.paymentDate)}</p>
-            ${data.paymentId ? `<p style="margin: 8px 0; color: #374151;"><strong>Transactie ID:</strong><br>${data.paymentId}</p>` : ''}
-          </div>
-          
-          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; border-left: 4px solid #6366f1;">
-            <h3 style="margin-top: 0; margin-bottom: 15px; color: #111827; font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Factuur naar</h3>
-            <p style="margin: 8px 0; color: #374151; font-weight: 600;">${data.customer.name}</p>
-            ${data.customer.company ? `<p style="margin: 8px 0; color: #374151;">${data.customer.company}</p>` : ''}
-            ${data.customer.address ? `<p style="margin: 8px 0; color: #374151;">${data.customer.address}</p>` : ''}
-            ${data.customer.postcode && data.customer.city ? `<p style="margin: 8px 0; color: #374151;">${data.customer.postcode} ${data.customer.city}</p>` : ''}
-            ${data.customer.country ? `<p style="margin: 8px 0; color: #374151;">${data.customer.country}</p>` : ''}
-            <p style="margin: 8px 0; color: #374151;">${data.customer.email}</p>
-          </div>
+        <!-- Customer and Invoice Details - Compact side-by-side -->
+        <div style="margin-top: 20px; margin-bottom: 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td style="width: 50%; vertical-align: top; padding-right: 10px;">
+                <div style="background: #f9fafb; padding: 12px; border-radius: 6px; border-left: 3px solid #0ea5e9;">
+                  <h3 style="margin: 0 0 8px 0; color: #111827; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Factuurgegevens</h3>
+                  <p style="margin: 4px 0; color: #374151; font-size: 12px; line-height: 1.4;"><strong style="font-size: 11px;">Datum:</strong> ${formatDate(data.orderDate)}</p>
+                  <p style="margin: 4px 0; color: #374151; font-size: 12px; line-height: 1.4;"><strong style="font-size: 11px;">Betaald:</strong> ${formatDate(data.paymentDate)}</p>
+                  ${data.paymentId ? `<p style="margin: 4px 0; color: #374151; font-size: 11px; line-height: 1.4;"><strong>Transactie:</strong> ${data.paymentId.substring(0, 20)}...</p>` : ''}
+                </div>
+              </td>
+              <td style="width: 50%; vertical-align: top; padding-left: 10px;">
+                <div style="background: #f9fafb; padding: 12px; border-radius: 6px; border-left: 3px solid #6366f1;">
+                  <h3 style="margin: 0 0 8px 0; color: #111827; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Factuur naar</h3>
+                  <p style="margin: 4px 0; color: #374151; font-size: 12px; font-weight: 600; line-height: 1.4;">${data.customer.name}</p>
+                  ${data.customer.company ? `<p style="margin: 4px 0; color: #374151; font-size: 11px; line-height: 1.4;">${data.customer.company}</p>` : ''}
+                  ${data.customer.address ? `<p style="margin: 4px 0; color: #374151; font-size: 11px; line-height: 1.4;">${data.customer.address}</p>` : ''}
+                  ${data.customer.postcode && data.customer.city ? `<p style="margin: 4px 0; color: #374151; font-size: 11px; line-height: 1.4;">${data.customer.postcode} ${data.customer.city}</p>` : ''}
+                  <p style="margin: 4px 0; color: #374151; font-size: 11px; line-height: 1.4;">${data.customer.email}</p>
+                </div>
+              </td>
+            </tr>
+          </table>
         </div>
         
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <!-- Products Table - Compact -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
           <thead>
-            <!-- Outlook: Use solid background color -->
             <!--[if mso]>
             <tr style="background-color: #0ea5e9;">
-              <th style="padding: 18px; text-align: left; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Product</th>
-              <th style="padding: 18px; text-align: center; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Aantal</th>
-              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Prijs</th>
-              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Subtotaal</th>
+              <th style="padding: 10px 8px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; color: white;">Product</th>
+              <th style="padding: 10px 8px; text-align: center; font-weight: 600; font-size: 11px; text-transform: uppercase; color: white;">Aantal</th>
+              <th style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 11px; text-transform: uppercase; color: white;">Prijs</th>
+              <th style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 11px; text-transform: uppercase; color: white;">Totaal</th>
             </tr>
             <![endif]-->
             <!--[if !mso]><!-->
             <tr style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: white;">
-              <th style="padding: 18px; text-align: left; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Product</th>
-              <th style="padding: 18px; text-align: center; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Aantal</th>
-              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Prijs</th>
-              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Subtotaal</th>
+              <th style="padding: 10px 8px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase;">Product</th>
+              <th style="padding: 10px 8px; text-align: center; font-weight: 600; font-size: 11px; text-transform: uppercase;">Aantal</th>
+              <th style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 11px; text-transform: uppercase;">Prijs</th>
+              <th style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 11px; text-transform: uppercase;">Totaal</th>
             </tr>
             <!--<![endif]-->
           </thead>
           <tbody>
             ${data.items.map((item, index) => `
               <tr style="${index % 2 === 0 ? 'background: #ffffff;' : 'background: #f9fafb;'}">
-                <td style="padding: 18px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 500;">${item.name}</td>
-                <td style="padding: 18px; text-align: center; border-bottom: 1px solid #e5e7eb; color: #374151;">${item.quantity}</td>
-                <td style="padding: 18px; text-align: right; border-bottom: 1px solid #e5e7eb; color: #374151;">€ ${formatPrice(item.price)}</td>
-                <td style="padding: 18px; text-align: right; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600;">€ ${formatPrice(item.subtotal)}</td>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 500; font-size: 12px;">${item.name}</td>
+                <td style="padding: 10px 8px; text-align: center; border-bottom: 1px solid #e5e7eb; color: #374151; font-size: 12px;">${item.quantity}</td>
+                <td style="padding: 10px 8px; text-align: right; border-bottom: 1px solid #e5e7eb; color: #374151; font-size: 12px;">€ ${formatPrice(item.price)}</td>
+                <td style="padding: 10px 8px; text-align: right; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600; font-size: 12px;">€ ${formatPrice(item.subtotal)}</td>
               </tr>
             `).join('')}
           </tbody>
           <tfoot>
             <tr style="background: #f9fafb;">
-              <td colspan="3" style="padding: 20px; text-align: right; font-weight: 600; font-size: 16px; color: #111827; border-top: 2px solid #e5e7eb;">Totaal:</td>
-              <td style="padding: 20px; text-align: right; font-weight: 700; font-size: 20px; border-top: 2px solid #e5e7eb; color: #0ea5e9;">€ ${totalFormatted}</td>
+              <td colspan="3" style="padding: 12px 8px; text-align: right; font-weight: 600; font-size: 14px; color: #111827; border-top: 2px solid #e5e7eb;">Totaal:</td>
+              <td style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 16px; border-top: 2px solid #e5e7eb; color: #0ea5e9;">€ ${totalFormatted}</td>
             </tr>
           </tfoot>
         </table>
         
-        <div style="background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%); padding: 25px; border-radius: 8px; border-left: 4px solid #0ea5e9; margin-bottom: 30px;">
-          <p style="margin: 0 0 8px; color: #1e40af; font-weight: 600; font-size: 16px;">✓ Betaling ontvangen</p>
-          <p style="margin: 0; color: #1e40af; font-size: 14px;">Bedankt voor je aankoop! Je hebt toegang tot de gekochte producten in je dashboard.</p>
+        <!-- Payment Confirmation - Compact -->
+        <div style="background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%); padding: 12px; border-radius: 6px; border-left: 3px solid #0ea5e9; margin-bottom: 15px;">
+          <p style="margin: 0; color: #1e40af; font-weight: 600; font-size: 12px;">✓ Betaling ontvangen - Bedankt voor je aankoop!</p>
         </div>
-      </div>
-      
-      <div style="background: #1f2937; color: #9ca3af; padding: 25px; text-align: center; font-size: 12px;">
-        <p style="margin: 0 0 10px; color: #ffffff; font-weight: 600; font-size: 14px;">${company.name}</p>
-        ${company.address ? `<p style="margin: 0 0 5px;">${company.address}</p>` : ''}
-        ${company.postcode && company.city ? `<p style="margin: 0 0 5px;">${company.postcode} ${company.city}</p>` : ''}
-        ${company.vatNumber ? `<p style="margin: 0 0 5px;">BTW: ${company.vatNumber}</p>` : ''}
-        ${company.email ? `<p style="margin: 0 0 5px;"><a href="mailto:${company.email}" style="color: #0ea5e9; text-decoration: none;">${company.email}</a></p>` : ''}
-        ${company.website ? `<p style="margin: 0;"><a href="${company.website}" style="color: #0ea5e9; text-decoration: none;">${company.website}</a></p>` : ''}
-      </div>
+        
+        <!-- Footer - Compact -->
+        <div style="background: #1f2937; color: #9ca3af; padding: 12px; text-align: center; font-size: 10px; border-radius: 6px;">
+          <p style="margin: 0 0 4px; color: #ffffff; font-weight: 600; font-size: 11px;">${company.name}</p>
+          <p style="margin: 0 0 2px; font-size: 10px;">
+            ${company.address ? `${company.address}, ` : ''}${company.postcode && company.city ? `${company.postcode} ${company.city}` : ''}
+            ${company.vatNumber ? ` • BTW: ${company.vatNumber}` : ''}
+          </p>
+          ${company.email ? `<p style="margin: 2px 0 0; font-size: 10px;"><a href="mailto:${company.email}" style="color: #0ea5e9; text-decoration: none;">${company.email}</a></p>` : ''}
+        </div>
       </div>
     </body>
     </html>
@@ -358,42 +362,36 @@ export function generateAdminInvoiceHTML(data: InvoiceData, logoUrl?: string | n
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Factuur ${data.orderNumber} - Administratie</title>
     </head>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
-      <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
-        <!-- Header with Logo and Company Info - Using table structure for maximum compatibility -->
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.4; color: #333; margin: 0; padding: 0; background: white;">
+      <div style="max-width: 210mm; margin: 0 auto; background: white; padding: 15mm;">
+        <!-- Header with Logo and Company Info - Compact for A4 -->
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #dc2626; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);">
           <!--[if mso]>
           <tr>
-            <td bgcolor="#dc2626" style="padding: 40px 30px;">
+            <td bgcolor="#dc2626" style="padding: 15px 20px;">
           <![endif]-->
           <tr>
-            <td style="padding: 40px 30px; color: white;">
-              ${finalLogoUrl ? `
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                  <tr>
-                    <td align="center" style="padding: 0 0 20px 0;">
-                      <img src="${finalLogoUrl}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; width: 250px; height: auto; border: 0;">
-                    </td>
-                  </tr>
-                </table>
-              ` : ''}
+            <td style="padding: 15px 20px; color: white;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td align="center" style="padding: 0 0 20px 0;">
-                    <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: 700; color: white;">ADMINISTRATIE FACTUUR</h1>
-                    <p style="margin: 0; font-size: 16px; color: white;">Factuurnummer: ${data.orderNumber}</p>
+                  <td style="width: 50%; vertical-align: top;">
+                    ${finalLogoUrl ? `
+                      <img src="${finalLogoUrl}" alt="${company.name}" width="120" style="background: white; padding: 8px; border-radius: 8px; display: block; max-width: 120px; width: 120px; height: auto; border: 0;">
+                    ` : ''}
+                  </td>
+                  <td style="width: 50%; vertical-align: top; text-align: right;">
+                    <h1 style="margin: 0 0 5px 0; font-size: 20px; font-weight: 700; color: white;">ADMIN FACTUUR</h1>
+                    <p style="margin: 0; font-size: 13px; color: white;">${data.orderNumber}</p>
                   </td>
                 </tr>
               </table>
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 12px;">
                 <tr>
-                  <td style="background-color: rgba(255,255,255,0.2); padding: 20px; border-radius: 8px;">
-                    <p style="margin: 0 0 8px 0; font-weight: 600; font-size: 18px; color: white;">${company.name}</p>
-                    ${company.address ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">${company.address}</p>` : ''}
-                    ${company.postcode && company.city ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">${company.postcode} ${company.city}</p>` : ''}
-                    ${company.country ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">${company.country}</p>` : ''}
-                    ${company.email ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">E-mail: ${company.email}</p>` : ''}
-                    ${company.phone ? `<p style="margin: 0; font-size: 14px; color: white;">Telefoon: ${company.phone}</p>` : ''}
+                  <td style="background-color: rgba(255,255,255,0.2); padding: 12px; border-radius: 6px;">
+                    <p style="margin: 0 0 4px 0; font-weight: 600; font-size: 14px; color: white;">${company.name}</p>
+                    <p style="margin: 0 0 2px 0; font-size: 11px; color: white; line-height: 1.3;">
+                      ${company.address ? `${company.address}, ` : ''}${company.postcode && company.city ? `${company.postcode} ${company.city}` : ''}${company.country ? `, ${company.country}` : ''}
+                    </p>
                   </td>
                 </tr>
               </table>
@@ -405,79 +403,85 @@ export function generateAdminInvoiceHTML(data: InvoiceData, logoUrl?: string | n
           <![endif]-->
         </table>
       
-      <div style="padding: 40px 30px;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
-          <div style="background: #fef2f2; padding: 20px; border-radius: 8px; border-left: 4px solid #dc2626;">
-            <h3 style="margin-top: 0; margin-bottom: 15px; color: #111827; font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Klantgegevens</h3>
-            <p style="margin: 8px 0; color: #374151; font-weight: 600;">${data.customer.name}</p>
-            ${data.customer.company ? `<p style="margin: 8px 0; color: #374151;">${data.customer.company}</p>` : ''}
-            <p style="margin: 8px 0; color: #374151;">${data.customer.email}</p>
-            ${data.customer.address ? `<p style="margin: 8px 0; color: #374151;">${data.customer.address}</p>` : ''}
-            ${data.customer.postcode && data.customer.city ? `<p style="margin: 8px 0; color: #374151;">${data.customer.postcode} ${data.customer.city}</p>` : ''}
-            ${data.customer.country ? `<p style="margin: 8px 0; color: #374151;">${data.customer.country}</p>` : ''}
-          </div>
-          
-          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; border-left: 4px solid #dc2626;">
-            <h3 style="margin-top: 0; margin-bottom: 15px; color: #111827; font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Ordergegevens</h3>
-            <p style="margin: 8px 0; color: #374151;"><strong>Order ID:</strong><br><span style="font-family: monospace; font-size: 12px;">${data.orderId}</span></p>
-            <p style="margin: 8px 0; color: #374151;"><strong>Factuurnummer:</strong><br>${data.orderNumber}</p>
-            <p style="margin: 8px 0; color: #374151;"><strong>Orderdatum:</strong><br>${formatDate(data.orderDate)}</p>
-            <p style="margin: 8px 0; color: #374151;"><strong>Betaaldatum:</strong><br>${formatDate(data.paymentDate)}</p>
-            ${data.paymentId ? `<p style="margin: 8px 0; color: #374151;"><strong>Payment ID:</strong><br><span style="font-family: monospace; font-size: 12px;">${data.paymentId}</span></p>` : ''}
-          </div>
+        <!-- Customer and Order Details - Compact side-by-side -->
+        <div style="margin-top: 20px; margin-bottom: 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td style="width: 50%; vertical-align: top; padding-right: 10px;">
+                <div style="background: #fef2f2; padding: 12px; border-radius: 6px; border-left: 3px solid #dc2626;">
+                  <h3 style="margin: 0 0 8px 0; color: #111827; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Klantgegevens</h3>
+                  <p style="margin: 4px 0; color: #374151; font-size: 12px; font-weight: 600; line-height: 1.4;">${data.customer.name}</p>
+                  ${data.customer.company ? `<p style="margin: 4px 0; color: #374151; font-size: 11px; line-height: 1.4;">${data.customer.company}</p>` : ''}
+                  <p style="margin: 4px 0; color: #374151; font-size: 11px; line-height: 1.4;">${data.customer.email}</p>
+                  ${data.customer.address ? `<p style="margin: 4px 0; color: #374151; font-size: 11px; line-height: 1.4;">${data.customer.address}</p>` : ''}
+                  ${data.customer.postcode && data.customer.city ? `<p style="margin: 4px 0; color: #374151; font-size: 11px; line-height: 1.4;">${data.customer.postcode} ${data.customer.city}</p>` : ''}
+                </div>
+              </td>
+              <td style="width: 50%; vertical-align: top; padding-left: 10px;">
+                <div style="background: #f9fafb; padding: 12px; border-radius: 6px; border-left: 3px solid #dc2626;">
+                  <h3 style="margin: 0 0 8px 0; color: #111827; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Ordergegevens</h3>
+                  <p style="margin: 4px 0; color: #374151; font-size: 11px; line-height: 1.4;"><strong>Order ID:</strong> <span style="font-family: monospace; font-size: 10px;">${data.orderId.substring(0, 20)}...</span></p>
+                  <p style="margin: 4px 0; color: #374151; font-size: 12px; line-height: 1.4;"><strong>Factuur:</strong> ${data.orderNumber}</p>
+                  <p style="margin: 4px 0; color: #374151; font-size: 11px; line-height: 1.4;"><strong>Datum:</strong> ${formatDate(data.orderDate)}</p>
+                  <p style="margin: 4px 0; color: #374151; font-size: 11px; line-height: 1.4;"><strong>Betaald:</strong> ${formatDate(data.paymentDate)}</p>
+                  ${data.paymentId ? `<p style="margin: 4px 0; color: #374151; font-size: 10px; line-height: 1.4;"><strong>Payment ID:</strong> <span style="font-family: monospace;">${data.paymentId.substring(0, 20)}...</span></p>` : ''}
+                </div>
+              </td>
+            </tr>
+          </table>
         </div>
         
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <!-- Products Table - Compact -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
           <thead>
-            <!-- Outlook: Use solid background color -->
             <!--[if mso]>
             <tr style="background-color: #dc2626;">
-              <th style="padding: 18px; text-align: left; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Product</th>
-              <th style="padding: 18px; text-align: center; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Aantal</th>
-              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Prijs</th>
-              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Subtotaal</th>
+              <th style="padding: 10px 8px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; color: white;">Product</th>
+              <th style="padding: 10px 8px; text-align: center; font-weight: 600; font-size: 11px; text-transform: uppercase; color: white;">Aantal</th>
+              <th style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 11px; text-transform: uppercase; color: white;">Prijs</th>
+              <th style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 11px; text-transform: uppercase; color: white;">Totaal</th>
             </tr>
             <![endif]-->
             <!--[if !mso]><!-->
             <tr style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white;">
-              <th style="padding: 18px; text-align: left; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Product</th>
-              <th style="padding: 18px; text-align: center; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Aantal</th>
-              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Prijs</th>
-              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Subtotaal</th>
+              <th style="padding: 10px 8px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase;">Product</th>
+              <th style="padding: 10px 8px; text-align: center; font-weight: 600; font-size: 11px; text-transform: uppercase;">Aantal</th>
+              <th style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 11px; text-transform: uppercase;">Prijs</th>
+              <th style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 11px; text-transform: uppercase;">Totaal</th>
             </tr>
             <!--<![endif]-->
           </thead>
           <tbody>
             ${data.items.map((item, index) => `
               <tr style="${index % 2 === 0 ? 'background: #ffffff;' : 'background: #f9fafb;'}">
-                <td style="padding: 18px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 500;">${item.name}</td>
-                <td style="padding: 18px; text-align: center; border-bottom: 1px solid #e5e7eb; color: #374151;">${item.quantity}</td>
-                <td style="padding: 18px; text-align: right; border-bottom: 1px solid #e5e7eb; color: #374151;">€ ${formatPrice(item.price)}</td>
-                <td style="padding: 18px; text-align: right; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600;">€ ${formatPrice(item.subtotal)}</td>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 500; font-size: 12px;">${item.name}</td>
+                <td style="padding: 10px 8px; text-align: center; border-bottom: 1px solid #e5e7eb; color: #374151; font-size: 12px;">${item.quantity}</td>
+                <td style="padding: 10px 8px; text-align: right; border-bottom: 1px solid #e5e7eb; color: #374151; font-size: 12px;">€ ${formatPrice(item.price)}</td>
+                <td style="padding: 10px 8px; text-align: right; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600; font-size: 12px;">€ ${formatPrice(item.subtotal)}</td>
               </tr>
             `).join('')}
           </tbody>
           <tfoot>
             <tr style="background: #f9fafb;">
-              <td colspan="3" style="padding: 20px; text-align: right; font-weight: 600; font-size: 16px; color: #111827; border-top: 2px solid #e5e7eb;">Totaal:</td>
-              <td style="padding: 20px; text-align: right; font-weight: 700; font-size: 20px; border-top: 2px solid #e5e7eb; color: #dc2626;">€ ${totalFormatted}</td>
+              <td colspan="3" style="padding: 12px 8px; text-align: right; font-weight: 600; font-size: 14px; color: #111827; border-top: 2px solid #e5e7eb;">Totaal:</td>
+              <td style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 16px; border-top: 2px solid #e5e7eb; color: #dc2626;">€ ${totalFormatted}</td>
             </tr>
           </tfoot>
         </table>
         
-        <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); padding: 25px; border-radius: 8px; border-left: 4px solid #dc2626; margin-bottom: 30px;">
-          <p style="margin: 0; color: #991b1b; font-weight: 600; font-size: 14px;">INTERNE FACTUUR - Automatisch gegenereerd voor administratieve doeleinden</p>
+        <!-- Admin Notice - Compact -->
+        <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); padding: 12px; border-radius: 6px; border-left: 3px solid #dc2626; margin-bottom: 15px;">
+          <p style="margin: 0; color: #991b1b; font-weight: 600; font-size: 11px;">INTERNE FACTUUR - Automatisch gegenereerd voor administratieve doeleinden</p>
         </div>
-      </div>
-      
-      <div style="background: #1f2937; color: #9ca3af; padding: 25px; text-align: center; font-size: 12px;">
-        <p style="margin: 0 0 10px; color: #ffffff; font-weight: 600; font-size: 14px;">${company.name}</p>
-        ${company.address ? `<p style="margin: 0 0 5px;">${company.address}</p>` : ''}
-        ${company.postcode && company.city ? `<p style="margin: 0 0 5px;">${company.postcode} ${company.city}</p>` : ''}
-        ${company.vatNumber ? `<p style="margin: 0 0 5px;">BTW: ${company.vatNumber}</p>` : ''}
-        ${company.email ? `<p style="margin: 0 0 5px;"><a href="mailto:${company.email}" style="color: #0ea5e9; text-decoration: none;">${company.email}</a></p>` : ''}
-        ${company.website ? `<p style="margin: 0;"><a href="${company.website}" style="color: #0ea5e9; text-decoration: none;">${company.website}</a></p>` : ''}
-      </div>
+        
+        <!-- Footer - Compact -->
+        <div style="background: #1f2937; color: #9ca3af; padding: 12px; text-align: center; font-size: 10px; border-radius: 6px;">
+          <p style="margin: 0 0 4px; color: #ffffff; font-weight: 600; font-size: 11px;">${company.name}</p>
+          <p style="margin: 0 0 2px; font-size: 10px;">
+            ${company.address ? `${company.address}, ` : ''}${company.postcode && company.city ? `${company.postcode} ${company.city}` : ''}
+            ${company.vatNumber ? ` • BTW: ${company.vatNumber}` : ''}
+          </p>
+        </div>
       </div>
     </body>
     </html>
