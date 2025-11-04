@@ -286,7 +286,7 @@ export async function getInvoiceData(orderId: string): Promise<InvoiceData | nul
       subtotal: parseFloat(item.price || '0') * parseInt(item.quantity || '1', 10)
     }))
 
-    const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0)
+    const subtotal = items.reduce((sum: number, item) => sum + item.subtotal, 0)
     const total = parseFloat(order.total_amount || '0')
 
     return {
