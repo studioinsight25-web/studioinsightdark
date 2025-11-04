@@ -219,14 +219,14 @@ function formatDate(date: string | Date): string {
 }
 
 // Generate invoice HTML for customer
-export function generateCustomerInvoiceHTML(data: InvoiceData, useCID: boolean = false): string {
+export function generateCustomerInvoiceHTML(data: InvoiceData, logoUrl?: string | null, logoBase64?: string | null): string {
   const company = getCompanyDetails()
   const subtotalFormatted = formatPrice(data.subtotal)
   const totalFormatted = formatPrice(data.total)
   
-  // Use CID reference for inline attachment (best for Outlook)
-  // Fallback to base64 or URL if CID not available
-  const logoSrc = useCID ? 'cid:logo' : ''
+  // Hybrid approach: URL for mobile/modern clients, base64 for Outlook
+  // Use URL as primary (works on mobile), base64 as fallback in same image tag
+  const logoSrc = logoUrl || logoBase64 || ''
   
   return `
     <!DOCTYPE html>
@@ -248,14 +248,26 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, useCID: boolean =
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                   <tr>
                     <td align="center" style="padding: 15px;">
-                      <img src="cid:logo" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
+                      ${logoBase64 ? `
+                        <!-- Outlook: Use base64 for better compatibility -->
+                        <img src="${logoBase64}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
+                      ` : logoUrl ? `
+                        <!-- Outlook: Use URL as fallback -->
+                        <img src="${logoUrl}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
+                      ` : ''}
                     </td>
                   </tr>
                 </table>
                 <![endif]-->
                 <!--[if !mso]><!-->
-                <!-- Modern email clients: use CID reference for inline attachment -->
-                <img src="cid:logo" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
+                <!-- Modern email clients: URL works best, base64 as fallback -->
+                ${logoBase64 ? `
+                  <!-- Use base64 inline for maximum compatibility -->
+                  <img src="${logoBase64}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
+                ` : logoUrl ? `
+                  <!-- Use URL for modern clients -->
+                  <img src="${logoUrl}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
+                ` : ''}
                 <!--<![endif]-->
               </div>
             ` : ''}
@@ -343,13 +355,13 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, useCID: boolean =
 }
 
 // Generate invoice HTML for administration/internal use
-export function generateAdminInvoiceHTML(data: InvoiceData, useCID: boolean = false): string {
+export function generateAdminInvoiceHTML(data: InvoiceData, logoUrl?: string | null, logoBase64?: string | null): string {
   const company = getCompanyDetails()
   const subtotalFormatted = formatPrice(data.subtotal)
   const totalFormatted = formatPrice(data.total)
   
-  // Use CID reference for inline attachment (best for Outlook)
-  const logoSrc = useCID ? 'cid:logo' : ''
+  // Hybrid approach: URL for mobile/modern clients, base64 for Outlook
+  const logoSrc = logoUrl || logoBase64 || ''
   
   return `
     <!DOCTYPE html>
@@ -371,14 +383,26 @@ export function generateAdminInvoiceHTML(data: InvoiceData, useCID: boolean = fa
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                   <tr>
                     <td align="center" style="padding: 15px;">
-                      <img src="cid:logo" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
+                      ${logoBase64 ? `
+                        <!-- Outlook: Use base64 for better compatibility -->
+                        <img src="${logoBase64}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
+                      ` : logoUrl ? `
+                        <!-- Outlook: Use URL as fallback -->
+                        <img src="${logoUrl}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
+                      ` : ''}
                     </td>
                   </tr>
                 </table>
                 <![endif]-->
                 <!--[if !mso]><!-->
-                <!-- Modern email clients: use CID reference for inline attachment -->
-                <img src="cid:logo" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
+                <!-- Modern email clients: URL works best, base64 as fallback -->
+                ${logoBase64 ? `
+                  <!-- Use base64 inline for maximum compatibility -->
+                  <img src="${logoBase64}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
+                ` : logoUrl ? `
+                  <!-- Use URL for modern clients -->
+                  <img src="${logoUrl}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
+                ` : ''}
                 <!--<![endif]-->
               </div>
             ` : ''}
@@ -564,29 +588,35 @@ export async function sendInvoiceEmails(orderId: string): Promise<{ customerSent
     const company = getCompanyDetails()
     const adminEmail = company.email
 
-    // Fetch logo as Buffer for inline attachment (CID reference) - best for Outlook
-    let logoBuffer: Buffer | null = null
+    // Hybrid approach: Fetch both URL and base64 for maximum compatibility
+    // URL works on mobile/modern clients, base64 works in Outlook
+    let logoUrl: string | null = null
+    let logoBase64: string | null = null
     
     if (company.logoUrl) {
+      logoUrl = company.logoUrl
+      
+      // Also fetch as base64 for Outlook compatibility
       try {
-        logoBuffer = await getLogoAsBuffer(company.logoUrl)
-        if (logoBuffer) {
-          console.log(`[Invoice] Logo fetched as buffer (${logoBuffer.length} bytes)`)
+        logoBase64 = await getLogoAsBase64(company.logoUrl)
+        if (logoBase64) {
+          console.log(`[Invoice] Logo available - URL: ${logoUrl}, Base64: ${logoBase64.length} chars`)
         }
       } catch (error) {
-        console.warn(`[Invoice] Could not fetch logo as buffer:`, error)
+        console.warn(`[Invoice] Could not fetch logo as base64, will use URL only:`, error)
       }
     }
     
-    if (logoBuffer) {
-      console.log(`[Invoice] Logo available for inline attachment`)
+    if (logoUrl || logoBase64) {
+      console.log(`[Invoice] Logo available - URL: ${!!logoUrl}, Base64: ${!!logoBase64}`)
     } else {
       console.warn(`[Invoice] Logo not available - invoices will be sent without logo`)
     }
 
-    // Generate HTML with CID reference for inline attachment (best for Outlook)
-    const customerHtml = generateCustomerInvoiceHTML(invoiceData, !!logoBuffer)
-    const adminHtml = generateAdminInvoiceHTML(invoiceData, !!logoBuffer)
+    // Generate HTML with both URL and base64 (hybrid approach)
+    // Outlook will use base64, modern clients will use URL
+    const customerHtml = generateCustomerInvoiceHTML(invoiceData, logoUrl, logoBase64)
+    const adminHtml = generateAdminInvoiceHTML(invoiceData, logoUrl, logoBase64)
 
     // Generate PDF from customer invoice HTML (using external API - lightweight)
     const pdfBuffer = await generatePDFFromHTML(customerHtml)
@@ -601,44 +631,33 @@ export async function sendInvoiceEmails(orderId: string): Promise<{ customerSent
       console.warn(`[Invoice] PDF generation skipped - no API configured. Add DOPPIO_API_KEY or HTMLPDF_API_KEY to enable PDF attachments`)
     }
 
-    // Prepare inline image for CID reference (if logo available)
-    const inlineLogo = logoBuffer ? {
-      content: logoBuffer,
-      cid: 'logo',
-      contentType: 'image/png' // Adjust based on actual logo type
-    } : undefined
-
-    // Send invoice to customer with PDF attachment and inline logo
+    // Send invoice to customer with PDF attachment (no inline attachment needed - using URL/base64 in HTML)
     const customerSubject = `Factuur ${invoiceData.orderNumber} - Studio Insight`
     const customerResult = await brevoSendEmail(
       invoiceData.customer.email,
       customerSubject,
       customerHtml,
       invoiceData.customer.name,
-      pdfAttachment,
-      inlineLogo
+      pdfAttachment
     )
 
-    // Send customer invoice copy to admin/company (info@studio-insight.nl) with PDF and inline logo
+    // Send customer invoice copy to admin/company (info@studio-insight.nl) with PDF
     const customerCopySubject = `[KOPIE] Factuur ${invoiceData.orderNumber} - ${invoiceData.customer.name}`
     const customerCopyResult = await brevoSendEmail(
       adminEmail,
       customerCopySubject,
       customerHtml,
       company.name,
-      pdfAttachment,
-      inlineLogo
+      pdfAttachment
     )
 
-    // Send admin invoice to admin/company (without PDF, as it's internal) with inline logo
+    // Send admin invoice to admin/company (without PDF, as it's internal)
     const adminSubject = `[ADMIN] Factuur ${invoiceData.orderNumber} - ${invoiceData.customer.name}`
     const adminResult = await brevoSendEmail(
       adminEmail,
       adminSubject,
       adminHtml,
-      company.name,
-      undefined,
-      inlineLogo
+      company.name
     )
 
     console.log(`[Invoice] Invoice emails sent for order ${orderId}:`, {

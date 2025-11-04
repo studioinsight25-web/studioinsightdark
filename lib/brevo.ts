@@ -15,10 +15,6 @@ type BrevoEmailPayload = {
     name: string
     content: string // Base64 encoded content
   }>
-  inlineImage?: Array<{
-    content: string // Base64 encoded content
-    cid: string // Content-ID for referencing in HTML (e.g., "logo")
-  }>
 }
 
 export async function brevoUpsertContact(email: string, name?: string, status: 'pending' | 'confirmed' = 'pending') {
@@ -244,8 +240,7 @@ export async function brevoSendEmail(
   subject: string, 
   htmlContent: string, 
   toName?: string,
-  attachment?: { name: string; content: Buffer },
-  inlineImage?: { content: Buffer; cid: string; contentType?: string }
+  attachment?: { name: string; content: Buffer }
 ) {
   const apiKey = process.env.BREVO_API_KEY
   if (!apiKey) {
@@ -267,14 +262,6 @@ export async function brevoSendEmail(
     payload.attachment = [{
       name: attachment.name,
       content: attachment.content.toString('base64')
-    }]
-  }
-
-  // Add inline image if provided (for CID references in HTML)
-  if (inlineImage) {
-    payload.inlineImage = [{
-      content: inlineImage.content.toString('base64'),
-      cid: inlineImage.cid
     }]
   }
 
