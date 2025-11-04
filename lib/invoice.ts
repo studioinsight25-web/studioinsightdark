@@ -187,7 +187,7 @@ export interface InvoiceData {
 }
 
 // Generate Cloudinary URL from public_id or full URL
-function getLogoUrl(logoIdOrUrl?: string): string | null {
+export function getLogoUrl(logoIdOrUrl?: string): string | null {
   if (!logoIdOrUrl) {
     logoIdOrUrl = process.env.INVOICE_LOGO_URL
   }
