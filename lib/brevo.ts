@@ -11,6 +11,10 @@ type BrevoEmailPayload = {
   subject?: string
   htmlContent?: string
   params?: Record<string, string>
+  attachment?: Array<{
+    name: string
+    content: string // Base64 encoded content
+  }>
 }
 
 export async function brevoUpsertContact(email: string, name?: string, status: 'pending' | 'confirmed' = 'pending') {
@@ -231,7 +235,13 @@ export async function brevoSendWelcomeEmail(email: string, name?: string) {
   return { sent: res.ok, status: res.status, details }
 }
 
-export async function brevoSendEmail(to: string, subject: string, htmlContent: string, toName?: string) {
+export async function brevoSendEmail(
+  to: string, 
+  subject: string, 
+  htmlContent: string, 
+  toName?: string,
+  attachment?: { name: string; content: Buffer }
+) {
   const apiKey = process.env.BREVO_API_KEY
   if (!apiKey) {
     console.error('❌ BREVO_API_KEY not configured in environment variables')
@@ -245,6 +255,14 @@ export async function brevoSendEmail(to: string, subject: string, htmlContent: s
     to: [{ email: to, name: toName }],
     subject,
     htmlContent,
+  }
+
+  // Add attachment if provided
+  if (attachment) {
+    payload.attachment = [{
+      name: attachment.name,
+      content: attachment.content.toString('base64')
+    }]
   }
 
   try {

@@ -3,6 +3,73 @@ import { brevoSendEmail } from './brevo'
 import { DatabaseService } from './database-direct'
 import { UserService } from './user-database'
 
+// Fetch logo and convert to base64 for inline embedding
+async function getLogoAsBase64(logoUrl?: string): Promise<string | null> {
+  if (!logoUrl) return null
+  
+  try {
+    // If logo URL is a data URL, return as is
+    if (logoUrl.startsWith('data:')) {
+      return logoUrl
+    }
+    
+    // Fetch logo from URL
+    const response = await fetch(logoUrl)
+    if (!response.ok) {
+      console.warn(`[Invoice] Could not fetch logo from ${logoUrl}: ${response.statusText}`)
+      return null
+    }
+    
+    const buffer = await response.arrayBuffer()
+    const base64 = Buffer.from(buffer).toString('base64')
+    const contentType = response.headers.get('content-type') || 'image/png'
+    
+    return `data:${contentType};base64,${base64}`
+  } catch (error) {
+    console.error('[Invoice] Error fetching logo:', error)
+    return null
+  }
+}
+
+// Generate PDF from HTML using Puppeteer
+async function generatePDFFromHTML(html: string): Promise<Buffer | null> {
+  try {
+    // Dynamic import to avoid issues if Puppeteer is not available
+    const puppeteer = await import('puppeteer')
+    
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
+    })
+    
+    const page = await browser.newPage()
+    await page.setContent(html, { waitUntil: 'networkidle0' })
+    
+    const pdf = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '20mm',
+        right: '15mm',
+        bottom: '20mm',
+        left: '15mm'
+      }
+    })
+    
+    await browser.close()
+    return Buffer.from(pdf)
+  } catch (error) {
+    console.error('[Invoice] Error generating PDF:', error)
+    // If Puppeteer fails, return null (email will still be sent without PDF)
+    return null
+  }
+}
+
 export interface InvoiceData {
   orderId: string
   orderNumber: string
@@ -61,7 +128,7 @@ function formatDate(date: string | Date): string {
 }
 
 // Generate invoice HTML for customer
-export function generateCustomerInvoiceHTML(data: InvoiceData): string {
+export function generateCustomerInvoiceHTML(data: InvoiceData, logoBase64?: string | null): string {
   const company = getCompanyDetails()
   const subtotalFormatted = formatPrice(data.subtotal)
   const totalFormatted = formatPrice(data.total)
@@ -80,7 +147,7 @@ export function generateCustomerInvoiceHTML(data: InvoiceData): string {
         <div style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: white; padding: 40px 30px;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
             <div style="flex: 1;">
-              ${company.logoUrl ? `<img src="${company.logoUrl}" alt="${company.name}" style="max-width: 200px; height: auto; margin-bottom: 15px; background: white; padding: 10px; border-radius: 8px;">` : ''}
+              ${logoBase64 ? `<img src="${logoBase64}" alt="${company.name}" style="max-width: 200px; height: auto; margin-bottom: 15px; background: white; padding: 10px; border-radius: 8px; display: block;">` : ''}
               <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: 700;">Factuur</h1>
               <p style="margin: 0; opacity: 0.95; font-size: 16px;">Factuurnummer: ${data.orderNumber}</p>
             </div>
@@ -164,7 +231,7 @@ export function generateCustomerInvoiceHTML(data: InvoiceData): string {
 }
 
 // Generate invoice HTML for administration/internal use
-export function generateAdminInvoiceHTML(data: InvoiceData): string {
+export function generateAdminInvoiceHTML(data: InvoiceData, logoBase64?: string | null): string {
   const company = getCompanyDetails()
   const subtotalFormatted = formatPrice(data.subtotal)
   const totalFormatted = formatPrice(data.total)
@@ -183,7 +250,7 @@ export function generateAdminInvoiceHTML(data: InvoiceData): string {
         <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 40px 30px;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
             <div style="flex: 1;">
-              ${company.logoUrl ? `<img src="${company.logoUrl}" alt="${company.name}" style="max-width: 200px; height: auto; margin-bottom: 15px; background: white; padding: 10px; border-radius: 8px;">` : ''}
+              ${logoBase64 ? `<img src="${logoBase64}" alt="${company.name}" style="max-width: 200px; height: auto; margin-bottom: 15px; background: white; padding: 10px; border-radius: 8px; display: block;">` : ''}
               <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: 700;">ADMINISTRATIE FACTUUR</h1>
               <p style="margin: 0; opacity: 0.95; font-size: 16px;">Factuurnummer: ${data.orderNumber}</p>
             </div>
@@ -365,27 +432,52 @@ export async function sendInvoiceEmails(orderId: string): Promise<{ customerSent
     const company = getCompanyDetails()
     const adminEmail = company.email
 
-    // Send invoice to customer
-    const customerHtml = generateCustomerInvoiceHTML(invoiceData)
+    // Fetch logo as base64 for inline embedding
+    const logoBase64 = await getLogoAsBase64(company.logoUrl)
+    if (logoBase64) {
+      console.log(`[Invoice] Logo fetched and converted to base64`)
+    } else {
+      console.warn(`[Invoice] Logo not available or could not be fetched`)
+    }
+
+    // Generate HTML with inline logo
+    const customerHtml = generateCustomerInvoiceHTML(invoiceData, logoBase64)
+    const adminHtml = generateAdminInvoiceHTML(invoiceData, logoBase64)
+
+    // Generate PDF from customer invoice HTML
+    const pdfBuffer = await generatePDFFromHTML(customerHtml)
+    const pdfAttachment = pdfBuffer ? {
+      name: `Factuur_${invoiceData.orderNumber}.pdf`,
+      content: pdfBuffer
+    } : undefined
+
+    if (pdfBuffer) {
+      console.log(`[Invoice] PDF generated successfully (${pdfBuffer.length} bytes)`)
+    } else {
+      console.warn(`[Invoice] PDF generation failed or skipped`)
+    }
+
+    // Send invoice to customer with PDF attachment
     const customerSubject = `Factuur ${invoiceData.orderNumber} - Studio Insight`
     const customerResult = await brevoSendEmail(
       invoiceData.customer.email,
       customerSubject,
       customerHtml,
-      invoiceData.customer.name
+      invoiceData.customer.name,
+      pdfAttachment
     )
 
-    // Send customer invoice copy to admin/company (info@studio-insight.nl)
+    // Send customer invoice copy to admin/company (info@studio-insight.nl) with PDF
     const customerCopySubject = `[KOPIE] Factuur ${invoiceData.orderNumber} - ${invoiceData.customer.name}`
     const customerCopyResult = await brevoSendEmail(
       adminEmail,
       customerCopySubject,
       customerHtml,
-      company.name
+      company.name,
+      pdfAttachment
     )
 
-    // Send admin invoice to admin/company
-    const adminHtml = generateAdminInvoiceHTML(invoiceData)
+    // Send admin invoice to admin/company (without PDF, as it's internal)
     const adminSubject = `[ADMIN] Factuur ${invoiceData.orderNumber} - ${invoiceData.customer.name}`
     const adminResult = await brevoSendEmail(
       adminEmail,
@@ -397,7 +489,8 @@ export async function sendInvoiceEmails(orderId: string): Promise<{ customerSent
     console.log(`[Invoice] Invoice emails sent for order ${orderId}:`, {
       customer: customerResult.sent,
       customerCopy: customerCopyResult.sent,
-      admin: adminResult.sent
+      admin: adminResult.sent,
+      pdfAttached: !!pdfAttachment
     })
 
     return {

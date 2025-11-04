@@ -1,7 +1,46 @@
 // app/api/test-invoice/route.ts - Test Invoice Endpoint
 import { NextRequest, NextResponse } from 'next/server'
-import { generateCustomerInvoiceHTML, generateAdminInvoiceHTML, InvoiceData } from '@/lib/invoice'
+import { generateCustomerInvoiceHTML, generateAdminInvoiceHTML, InvoiceData, getInvoiceData } from '@/lib/invoice'
 import { brevoSendEmail } from '@/lib/brevo'
+
+// Helper functions from invoice.ts (duplicated for test endpoint)
+async function getLogoAsBase64(logoUrl?: string): Promise<string | null> {
+  if (!logoUrl) return null
+  try {
+    if (logoUrl.startsWith('data:')) return logoUrl
+    const response = await fetch(logoUrl)
+    if (!response.ok) return null
+    const buffer = await response.arrayBuffer()
+    const base64 = Buffer.from(buffer).toString('base64')
+    const contentType = response.headers.get('content-type') || 'image/png'
+    return `data:${contentType};base64,${base64}`
+  } catch (error) {
+    console.error('[Test Invoice] Error fetching logo:', error)
+    return null
+  }
+}
+
+async function generatePDFFromHTML(html: string): Promise<Buffer | null> {
+  try {
+    const puppeteer = await import('puppeteer')
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+    })
+    const page = await browser.newPage()
+    await page.setContent(html, { waitUntil: 'networkidle0' })
+    const pdf = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' }
+    })
+    await browser.close()
+    return Buffer.from(pdf)
+  } catch (error) {
+    console.error('[Test Invoice] Error generating PDF:', error)
+    return null
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,17 +82,29 @@ export async function POST(request: NextRequest) {
       paymentId: 'test_payment_' + Date.now()
     }
 
-    // Generate invoice HTML
-    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData)
-    const adminHtml = generateAdminInvoiceHTML(testInvoiceData)
+    // Get logo and generate HTML with inline logo
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
+    const logoUrl = process.env.INVOICE_LOGO_URL || `${baseUrl}/logo.png`
+    const logoBase64 = await getLogoAsBase64(logoUrl)
+    
+    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoBase64)
+    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoBase64)
 
-    // Send test customer invoice
+    // Generate PDF
+    const pdfBuffer = await generatePDFFromHTML(customerHtml)
+    const pdfAttachment = pdfBuffer ? {
+      name: `Factuur_${testInvoiceData.orderNumber}.pdf`,
+      content: pdfBuffer
+    } : undefined
+
+    // Send test customer invoice with PDF
     const customerSubject = `[TEST] Factuur ${testInvoiceData.orderNumber} - Studio Insight`
     const customerResult = await brevoSendEmail(
       testEmail,
       customerSubject,
       customerHtml,
-      'Test Gebruiker'
+      'Test Gebruiker',
+      pdfAttachment
     )
 
     // Send test admin invoice
@@ -139,17 +190,29 @@ export async function GET(request: NextRequest) {
       paymentId: 'test_payment_' + Date.now()
     }
 
-    // Generate invoice HTML
-    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData)
-    const adminHtml = generateAdminInvoiceHTML(testInvoiceData)
+    // Get logo and generate HTML with inline logo
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
+    const logoUrl = process.env.INVOICE_LOGO_URL || `${baseUrl}/logo.png`
+    const logoBase64 = await getLogoAsBase64(logoUrl)
+    
+    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoBase64)
+    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoBase64)
 
-    // Send test customer invoice
+    // Generate PDF
+    const pdfBuffer = await generatePDFFromHTML(customerHtml)
+    const pdfAttachment = pdfBuffer ? {
+      name: `Factuur_${testInvoiceData.orderNumber}.pdf`,
+      content: pdfBuffer
+    } : undefined
+
+    // Send test customer invoice with PDF
     const customerSubject = `[TEST] Factuur ${testInvoiceData.orderNumber} - Studio Insight`
     const customerResult = await brevoSendEmail(
       email,
       customerSubject,
       customerHtml,
-      'Test Gebruiker'
+      'Test Gebruiker',
+      pdfAttachment
     )
 
     // Send test admin invoice
