@@ -62,16 +62,6 @@ async function getLogoAsBuffer(logoUrl?: string): Promise<Buffer | null> {
   }
 }
 
-// Get logo URL for fallback (for email clients that don't support base64)
-function getLogoUrl(logoUrl?: string): string | null {
-  if (!logoUrl) return null
-  // Return URL as-is if it's not a data URL
-  if (!logoUrl.startsWith('data:')) {
-    return logoUrl
-  }
-  return null
-}
-
 // Generate PDF from HTML using external API (lightweight, no build dependencies)
 async function generatePDFFromHTML(html: string): Promise<Buffer | null> {
   try {
