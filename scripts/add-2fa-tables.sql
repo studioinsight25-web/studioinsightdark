@@ -16,3 +16,5 @@ CREATE TABLE IF NOT EXISTS user_recovery_codes (
 
 CREATE INDEX IF NOT EXISTS idx_user_recovery_codes_user ON user_recovery_codes(user_id);
 
+
+
