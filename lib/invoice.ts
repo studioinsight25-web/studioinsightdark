@@ -3,65 +3,6 @@ import { brevoSendEmail } from './brevo'
 import { DatabaseService } from './database-direct'
 import { UserService } from './user-database'
 
-// Fetch logo and convert to base64 for inline embedding (optimized for email clients)
-async function getLogoAsBase64(logoUrl?: string): Promise<string | null> {
-  if (!logoUrl) return null
-  
-  try {
-    // If logo URL is a data URL, return as is
-    if (logoUrl.startsWith('data:')) {
-      return logoUrl
-    }
-    
-    // Fetch logo from URL
-    const response = await fetch(logoUrl)
-    if (!response.ok) {
-      console.warn(`[Invoice] Could not fetch logo from ${logoUrl}: ${response.statusText}`)
-      return null
-    }
-    
-    const buffer = await response.arrayBuffer()
-    const base64 = Buffer.from(buffer).toString('base64')
-    const contentType = response.headers.get('content-type') || 'image/png'
-    
-    // For better email client compatibility, use proper data URI format
-    // Some email clients need this exact format
-    return `data:${contentType};base64,${base64}`
-  } catch (error) {
-    console.error('[Invoice] Error fetching logo:', error)
-    return null
-  }
-}
-
-// Fetch logo as Buffer for inline attachment (CID reference)
-async function getLogoAsBuffer(logoUrl?: string): Promise<Buffer | null> {
-  if (!logoUrl) return null
-  
-  try {
-    // If logo URL is a data URL, extract the base64 part
-    if (logoUrl.startsWith('data:')) {
-      const base64Match = logoUrl.match(/^data:image\/[^;]+;base64,(.+)$/)
-      if (base64Match) {
-        return Buffer.from(base64Match[1], 'base64')
-      }
-      return null
-    }
-    
-    // Fetch logo from URL
-    const response = await fetch(logoUrl)
-    if (!response.ok) {
-      console.warn(`[Invoice] Could not fetch logo from ${logoUrl}: ${response.statusText}`)
-      return null
-    }
-    
-    const buffer = await response.arrayBuffer()
-    return Buffer.from(buffer)
-  } catch (error) {
-    console.error('[Invoice] Error fetching logo as buffer:', error)
-    return null
-  }
-}
-
 // Generate PDF from HTML using external API (lightweight, no build dependencies)
 async function generatePDFFromHTML(html: string): Promise<Buffer | null> {
   try {
