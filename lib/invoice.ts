@@ -31,13 +31,19 @@ async function getLogoAsBase64(logoUrl?: string): Promise<string | null> {
   }
 }
 
-// Generate PDF from HTML using Puppeteer
+// Generate PDF from HTML using Puppeteer (optional - only if installed)
 async function generatePDFFromHTML(html: string): Promise<Buffer | null> {
   try {
-    // Dynamic import to avoid issues if Puppeteer is not available
-    const puppeteer = await import('puppeteer')
+    // Try to import puppeteer - if not available, return null gracefully
+    let puppeteer
+    try {
+      puppeteer = await import('puppeteer')
+    } catch (importError) {
+      console.warn('[Invoice] Puppeteer not available - PDF generation skipped. Install with: npm install puppeteer')
+      return null
+    }
     
-    const browser = await puppeteer.launch({
+    const browser = await puppeteer.default.launch({
       headless: true,
       args: [
         '--no-sandbox',

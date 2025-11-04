@@ -22,8 +22,16 @@ async function getLogoAsBase64(logoUrl?: string): Promise<string | null> {
 
 async function generatePDFFromHTML(html: string): Promise<Buffer | null> {
   try {
-    const puppeteer = await import('puppeteer')
-    const browser = await puppeteer.launch({
+    // Try to import puppeteer - if not available, return null gracefully
+    let puppeteer
+    try {
+      puppeteer = await import('puppeteer')
+    } catch (importError) {
+      console.warn('[Test Invoice] Puppeteer not available - PDF generation skipped')
+      return null
+    }
+    
+    const browser = await puppeteer.default.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
     })
