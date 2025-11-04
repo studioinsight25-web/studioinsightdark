@@ -30,16 +30,18 @@ export interface InvoiceData {
 
 // Get company details from environment variables
 function getCompanyDetails() {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
   return {
     name: process.env.INVOICE_COMPANY_NAME || 'Studio Insight',
-    address: process.env.INVOICE_COMPANY_ADDRESS || '',
-    city: process.env.INVOICE_COMPANY_CITY || '',
-    postcode: process.env.INVOICE_COMPANY_POSTCODE || '',
+    address: process.env.INVOICE_COMPANY_ADDRESS || 'De Veken 122b',
+    city: process.env.INVOICE_COMPANY_CITY || 'Opmeer',
+    postcode: process.env.INVOICE_COMPANY_POSTCODE || '1716 KG',
     country: process.env.INVOICE_COMPANY_COUNTRY || 'Nederland',
     vatNumber: process.env.INVOICE_COMPANY_VAT || '',
     email: process.env.INVOICE_COMPANY_EMAIL || process.env.BREVO_SENDER_EMAIL || 'info@studio-insight.nl',
     phone: process.env.INVOICE_COMPANY_PHONE || '',
-    website: process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
+    website: baseUrl,
+    logoUrl: process.env.INVOICE_LOGO_URL || `${baseUrl}/logo.png` // Logo URL - upload logo to public folder or use hosted URL
   }
 }
 
@@ -72,79 +74,89 @@ export function generateCustomerInvoiceHTML(data: InvoiceData): string {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Factuur ${data.orderNumber}</title>
     </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, #0ea5e9, #6366f1); color: white; padding: 30px; border-radius: 10px 10px 0 0;">
-        <h1 style="margin: 0; font-size: 28px;">Factuur</h1>
-        <p style="margin: 10px 0 0; opacity: 0.9;">Factuurnummer: ${data.orderNumber}</p>
-      </div>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
+      <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+        <!-- Header with Logo and Company Info -->
+        <div style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: white; padding: 40px 30px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+            <div style="flex: 1;">
+              ${company.logoUrl ? `<img src="${company.logoUrl}" alt="${company.name}" style="max-width: 200px; height: auto; margin-bottom: 15px; background: white; padding: 10px; border-radius: 8px;">` : ''}
+              <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: 700;">Factuur</h1>
+              <p style="margin: 0; opacity: 0.95; font-size: 16px;">Factuurnummer: ${data.orderNumber}</p>
+            </div>
+          </div>
+          <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 8px; margin-top: 20px;">
+            <p style="margin: 0 0 8px 0; font-weight: 600; font-size: 18px;">${company.name}</p>
+            ${company.address ? `<p style="margin: 0 0 5px 0; opacity: 0.95;">${company.address}</p>` : ''}
+            ${company.postcode && company.city ? `<p style="margin: 0 0 5px 0; opacity: 0.95;">${company.postcode} ${company.city}</p>` : ''}
+            ${company.country ? `<p style="margin: 0 0 5px 0; opacity: 0.95;">${company.country}</p>` : ''}
+            ${company.email ? `<p style="margin: 0 0 5px 0; opacity: 0.95;">E-mail: ${company.email}</p>` : ''}
+            ${company.phone ? `<p style="margin: 0; opacity: 0.95;">Telefoon: ${company.phone}</p>` : ''}
+          </div>
+        </div>
       
-      <div style="background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
-          <div>
-            <h3 style="margin-top: 0; color: #111827; font-size: 16px; font-weight: 600;">Verzendadres:</h3>
-            <p style="margin: 5px 0;">${data.customer.name}</p>
-            ${data.customer.company ? `<p style="margin: 5px 0;">${data.customer.company}</p>` : ''}
-            ${data.customer.address ? `<p style="margin: 5px 0;">${data.customer.address}</p>` : ''}
-            ${data.customer.postcode && data.customer.city ? `<p style="margin: 5px 0;">${data.customer.postcode} ${data.customer.city}</p>` : ''}
-            ${data.customer.country ? `<p style="margin: 5px 0;">${data.customer.country}</p>` : ''}
-            <p style="margin: 5px 0;">${data.customer.email}</p>
+      <div style="padding: 40px 30px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
+          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; border-left: 4px solid #0ea5e9;">
+            <h3 style="margin-top: 0; margin-bottom: 15px; color: #111827; font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Factuurgegevens</h3>
+            <p style="margin: 8px 0; color: #374151;"><strong>Factuurnummer:</strong><br>${data.orderNumber}</p>
+            <p style="margin: 8px 0; color: #374151;"><strong>Orderdatum:</strong><br>${formatDate(data.orderDate)}</p>
+            <p style="margin: 8px 0; color: #374151;"><strong>Betaaldatum:</strong><br>${formatDate(data.paymentDate)}</p>
+            ${data.paymentId ? `<p style="margin: 8px 0; color: #374151;"><strong>Transactie ID:</strong><br>${data.paymentId}</p>` : ''}
           </div>
           
-          <div>
-            <h3 style="margin-top: 0; color: #111827; font-size: 16px; font-weight: 600;">Factuurgegevens:</h3>
-            <p style="margin: 5px 0;"><strong>Factuurnummer:</strong> ${data.orderNumber}</p>
-            <p style="margin: 5px 0;"><strong>Orderdatum:</strong> ${formatDate(data.orderDate)}</p>
-            <p style="margin: 5px 0;"><strong>Betaaldatum:</strong> ${formatDate(data.paymentDate)}</p>
-            ${data.paymentId ? `<p style="margin: 5px 0;"><strong>Transactie ID:</strong> ${data.paymentId}</p>` : ''}
+          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; border-left: 4px solid #6366f1;">
+            <h3 style="margin-top: 0; margin-bottom: 15px; color: #111827; font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Factuur naar</h3>
+            <p style="margin: 8px 0; color: #374151; font-weight: 600;">${data.customer.name}</p>
+            ${data.customer.company ? `<p style="margin: 8px 0; color: #374151;">${data.customer.company}</p>` : ''}
+            ${data.customer.address ? `<p style="margin: 8px 0; color: #374151;">${data.customer.address}</p>` : ''}
+            ${data.customer.postcode && data.customer.city ? `<p style="margin: 8px 0; color: #374151;">${data.customer.postcode} ${data.customer.city}</p>` : ''}
+            ${data.customer.country ? `<p style="margin: 8px 0; color: #374151;">${data.customer.country}</p>` : ''}
+            <p style="margin: 8px 0; color: #374151;">${data.customer.email}</p>
           </div>
         </div>
         
-        <div style="margin-bottom: 30px;">
-          <h3 style="margin-top: 0; color: #111827; font-size: 16px; font-weight: 600;">Betaald door:</h3>
-          <p style="margin: 5px 0;">${data.customer.name}</p>
-          <p style="margin: 5px 0;">${data.customer.email}</p>
-        </div>
-        
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; background: white; border-radius: 8px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
           <thead>
-            <tr style="background: #f3f4f6;">
-              <th style="padding: 15px; text-align: left; border-bottom: 2px solid #e5e7eb;">Product</th>
-              <th style="padding: 15px; text-align: center; border-bottom: 2px solid #e5e7eb;">Aantal</th>
-              <th style="padding: 15px; text-align: right; border-bottom: 2px solid #e5e7eb;">Prijs</th>
-              <th style="padding: 15px; text-align: right; border-bottom: 2px solid #e5e7eb;">Subtotaal</th>
+            <tr style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: white;">
+              <th style="padding: 18px; text-align: left; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Product</th>
+              <th style="padding: 18px; text-align: center; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Aantal</th>
+              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Prijs</th>
+              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Subtotaal</th>
             </tr>
           </thead>
           <tbody>
-            ${data.items.map(item => `
-              <tr>
-                <td style="padding: 15px; border-bottom: 1px solid #e5e7eb;">${item.name}</td>
-                <td style="padding: 15px; text-align: center; border-bottom: 1px solid #e5e7eb;">${item.quantity}</td>
-                <td style="padding: 15px; text-align: right; border-bottom: 1px solid #e5e7eb;">€ ${formatPrice(item.price)}</td>
-                <td style="padding: 15px; text-align: right; border-bottom: 1px solid #e5e7eb;">€ ${formatPrice(item.subtotal)}</td>
+            ${data.items.map((item, index) => `
+              <tr style="${index % 2 === 0 ? 'background: #ffffff;' : 'background: #f9fafb;'}">
+                <td style="padding: 18px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 500;">${item.name}</td>
+                <td style="padding: 18px; text-align: center; border-bottom: 1px solid #e5e7eb; color: #374151;">${item.quantity}</td>
+                <td style="padding: 18px; text-align: right; border-bottom: 1px solid #e5e7eb; color: #374151;">€ ${formatPrice(item.price)}</td>
+                <td style="padding: 18px; text-align: right; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600;">€ ${formatPrice(item.subtotal)}</td>
               </tr>
             `).join('')}
           </tbody>
           <tfoot>
-            <tr>
-              <td colspan="3" style="padding: 15px; text-align: right; font-weight: 600; border-top: 2px solid #e5e7eb;">Totaal:</td>
-              <td style="padding: 15px; text-align: right; font-weight: 600; font-size: 18px; border-top: 2px solid #e5e7eb; color: #0ea5e9;">€ ${totalFormatted}</td>
+            <tr style="background: #f9fafb;">
+              <td colspan="3" style="padding: 20px; text-align: right; font-weight: 600; font-size: 16px; color: #111827; border-top: 2px solid #e5e7eb;">Totaal:</td>
+              <td style="padding: 20px; text-align: right; font-weight: 700; font-size: 20px; border-top: 2px solid #e5e7eb; color: #0ea5e9;">€ ${totalFormatted}</td>
             </tr>
           </tfoot>
         </table>
         
-        <div style="background: #eff6ff; padding: 20px; border-radius: 8px; border-left: 4px solid #0ea5e9;">
-          <p style="margin: 0; color: #1e40af;"><strong>✓ Betaling ontvangen</strong></p>
-          <p style="margin: 5px 0 0; color: #1e40af; font-size: 14px;">Bedankt voor je aankoop! Je hebt toegang tot de gekochte producten in je dashboard.</p>
+        <div style="background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%); padding: 25px; border-radius: 8px; border-left: 4px solid #0ea5e9; margin-bottom: 30px;">
+          <p style="margin: 0 0 8px; color: #1e40af; font-weight: 600; font-size: 16px;">✓ Betaling ontvangen</p>
+          <p style="margin: 0; color: #1e40af; font-size: 14px;">Bedankt voor je aankoop! Je hebt toegang tot de gekochte producten in je dashboard.</p>
         </div>
       </div>
       
-      <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px; font-size: 12px; color: #6b7280;">
-        <p style="margin: 0 0 10px;"><strong>${company.name}</strong></p>
+      <div style="background: #1f2937; color: #9ca3af; padding: 25px; text-align: center; font-size: 12px;">
+        <p style="margin: 0 0 10px; color: #ffffff; font-weight: 600; font-size: 14px;">${company.name}</p>
         ${company.address ? `<p style="margin: 0 0 5px;">${company.address}</p>` : ''}
         ${company.postcode && company.city ? `<p style="margin: 0 0 5px;">${company.postcode} ${company.city}</p>` : ''}
         ${company.vatNumber ? `<p style="margin: 0 0 5px;">BTW: ${company.vatNumber}</p>` : ''}
-        ${company.email ? `<p style="margin: 0 0 5px;">E-mail: ${company.email}</p>` : ''}
-        ${company.website ? `<p style="margin: 0;"><a href="${company.website}" style="color: #0ea5e9;">${company.website}</a></p>` : ''}
+        ${company.email ? `<p style="margin: 0 0 5px;"><a href="mailto:${company.email}" style="color: #0ea5e9; text-decoration: none;">${company.email}</a></p>` : ''}
+        ${company.website ? `<p style="margin: 0;"><a href="${company.website}" style="color: #0ea5e9; text-decoration: none;">${company.website}</a></p>` : ''}
+      </div>
       </div>
     </body>
     </html>
@@ -165,65 +177,89 @@ export function generateAdminInvoiceHTML(data: InvoiceData): string {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Factuur ${data.orderNumber} - Administratie</title>
     </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
-      <div style="background: #dc2626; color: white; padding: 30px; border-radius: 10px 10px 0 0;">
-        <h1 style="margin: 0; font-size: 28px;">Factuur - Administratie</h1>
-        <p style="margin: 10px 0 0; opacity: 0.9;">Factuurnummer: ${data.orderNumber}</p>
-      </div>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
+      <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+        <!-- Header with Logo and Company Info -->
+        <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 40px 30px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+            <div style="flex: 1;">
+              ${company.logoUrl ? `<img src="${company.logoUrl}" alt="${company.name}" style="max-width: 200px; height: auto; margin-bottom: 15px; background: white; padding: 10px; border-radius: 8px;">` : ''}
+              <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: 700;">ADMINISTRATIE FACTUUR</h1>
+              <p style="margin: 0; opacity: 0.95; font-size: 16px;">Factuurnummer: ${data.orderNumber}</p>
+            </div>
+          </div>
+          <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 8px; margin-top: 20px;">
+            <p style="margin: 0 0 8px 0; font-weight: 600; font-size: 18px;">${company.name}</p>
+            ${company.address ? `<p style="margin: 0 0 5px 0; opacity: 0.95;">${company.address}</p>` : ''}
+            ${company.postcode && company.city ? `<p style="margin: 0 0 5px 0; opacity: 0.95;">${company.postcode} ${company.city}</p>` : ''}
+            ${company.country ? `<p style="margin: 0 0 5px 0; opacity: 0.95;">${company.country}</p>` : ''}
+            ${company.email ? `<p style="margin: 0 0 5px 0; opacity: 0.95;">E-mail: ${company.email}</p>` : ''}
+            ${company.phone ? `<p style="margin: 0; opacity: 0.95;">Telefoon: ${company.phone}</p>` : ''}
+          </div>
+        </div>
       
-      <div style="background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
-          <div>
-            <h3 style="margin-top: 0; color: #111827; font-size: 16px; font-weight: 600;">Klantgegevens:</h3>
-            <p style="margin: 5px 0;"><strong>Naam:</strong> ${data.customer.name}</p>
-            ${data.customer.company ? `<p style="margin: 5px 0;"><strong>Bedrijf:</strong> ${data.customer.company}</p>` : ''}
-            <p style="margin: 5px 0;"><strong>E-mail:</strong> ${data.customer.email}</p>
-            ${data.customer.address ? `<p style="margin: 5px 0;"><strong>Adres:</strong> ${data.customer.address}</p>` : ''}
-            ${data.customer.postcode && data.customer.city ? `<p style="margin: 5px 0;"><strong>Plaats:</strong> ${data.customer.postcode} ${data.customer.city}</p>` : ''}
-            ${data.customer.country ? `<p style="margin: 5px 0;"><strong>Land:</strong> ${data.customer.country}</p>` : ''}
+      <div style="padding: 40px 30px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
+          <div style="background: #fef2f2; padding: 20px; border-radius: 8px; border-left: 4px solid #dc2626;">
+            <h3 style="margin-top: 0; margin-bottom: 15px; color: #111827; font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Klantgegevens</h3>
+            <p style="margin: 8px 0; color: #374151; font-weight: 600;">${data.customer.name}</p>
+            ${data.customer.company ? `<p style="margin: 8px 0; color: #374151;">${data.customer.company}</p>` : ''}
+            <p style="margin: 8px 0; color: #374151;">${data.customer.email}</p>
+            ${data.customer.address ? `<p style="margin: 8px 0; color: #374151;">${data.customer.address}</p>` : ''}
+            ${data.customer.postcode && data.customer.city ? `<p style="margin: 8px 0; color: #374151;">${data.customer.postcode} ${data.customer.city}</p>` : ''}
+            ${data.customer.country ? `<p style="margin: 8px 0; color: #374151;">${data.customer.country}</p>` : ''}
           </div>
           
-          <div>
-            <h3 style="margin-top: 0; color: #111827; font-size: 16px; font-weight: 600;">Ordergegevens:</h3>
-            <p style="margin: 5px 0;"><strong>Order ID:</strong> ${data.orderId}</p>
-            <p style="margin: 5px 0;"><strong>Factuurnummer:</strong> ${data.orderNumber}</p>
-            <p style="margin: 5px 0;"><strong>Orderdatum:</strong> ${formatDate(data.orderDate)}</p>
-            <p style="margin: 5px 0;"><strong>Betaaldatum:</strong> ${formatDate(data.paymentDate)}</p>
-            ${data.paymentId ? `<p style="margin: 5px 0;"><strong>Payment ID:</strong> ${data.paymentId}</p>` : ''}
+          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; border-left: 4px solid #dc2626;">
+            <h3 style="margin-top: 0; margin-bottom: 15px; color: #111827; font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Ordergegevens</h3>
+            <p style="margin: 8px 0; color: #374151;"><strong>Order ID:</strong><br><span style="font-family: monospace; font-size: 12px;">${data.orderId}</span></p>
+            <p style="margin: 8px 0; color: #374151;"><strong>Factuurnummer:</strong><br>${data.orderNumber}</p>
+            <p style="margin: 8px 0; color: #374151;"><strong>Orderdatum:</strong><br>${formatDate(data.orderDate)}</p>
+            <p style="margin: 8px 0; color: #374151;"><strong>Betaaldatum:</strong><br>${formatDate(data.paymentDate)}</p>
+            ${data.paymentId ? `<p style="margin: 8px 0; color: #374151;"><strong>Payment ID:</strong><br><span style="font-family: monospace; font-size: 12px;">${data.paymentId}</span></p>` : ''}
           </div>
         </div>
         
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; background: white; border-radius: 8px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
           <thead>
-            <tr style="background: #f3f4f6;">
-              <th style="padding: 15px; text-align: left; border-bottom: 2px solid #e5e7eb;">Product</th>
-              <th style="padding: 15px; text-align: center; border-bottom: 2px solid #e5e7eb;">Aantal</th>
-              <th style="padding: 15px; text-align: right; border-bottom: 2px solid #e5e7eb;">Prijs</th>
-              <th style="padding: 15px; text-align: right; border-bottom: 2px solid #e5e7eb;">Subtotaal</th>
+            <tr style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white;">
+              <th style="padding: 18px; text-align: left; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Product</th>
+              <th style="padding: 18px; text-align: center; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Aantal</th>
+              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Prijs</th>
+              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Subtotaal</th>
             </tr>
           </thead>
           <tbody>
-            ${data.items.map(item => `
-              <tr>
-                <td style="padding: 15px; border-bottom: 1px solid #e5e7eb;">${item.name}</td>
-                <td style="padding: 15px; text-align: center; border-bottom: 1px solid #e5e7eb;">${item.quantity}</td>
-                <td style="padding: 15px; text-align: right; border-bottom: 1px solid #e5e7eb;">€ ${formatPrice(item.price)}</td>
-                <td style="padding: 15px; text-align: right; border-bottom: 1px solid #e5e7eb;">€ ${formatPrice(item.subtotal)}</td>
+            ${data.items.map((item, index) => `
+              <tr style="${index % 2 === 0 ? 'background: #ffffff;' : 'background: #f9fafb;'}">
+                <td style="padding: 18px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 500;">${item.name}</td>
+                <td style="padding: 18px; text-align: center; border-bottom: 1px solid #e5e7eb; color: #374151;">${item.quantity}</td>
+                <td style="padding: 18px; text-align: right; border-bottom: 1px solid #e5e7eb; color: #374151;">€ ${formatPrice(item.price)}</td>
+                <td style="padding: 18px; text-align: right; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600;">€ ${formatPrice(item.subtotal)}</td>
               </tr>
             `).join('')}
           </tbody>
           <tfoot>
-            <tr>
-              <td colspan="3" style="padding: 15px; text-align: right; font-weight: 600; border-top: 2px solid #e5e7eb;">Totaal:</td>
-              <td style="padding: 15px; text-align: right; font-weight: 600; font-size: 18px; border-top: 2px solid #e5e7eb; color: #dc2626;">€ ${totalFormatted}</td>
+            <tr style="background: #f9fafb;">
+              <td colspan="3" style="padding: 20px; text-align: right; font-weight: 600; font-size: 16px; color: #111827; border-top: 2px solid #e5e7eb;">Totaal:</td>
+              <td style="padding: 20px; text-align: right; font-weight: 700; font-size: 20px; border-top: 2px solid #e5e7eb; color: #dc2626;">€ ${totalFormatted}</td>
             </tr>
           </tfoot>
         </table>
+        
+        <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); padding: 25px; border-radius: 8px; border-left: 4px solid #dc2626; margin-bottom: 30px;">
+          <p style="margin: 0; color: #991b1b; font-weight: 600; font-size: 14px;">INTERNE FACTUUR - Automatisch gegenereerd voor administratieve doeleinden</p>
+        </div>
       </div>
       
-      <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px; font-size: 12px; color: #6b7280;">
-        <p style="margin: 0;"><strong>Interne factuur - ${company.name}</strong></p>
-        <p style="margin: 5px 0 0;">Deze factuur is automatisch gegenereerd voor administratieve doeleinden.</p>
+      <div style="background: #1f2937; color: #9ca3af; padding: 25px; text-align: center; font-size: 12px;">
+        <p style="margin: 0 0 10px; color: #ffffff; font-weight: 600; font-size: 14px;">${company.name}</p>
+        ${company.address ? `<p style="margin: 0 0 5px;">${company.address}</p>` : ''}
+        ${company.postcode && company.city ? `<p style="margin: 0 0 5px;">${company.postcode} ${company.city}</p>` : ''}
+        ${company.vatNumber ? `<p style="margin: 0 0 5px;">BTW: ${company.vatNumber}</p>` : ''}
+        ${company.email ? `<p style="margin: 0 0 5px;"><a href="mailto:${company.email}" style="color: #0ea5e9; text-decoration: none;">${company.email}</a></p>` : ''}
+        ${company.website ? `<p style="margin: 0;"><a href="${company.website}" style="color: #0ea5e9; text-decoration: none;">${company.website}</a></p>` : ''}
+      </div>
       </div>
     </body>
     </html>
