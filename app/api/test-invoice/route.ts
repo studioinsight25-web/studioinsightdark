@@ -3,26 +3,33 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateCustomerInvoiceHTML, generateAdminInvoiceHTML, InvoiceData } from '@/lib/invoice'
 import { brevoSendEmail } from '@/lib/brevo'
 
-// Logo URL validation - must be HTTPS for email compatibility
+// Generate Cloudinary URL from public_id or full URL
 function getLogoUrl(): string | null {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
-  let logoUrl = process.env.INVOICE_LOGO_URL
+  let logoIdOrUrl = process.env.INVOICE_LOGO_URL
   
-  // If no logo URL is set, try Cloudinary default
-  if (!logoUrl) {
+  if (!logoIdOrUrl) {
+    // Try default Cloudinary path
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME
     if (cloudName) {
-      logoUrl = `https://res.cloudinary.com/${cloudName}/image/upload/studio-insight/logo.png`
+      logoIdOrUrl = `studio-insight/logo`
+    } else {
+      return null
     }
   }
   
-  // Validate HTTPS
-  if (logoUrl && !logoUrl.startsWith('https://')) {
-    console.warn('[Test Invoice] Logo URL must be HTTPS for email compatibility')
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME
+  if (!cloudName) {
     return null
   }
   
-  return logoUrl || null
+  // If it's already a full HTTPS URL, use it
+  if (logoIdOrUrl.startsWith('https://')) {
+    return logoIdOrUrl
+  }
+  
+  // If it's a Cloudinary public_id, generate the URL
+  const publicId = logoIdOrUrl.startsWith('/') ? logoIdOrUrl.substring(1) : logoIdOrUrl
+  return `https://res.cloudinary.com/${cloudName}/image/upload/${publicId}`
 }
 
 async function generatePDFFromHTML(html: string): Promise<Buffer | null> {

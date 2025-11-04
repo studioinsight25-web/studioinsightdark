@@ -160,9 +160,17 @@ Het logo moet worden geüpload naar een publiekelijk toegankelijke HTTPS URL (bi
 3. Kopieer de **secure_url** van de geüploade afbeelding
 
 **Stap 2: Stel INVOICE_LOGO_URL in**
-Voeg deze environment variable toe in Vercel:
+Voeg deze environment variable toe in Vercel. Je kunt **twee opties** gebruiken:
+
+**Optie 1: Cloudinary public_id (eenvoudigst)**
 ```
-INVOICE_LOGO_URL=https://res.cloudinary.com/jouw-cloud-name/image/upload/studio-insight/logo.png
+INVOICE_LOGO_URL=studio-insight/logo
+```
+De code genereert automatisch de HTTPS URL: `https://res.cloudinary.com/dtwjo4vti/image/upload/studio-insight/logo`
+
+**Optie 2: Volledige HTTPS URL**
+```
+INVOICE_LOGO_URL=https://res.cloudinary.com/dtwjo4vti/image/upload/studio-insight/logo.png
 ```
 
 **Belangrijk:**

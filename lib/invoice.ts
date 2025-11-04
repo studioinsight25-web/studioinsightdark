@@ -186,32 +186,55 @@ export interface InvoiceData {
   paymentId?: string
 }
 
+// Generate Cloudinary URL from public_id or full URL
+function getLogoUrl(logoIdOrUrl?: string): string | null {
+  if (!logoIdOrUrl) {
+    logoIdOrUrl = process.env.INVOICE_LOGO_URL
+  }
+  
+  if (!logoIdOrUrl) {
+    // Try default Cloudinary path
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME
+    if (cloudName) {
+      logoIdOrUrl = `studio-insight/logo`
+    } else {
+      return null
+    }
+  }
+  
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME
+  if (!cloudName) {
+    console.warn('[Invoice] CLOUDINARY_CLOUD_NAME not set. Cannot generate logo URL.')
+    return null
+  }
+  
+  // If it's already a full HTTPS URL, use it
+  if (logoIdOrUrl.startsWith('https://')) {
+    return logoIdOrUrl
+  }
+  
+  // If it's a Cloudinary public_id, generate the URL
+  // Remove leading slash if present
+  const publicId = logoIdOrUrl.startsWith('/') ? logoIdOrUrl.substring(1) : logoIdOrUrl
+  
+  // Generate Cloudinary HTTPS URL
+  // Format: https://res.cloudinary.com/{cloud_name}/image/upload/{public_id}
+  const logoUrl = `https://res.cloudinary.com/${cloudName}/image/upload/${publicId}`
+  
+  return logoUrl
+}
+
 // Get company details from environment variables
 function getCompanyDetails() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
   
-  // Get logo URL - MUST be a publicly accessible HTTPS URL (e.g., Cloudinary)
-  // Local URLs (like /logo.png) will NOT work in email clients
-  let logoUrl = process.env.INVOICE_LOGO_URL
+  // Get logo URL - can be Cloudinary public_id or full HTTPS URL
+  const logoUrl = getLogoUrl()
   
-  // If no logo URL is set, use a default Cloudinary URL structure
-  // User should upload logo to Cloudinary and set INVOICE_LOGO_URL to the Cloudinary URL
   if (!logoUrl) {
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME
-    if (cloudName) {
-      // Default Cloudinary URL structure (user needs to upload logo to this path)
-      logoUrl = `https://res.cloudinary.com/${cloudName}/image/upload/studio-insight/logo.png`
-    } else {
-      // Fallback: use a placeholder or remove logo
-      logoUrl = null
-      console.warn('[Invoice] No INVOICE_LOGO_URL set. Logo will not be displayed. Upload logo to Cloudinary and set INVOICE_LOGO_URL environment variable.')
-    }
-  }
-  
-  // Validate that logo URL is HTTPS (required for email clients)
-  if (logoUrl && !logoUrl.startsWith('https://')) {
-    console.warn(`[Invoice] Logo URL must be HTTPS for email compatibility. Current URL: ${logoUrl}`)
-    logoUrl = null
+    console.warn('[Invoice] No logo URL available. Set INVOICE_LOGO_URL to Cloudinary public_id (e.g., "studio-insight/logo") or full HTTPS URL.')
+  } else {
+    console.log(`[Invoice] Using logo URL: ${logoUrl}`)
   }
   
   return {
@@ -224,7 +247,7 @@ function getCompanyDetails() {
     email: process.env.INVOICE_COMPANY_EMAIL || process.env.BREVO_SENDER_EMAIL || 'info@studio-insight.nl',
     phone: process.env.INVOICE_COMPANY_PHONE || '',
     website: baseUrl,
-    logoUrl: logoUrl // Only HTTPS URLs work in email clients
+    logoUrl: logoUrl // HTTPS URL generated from Cloudinary public_id or full URL
   }
 }
 
