@@ -195,9 +195,13 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, logoBase64?: stri
       <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
         <!-- Header with Logo and Company Info -->
         <div style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: white; padding: 40px 30px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-            <div style="flex: 1;">
-              ${logoBase64 ? `<img src="${logoBase64}" alt="${company.name}" style="max-width: 200px; height: auto; margin-bottom: 15px; background: white; padding: 10px; border-radius: 8px; display: block;">` : ''}
+          <div style="margin-bottom: 20px;">
+            ${logoBase64 ? `
+              <div style="text-align: center; margin-bottom: 20px;">
+                <img src="${logoBase64}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+              </div>
+            ` : ''}
+            <div style="text-align: center;">
               <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: 700;">Factuur</h1>
               <p style="margin: 0; opacity: 0.95; font-size: 16px;">Factuurnummer: ${data.orderNumber}</p>
             </div>
@@ -298,9 +302,13 @@ export function generateAdminInvoiceHTML(data: InvoiceData, logoBase64?: string 
       <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
         <!-- Header with Logo and Company Info -->
         <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 40px 30px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-            <div style="flex: 1;">
-              ${logoBase64 ? `<img src="${logoBase64}" alt="${company.name}" style="max-width: 200px; height: auto; margin-bottom: 15px; background: white; padding: 10px; border-radius: 8px; display: block;">` : ''}
+          <div style="margin-bottom: 20px;">
+            ${logoBase64 ? `
+              <div style="text-align: center; margin-bottom: 20px;">
+                <img src="${logoBase64}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+              </div>
+            ` : ''}
+            <div style="text-align: center;">
               <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: 700;">ADMINISTRATIE FACTUUR</h1>
               <p style="margin: 0; opacity: 0.95; font-size: 16px;">Factuurnummer: ${data.orderNumber}</p>
             </div>
