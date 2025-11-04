@@ -34,7 +34,7 @@ INVOICE_COMPANY_COUNTRY=Nederland
 INVOICE_COMPANY_VAT=NL123456789B01  # BTW nummer
 INVOICE_COMPANY_EMAIL=info@studio-insight.nl  # Waar facturen naartoe gaan
 INVOICE_COMPANY_PHONE=+31 20 123 4567
-INVOICE_LOGO_URL=https://studio-insight.nl/logo.png  # Logo URL (optioneel)
+INVOICE_LOGO_URL=https://res.cloudinary.com/dtwjo4vti/image/upload/studio-insight/logo.png  # Logo URL - MUST be HTTPS (Cloudinary recommended)
 ```
 
 ### PDF Generatie (optioneel - voor PDF attachments):
@@ -75,7 +75,7 @@ Als je geen environment variabelen instelt, worden deze standaard waarden gebrui
 ## Factuur Details
 
 ### Klant Factuur bevat:
-- **Logo** (inline base64 - werkt in alle e-mail clients)
+- **Logo** (HTTPS URL - werkt in alle e-mail clients, inclusief Outlook)
 - Factuurnummer (order_number)
 - Orderdatum en betaaldatum
 - Klantgegevens (naam, email, adres)
@@ -85,7 +85,7 @@ Als je geen environment variabelen instelt, worden deze standaard waarden gebrui
 - **PDF attachment** (als PDF API is geconfigureerd)
 
 ### Administratie Factuur bevat:
-- Logo (inline base64)
+- Logo (HTTPS URL)
 - Alle klantgegevens
 - Order ID en payment ID
 - Volledige productenlijst
@@ -149,4 +149,29 @@ Facturen worden **automatisch** verstuurd wanneer:
 - Dit gebeurt in `app/api/payment/webhook/route.ts`
 
 Je hoeft niets handmatig te doen!
+
+## Logo Setup (BELANGRIJK)
+
+Het logo moet worden geüpload naar een publiekelijk toegankelijke HTTPS URL (bijvoorbeeld Cloudinary).
+
+**Stap 1: Upload logo naar Cloudinary**
+1. Ga naar https://console.cloudinary.com
+2. Upload je logo naar de folder `studio-insight/logo.png`
+3. Kopieer de **secure_url** van de geüploade afbeelding
+
+**Stap 2: Stel INVOICE_LOGO_URL in**
+Voeg deze environment variable toe in Vercel:
+```
+INVOICE_LOGO_URL=https://res.cloudinary.com/jouw-cloud-name/image/upload/studio-insight/logo.png
+```
+
+**Belangrijk:**
+- ❌ **GEEN** lokale URLs (zoals `/logo.png`) - werken NIET in e-mails
+- ❌ **GEEN** base64 inline - werkt NIET in Outlook
+- ✅ **WEL** HTTPS URLs (Cloudinary, CDN, etc.) - werken in alle e-mailclients
+
+**Waarom?**
+- Outlook blokkeert base64 inline afbeeldingen
+- Lokale URLs zijn niet toegankelijk vanuit e-mailclients
+- Alleen publiekelijk toegankelijke HTTPS URLs werken betrouwbaar
 

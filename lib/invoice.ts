@@ -189,6 +189,31 @@ export interface InvoiceData {
 // Get company details from environment variables
 function getCompanyDetails() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
+  
+  // Get logo URL - MUST be a publicly accessible HTTPS URL (e.g., Cloudinary)
+  // Local URLs (like /logo.png) will NOT work in email clients
+  let logoUrl = process.env.INVOICE_LOGO_URL
+  
+  // If no logo URL is set, use a default Cloudinary URL structure
+  // User should upload logo to Cloudinary and set INVOICE_LOGO_URL to the Cloudinary URL
+  if (!logoUrl) {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME
+    if (cloudName) {
+      // Default Cloudinary URL structure (user needs to upload logo to this path)
+      logoUrl = `https://res.cloudinary.com/${cloudName}/image/upload/studio-insight/logo.png`
+    } else {
+      // Fallback: use a placeholder or remove logo
+      logoUrl = null
+      console.warn('[Invoice] No INVOICE_LOGO_URL set. Logo will not be displayed. Upload logo to Cloudinary and set INVOICE_LOGO_URL environment variable.')
+    }
+  }
+  
+  // Validate that logo URL is HTTPS (required for email clients)
+  if (logoUrl && !logoUrl.startsWith('https://')) {
+    console.warn(`[Invoice] Logo URL must be HTTPS for email compatibility. Current URL: ${logoUrl}`)
+    logoUrl = null
+  }
+  
   return {
     name: process.env.INVOICE_COMPANY_NAME || 'Studio Insight',
     address: process.env.INVOICE_COMPANY_ADDRESS || 'De Veken 122b',
@@ -199,7 +224,7 @@ function getCompanyDetails() {
     email: process.env.INVOICE_COMPANY_EMAIL || process.env.BREVO_SENDER_EMAIL || 'info@studio-insight.nl',
     phone: process.env.INVOICE_COMPANY_PHONE || '',
     website: baseUrl,
-    logoUrl: process.env.INVOICE_LOGO_URL || `${baseUrl}/logo.png` // Logo URL - upload logo to public folder or use hosted URL
+    logoUrl: logoUrl // Only HTTPS URLs work in email clients
   }
 }
 
@@ -219,14 +244,14 @@ function formatDate(date: string | Date): string {
 }
 
 // Generate invoice HTML for customer
-export function generateCustomerInvoiceHTML(data: InvoiceData, logoUrl?: string | null, logoBase64?: string | null): string {
+export function generateCustomerInvoiceHTML(data: InvoiceData, logoUrl?: string | null): string {
   const company = getCompanyDetails()
   const subtotalFormatted = formatPrice(data.subtotal)
   const totalFormatted = formatPrice(data.total)
   
-  // Hybrid approach: URL for mobile/modern clients, base64 for Outlook
-  // Use URL as primary (works on mobile), base64 as fallback in same image tag
-  const logoSrc = logoUrl || logoBase64 || ''
+  // Use ONLY HTTPS URLs - base64 does NOT work in Outlook
+  // Logo URL must be publicly accessible HTTPS URL (e.g., Cloudinary)
+  const finalLogoUrl = logoUrl || company.logoUrl
   
   return `
     <!DOCTYPE html>
@@ -241,33 +266,21 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, logoUrl?: string 
         <!-- Header with Logo and Company Info -->
         <div style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: white; padding: 40px 30px;">
           <div style="margin-bottom: 20px;">
-            ${logoSrc ? `
+            ${finalLogoUrl ? `
               <div style="text-align: center; margin-bottom: 20px;">
-                <!-- Outlook conditional comment for better compatibility -->
+                <!-- Outlook conditional comment - use HTTPS URL for all clients -->
                 <!--[if mso]>
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                   <tr>
                     <td align="center" style="padding: 15px;">
-                      ${logoBase64 ? `
-                        <!-- Outlook: Use base64 for better compatibility -->
-                        <img src="${logoBase64}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
-                      ` : logoUrl ? `
-                        <!-- Outlook: Use URL as fallback -->
-                        <img src="${logoUrl}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
-                      ` : ''}
+                      <img src="${finalLogoUrl}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
                     </td>
                   </tr>
                 </table>
                 <![endif]-->
                 <!--[if !mso]><!-->
-                <!-- Modern email clients: URL works best, base64 as fallback -->
-                ${logoBase64 ? `
-                  <!-- Use base64 inline for maximum compatibility -->
-                  <img src="${logoBase64}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
-                ` : logoUrl ? `
-                  <!-- Use URL for modern clients -->
-                  <img src="${logoUrl}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
-                ` : ''}
+                <!-- All email clients: Use HTTPS URL (works in Gmail, Apple Mail, Outlook, etc.) -->
+                <img src="${finalLogoUrl}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
                 <!--<![endif]-->
               </div>
             ` : ''}
@@ -355,13 +368,13 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, logoUrl?: string 
 }
 
 // Generate invoice HTML for administration/internal use
-export function generateAdminInvoiceHTML(data: InvoiceData, logoUrl?: string | null, logoBase64?: string | null): string {
+export function generateAdminInvoiceHTML(data: InvoiceData, logoUrl?: string | null): string {
   const company = getCompanyDetails()
   const subtotalFormatted = formatPrice(data.subtotal)
   const totalFormatted = formatPrice(data.total)
   
-  // Hybrid approach: URL for mobile/modern clients, base64 for Outlook
-  const logoSrc = logoUrl || logoBase64 || ''
+  // Use ONLY HTTPS URLs - base64 does NOT work in Outlook
+  const finalLogoUrl = logoUrl || company.logoUrl
   
   return `
     <!DOCTYPE html>
@@ -376,33 +389,21 @@ export function generateAdminInvoiceHTML(data: InvoiceData, logoUrl?: string | n
         <!-- Header with Logo and Company Info -->
         <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 40px 30px;">
           <div style="margin-bottom: 20px;">
-            ${logoSrc ? `
+            ${finalLogoUrl ? `
               <div style="text-align: center; margin-bottom: 20px;">
-                <!-- Outlook conditional comment for better compatibility -->
+                <!-- Outlook conditional comment - use HTTPS URL for all clients -->
                 <!--[if mso]>
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                   <tr>
                     <td align="center" style="padding: 15px;">
-                      ${logoBase64 ? `
-                        <!-- Outlook: Use base64 for better compatibility -->
-                        <img src="${logoBase64}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
-                      ` : logoUrl ? `
-                        <!-- Outlook: Use URL as fallback -->
-                        <img src="${logoUrl}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
-                      ` : ''}
+                      <img src="${finalLogoUrl}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
                     </td>
                   </tr>
                 </table>
                 <![endif]-->
                 <!--[if !mso]><!-->
-                <!-- Modern email clients: URL works best, base64 as fallback -->
-                ${logoBase64 ? `
-                  <!-- Use base64 inline for maximum compatibility -->
-                  <img src="${logoBase64}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
-                ` : logoUrl ? `
-                  <!-- Use URL for modern clients -->
-                  <img src="${logoUrl}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
-                ` : ''}
+                <!-- All email clients: Use HTTPS URL -->
+                <img src="${finalLogoUrl}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
                 <!--<![endif]-->
               </div>
             ` : ''}
@@ -588,35 +589,24 @@ export async function sendInvoiceEmails(orderId: string): Promise<{ customerSent
     const company = getCompanyDetails()
     const adminEmail = company.email
 
-    // Hybrid approach: Fetch both URL and base64 for maximum compatibility
-    // URL works on mobile/modern clients, base64 works in Outlook
-    let logoUrl: string | null = null
-    let logoBase64: string | null = null
+    // Use ONLY HTTPS URLs - base64 does NOT work in Outlook
+    // Logo URL must be publicly accessible HTTPS URL (e.g., Cloudinary)
+    const logoUrl = company.logoUrl
     
-    if (company.logoUrl) {
-      logoUrl = company.logoUrl
-      
-      // Also fetch as base64 for Outlook compatibility
-      try {
-        logoBase64 = await getLogoAsBase64(company.logoUrl)
-        if (logoBase64) {
-          console.log(`[Invoice] Logo available - URL: ${logoUrl}, Base64: ${logoBase64.length} chars`)
-        }
-      } catch (error) {
-        console.warn(`[Invoice] Could not fetch logo as base64, will use URL only:`, error)
+    if (logoUrl) {
+      // Validate HTTPS URL
+      if (!logoUrl.startsWith('https://')) {
+        console.error(`[Invoice] Logo URL must be HTTPS for email compatibility. Current URL: ${logoUrl}`)
+      } else {
+        console.log(`[Invoice] Using logo URL: ${logoUrl}`)
       }
-    }
-    
-    if (logoUrl || logoBase64) {
-      console.log(`[Invoice] Logo available - URL: ${!!logoUrl}, Base64: ${!!logoBase64}`)
     } else {
-      console.warn(`[Invoice] Logo not available - invoices will be sent without logo`)
+      console.warn(`[Invoice] No logo URL configured. Set INVOICE_LOGO_URL to a publicly accessible HTTPS URL (e.g., Cloudinary URL)`)
     }
 
-    // Generate HTML with both URL and base64 (hybrid approach)
-    // Outlook will use base64, modern clients will use URL
-    const customerHtml = generateCustomerInvoiceHTML(invoiceData, logoUrl, logoBase64)
-    const adminHtml = generateAdminInvoiceHTML(invoiceData, logoUrl, logoBase64)
+    // Generate HTML with HTTPS URL only (works in all email clients)
+    const customerHtml = generateCustomerInvoiceHTML(invoiceData, logoUrl)
+    const adminHtml = generateAdminInvoiceHTML(invoiceData, logoUrl)
 
     // Generate PDF from customer invoice HTML (using external API - lightweight)
     const pdfBuffer = await generatePDFFromHTML(customerHtml)

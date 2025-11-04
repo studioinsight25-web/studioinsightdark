@@ -3,21 +3,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateCustomerInvoiceHTML, generateAdminInvoiceHTML, InvoiceData } from '@/lib/invoice'
 import { brevoSendEmail } from '@/lib/brevo'
 
-// Helper functions from invoice.ts (duplicated for test endpoint)
-async function getLogoAsBase64(logoUrl?: string): Promise<string | null> {
-  if (!logoUrl) return null
-  try {
-    if (logoUrl.startsWith('data:')) return logoUrl
-    const response = await fetch(logoUrl)
-    if (!response.ok) return null
-    const buffer = await response.arrayBuffer()
-    const base64 = Buffer.from(buffer).toString('base64')
-    const contentType = response.headers.get('content-type') || 'image/png'
-    return `data:${contentType};base64,${base64}`
-  } catch (error) {
-    console.error('[Test Invoice] Error fetching logo:', error)
+// Logo URL validation - must be HTTPS for email compatibility
+function getLogoUrl(): string | null {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
+  let logoUrl = process.env.INVOICE_LOGO_URL
+  
+  // If no logo URL is set, try Cloudinary default
+  if (!logoUrl) {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME
+    if (cloudName) {
+      logoUrl = `https://res.cloudinary.com/${cloudName}/image/upload/studio-insight/logo.png`
+    }
+  }
+  
+  // Validate HTTPS
+  if (logoUrl && !logoUrl.startsWith('https://')) {
+    console.warn('[Test Invoice] Logo URL must be HTTPS for email compatibility')
     return null
   }
+  
+  return logoUrl || null
 }
 
 async function generatePDFFromHTML(html: string): Promise<Buffer | null> {
@@ -115,14 +120,16 @@ export async function POST(request: NextRequest) {
       paymentId: 'test_payment_' + Date.now()
     }
 
-    // Hybrid approach: Get both URL and base64 for maximum compatibility
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
-    const logoUrl = process.env.INVOICE_LOGO_URL || `${baseUrl}/logo.png`
-    const logoBase64 = await getLogoAsBase64(logoUrl)
+    // Get HTTPS logo URL (required for email clients)
+    const logoUrl = getLogoUrl()
     
-    // Generate HTML with both URL and base64 (hybrid approach)
-    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoUrl, logoBase64)
-    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoUrl, logoBase64)
+    if (!logoUrl) {
+      console.warn('[Test Invoice] No valid HTTPS logo URL found. Set INVOICE_LOGO_URL to a Cloudinary URL or other HTTPS URL.')
+    }
+    
+    // Generate HTML with HTTPS URL only (works in all email clients)
+    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoUrl)
+    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoUrl)
 
     // Generate PDF
     const pdfBuffer = await generatePDFFromHTML(customerHtml)
@@ -224,14 +231,16 @@ export async function GET(request: NextRequest) {
       paymentId: 'test_payment_' + Date.now()
     }
 
-    // Hybrid approach: Get both URL and base64 for maximum compatibility
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
-    const logoUrl = process.env.INVOICE_LOGO_URL || `${baseUrl}/logo.png`
-    const logoBase64 = await getLogoAsBase64(logoUrl)
+    // Get HTTPS logo URL (required for email clients)
+    const logoUrl = getLogoUrl()
     
-    // Generate HTML with both URL and base64 (hybrid approach)
-    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoUrl, logoBase64)
-    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoUrl, logoBase64)
+    if (!logoUrl) {
+      console.warn('[Test Invoice] No valid HTTPS logo URL found. Set INVOICE_LOGO_URL to a Cloudinary URL or other HTTPS URL.')
+    }
+    
+    // Generate HTML with HTTPS URL only (works in all email clients)
+    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoUrl)
+    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoUrl)
 
     // Generate PDF
     const pdfBuffer = await generatePDFFromHTML(customerHtml)
