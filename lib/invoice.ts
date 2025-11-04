@@ -277,24 +277,52 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, logoUrl?: string 
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
       <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
         <!-- Header with Logo and Company Info -->
-        <div style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: white; padding: 40px 30px;">
-          <div style="margin-bottom: 20px;">
-            ${finalLogoUrl ? `
-              <div style="text-align: center; margin-bottom: 20px;">
-                <!-- Outlook conditional comment - use HTTPS URL for all clients -->
-                <!--[if mso]>
+        <!-- Outlook conditional: Use solid background color (gradients don't work in Outlook) -->
+        <!--[if mso]>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+          <tr>
+            <td style="background-color: #0ea5e9; color: white; padding: 40px 30px;">
+              ${finalLogoUrl ? `
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                   <tr>
-                    <td align="center" style="padding: 15px;">
+                    <td align="center" style="padding: 15px 0 20px 0;">
                       <img src="${finalLogoUrl}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
                     </td>
                   </tr>
                 </table>
-                <![endif]-->
-                <!--[if !mso]><!-->
+              ` : ''}
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td align="center" style="padding: 0 0 20px 0;">
+                    <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: 700; color: white;">Factuur</h1>
+                    <p style="margin: 0; font-size: 16px; color: white;">Factuurnummer: ${data.orderNumber}</p>
+                  </td>
+                </tr>
+              </table>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="background-color: rgba(255,255,255,0.2); padding: 20px; border-radius: 8px;">
+                    <p style="margin: 0 0 8px 0; font-weight: 600; font-size: 18px; color: white;">${company.name}</p>
+                    ${company.address ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">${company.address}</p>` : ''}
+                    ${company.postcode && company.city ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">${company.postcode} ${company.city}</p>` : ''}
+                    ${company.country ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">${company.country}</p>` : ''}
+                    ${company.email ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">E-mail: ${company.email}</p>` : ''}
+                    ${company.phone ? `<p style="margin: 0; font-size: 14px; color: white;">Telefoon: ${company.phone}</p>` : ''}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <![endif]-->
+        <!--[if !mso]><!-->
+        <!-- Modern email clients: Use gradient background -->
+        <div style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: white; padding: 40px 30px;">
+          <div style="margin-bottom: 20px;">
+            ${finalLogoUrl ? `
+              <div style="text-align: center; margin-bottom: 20px;">
                 <!-- All email clients: Use HTTPS URL (works in Gmail, Apple Mail, Outlook, etc.) -->
                 <img src="${finalLogoUrl}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
-                <!--<![endif]-->
               </div>
             ` : ''}
             <div style="text-align: center;">
@@ -311,6 +339,7 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, logoUrl?: string 
             ${company.phone ? `<p style="margin: 0; opacity: 0.95;">Telefoon: ${company.phone}</p>` : ''}
           </div>
         </div>
+        <!--<![endif]-->
       
       <div style="padding: 40px 30px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
@@ -400,24 +429,52 @@ export function generateAdminInvoiceHTML(data: InvoiceData, logoUrl?: string | n
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
       <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
         <!-- Header with Logo and Company Info -->
-        <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 40px 30px;">
-          <div style="margin-bottom: 20px;">
-            ${finalLogoUrl ? `
-              <div style="text-align: center; margin-bottom: 20px;">
-                <!-- Outlook conditional comment - use HTTPS URL for all clients -->
-                <!--[if mso]>
+        <!-- Outlook conditional: Use solid background color (gradients don't work in Outlook) -->
+        <!--[if mso]>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+          <tr>
+            <td style="background-color: #dc2626; color: white; padding: 40px 30px;">
+              ${finalLogoUrl ? `
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                   <tr>
-                    <td align="center" style="padding: 15px;">
+                    <td align="center" style="padding: 15px 0 20px 0;">
                       <img src="${finalLogoUrl}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
                     </td>
                   </tr>
                 </table>
-                <![endif]-->
-                <!--[if !mso]><!-->
+              ` : ''}
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td align="center" style="padding: 0 0 20px 0;">
+                    <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: 700; color: white;">ADMINISTRATIE FACTUUR</h1>
+                    <p style="margin: 0; font-size: 16px; color: white;">Factuurnummer: ${data.orderNumber}</p>
+                  </td>
+                </tr>
+              </table>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="background-color: rgba(255,255,255,0.2); padding: 20px; border-radius: 8px;">
+                    <p style="margin: 0 0 8px 0; font-weight: 600; font-size: 18px; color: white;">${company.name}</p>
+                    ${company.address ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">${company.address}</p>` : ''}
+                    ${company.postcode && company.city ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">${company.postcode} ${company.city}</p>` : ''}
+                    ${company.country ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">${company.country}</p>` : ''}
+                    ${company.email ? `<p style="margin: 0 0 5px 0; font-size: 14px; color: white;">E-mail: ${company.email}</p>` : ''}
+                    ${company.phone ? `<p style="margin: 0; font-size: 14px; color: white;">Telefoon: ${company.phone}</p>` : ''}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <![endif]-->
+        <!--[if !mso]><!-->
+        <!-- Modern email clients: Use gradient background -->
+        <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 40px 30px;">
+          <div style="margin-bottom: 20px;">
+            ${finalLogoUrl ? `
+              <div style="text-align: center; margin-bottom: 20px;">
                 <!-- All email clients: Use HTTPS URL -->
                 <img src="${finalLogoUrl}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
-                <!--<![endif]-->
               </div>
             ` : ''}
             <div style="text-align: center;">
@@ -434,6 +491,7 @@ export function generateAdminInvoiceHTML(data: InvoiceData, logoUrl?: string | n
             ${company.phone ? `<p style="margin: 0; opacity: 0.95;">Telefoon: ${company.phone}</p>` : ''}
           </div>
         </div>
+        <!--<![endif]-->
       
       <div style="padding: 40px 30px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
