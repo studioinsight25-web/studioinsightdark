@@ -4,16 +4,22 @@ import { generateCustomerInvoiceHTML, generateAdminInvoiceHTML, InvoiceData } fr
 import { brevoSendEmail } from '@/lib/brevo'
 
 // Helper functions from invoice.ts (duplicated for test endpoint)
-async function getLogoAsBase64(logoUrl?: string): Promise<string | null> {
+async function getLogoAsBuffer(logoUrl?: string): Promise<Buffer | null> {
   if (!logoUrl) return null
   try {
-    if (logoUrl.startsWith('data:')) return logoUrl
+    // If logo URL is a data URL, extract the base64 part
+    if (logoUrl.startsWith('data:')) {
+      const base64Match = logoUrl.match(/^data:image\/[^;]+;base64,(.+)$/)
+      if (base64Match) {
+        return Buffer.from(base64Match[1], 'base64')
+      }
+      return null
+    }
+    
     const response = await fetch(logoUrl)
     if (!response.ok) return null
     const buffer = await response.arrayBuffer()
-    const base64 = Buffer.from(buffer).toString('base64')
-    const contentType = response.headers.get('content-type') || 'image/png'
-    return `data:${contentType};base64,${base64}`
+    return Buffer.from(buffer)
   } catch (error) {
     console.error('[Test Invoice] Error fetching logo:', error)
     return null
@@ -115,15 +121,14 @@ export async function POST(request: NextRequest) {
       paymentId: 'test_payment_' + Date.now()
     }
 
-    // Get logo - use base64 as primary option (works in all email clients without external requests)
+    // Get logo as Buffer for inline attachment (CID reference) - best for Outlook
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
     const logoUrl = process.env.INVOICE_LOGO_URL || `${baseUrl}/logo.png`
-    // Fetch as base64 for inline embedding (best for email clients)
-    const logoBase64 = await getLogoAsBase64(logoUrl)
+    const logoBuffer = await getLogoAsBuffer(logoUrl)
     
-    // Prefer base64 over URL for email client compatibility (works in all clients)
-    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoBase64 || logoUrl, logoUrl)
-    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoBase64 || logoUrl, logoUrl)
+    // Generate HTML with CID reference for inline attachment
+    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, !!logoBuffer)
+    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, !!logoBuffer)
 
     // Generate PDF
     const pdfBuffer = await generatePDFFromHTML(customerHtml)
@@ -132,23 +137,33 @@ export async function POST(request: NextRequest) {
       content: pdfBuffer
     } : undefined
 
-    // Send test customer invoice with PDF
+    // Prepare inline image for CID reference (if logo available)
+    const inlineLogo = logoBuffer ? {
+      content: logoBuffer,
+      cid: 'logo',
+      contentType: 'image/png'
+    } : undefined
+
+    // Send test customer invoice with PDF and inline logo
     const customerSubject = `[TEST] Factuur ${testInvoiceData.orderNumber} - Studio Insight`
     const customerResult = await brevoSendEmail(
       testEmail,
       customerSubject,
       customerHtml,
       'Test Gebruiker',
-      pdfAttachment
+      pdfAttachment,
+      inlineLogo
     )
 
-    // Send test admin invoice
+    // Send test admin invoice with inline logo
     const adminSubject = `[TEST ADMIN] Factuur ${testInvoiceData.orderNumber} - ${testInvoiceData.customer.name}`
     const adminResult = await brevoSendEmail(
       testEmail,
       adminSubject,
       adminHtml,
-      'Studio Insight'
+      'Studio Insight',
+      undefined,
+      inlineLogo
     )
 
     if (customerResult.sent && adminResult.sent) {
@@ -225,15 +240,14 @@ export async function GET(request: NextRequest) {
       paymentId: 'test_payment_' + Date.now()
     }
 
-    // Get logo - use base64 as primary option (works in all email clients without external requests)
+    // Get logo as Buffer for inline attachment (CID reference) - best for Outlook
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
     const logoUrl = process.env.INVOICE_LOGO_URL || `${baseUrl}/logo.png`
-    // Fetch as base64 for inline embedding (best for email clients)
-    const logoBase64 = await getLogoAsBase64(logoUrl)
+    const logoBuffer = await getLogoAsBuffer(logoUrl)
     
-    // Prefer base64 over URL for email client compatibility (works in all clients)
-    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoBase64 || logoUrl, logoUrl)
-    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoBase64 || logoUrl, logoUrl)
+    // Generate HTML with CID reference for inline attachment
+    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, !!logoBuffer)
+    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, !!logoBuffer)
 
     // Generate PDF
     const pdfBuffer = await generatePDFFromHTML(customerHtml)
