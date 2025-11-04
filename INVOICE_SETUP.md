@@ -27,14 +27,43 @@ Voeg deze variabelen toe aan je Vercel environment variables of `.env.local`:
 ```env
 # Bedrijfsgegevens (optioneel - standaard waarden worden gebruikt als niet ingesteld)
 INVOICE_COMPANY_NAME=Studio Insight
-INVOICE_COMPANY_ADDRESS=Straatnaam 123
-INVOICE_COMPANY_CITY=Amsterdam
-INVOICE_COMPANY_POSTCODE=1234 AB
+INVOICE_COMPANY_ADDRESS=De Veken 122b
+INVOICE_COMPANY_CITY=Opmeer
+INVOICE_COMPANY_POSTCODE=1716 KG
 INVOICE_COMPANY_COUNTRY=Nederland
 INVOICE_COMPANY_VAT=NL123456789B01  # BTW nummer
 INVOICE_COMPANY_EMAIL=info@studio-insight.nl  # Waar facturen naartoe gaan
 INVOICE_COMPANY_PHONE=+31 20 123 4567
+INVOICE_LOGO_URL=https://studio-insight.nl/logo.png  # Logo URL (optioneel)
 ```
+
+### PDF Generatie (optioneel - voor PDF attachments):
+
+Het systeem ondersteunt **3 verschillende PDF API's** (kies er één):
+
+**Optie 1: Doppio (Aanbevolen - Gratis tier beschikbaar)**
+```env
+DOPPIO_API_KEY=jouw_doppio_api_key
+```
+- Registreer op https://doppio.sh
+- Gratis tier: 100 PDF's/maand
+- Snel en betrouwbaar
+
+**Optie 2: HTMLtoPDF.io (Alternatief)**
+```env
+HTMLPDF_API_KEY=jouw_htmlpdf_api_key
+```
+- Registreer op https://htmlpdf.io
+- Gratis tier beschikbaar
+
+**Optie 3: Gotenberg (Self-hosted)**
+```env
+GOTENBERG_URL=https://jouw-gotenberg-instance.com
+```
+- Open source, zelf hosten
+- Geen API key nodig
+
+**Let op:** Als geen PDF API is geconfigureerd, worden facturen **zonder PDF attachment** verstuurd (alleen HTML e-mail met inline logo).
 
 ### Standaard Waarden
 
@@ -46,19 +75,29 @@ Als je geen environment variabelen instelt, worden deze standaard waarden gebrui
 ## Factuur Details
 
 ### Klant Factuur bevat:
+- **Logo** (inline base64 - werkt in alle e-mail clients)
 - Factuurnummer (order_number)
 - Orderdatum en betaaldatum
 - Klantgegevens (naam, email, adres)
 - Productenlijst met prijzen
 - Totaalbedrag
 - Bedrijfsgegevens (jullie gegevens)
+- **PDF attachment** (als PDF API is geconfigureerd)
 
 ### Administratie Factuur bevat:
+- Logo (inline base64)
 - Alle klantgegevens
 - Order ID en payment ID
 - Volledige productenlijst
 - Totaalbedrag
 - Markering als "ADMIN" factuur
+
+### PDF Attachment:
+- Automatisch gegenereerd van klant factuur HTML
+- Wordt meegestuurd als attachment aan:
+  - Klant factuur e-mail
+  - Kopie factuur naar info@studio-insight.nl
+- Bestandsnaam: `Factuur_[ORDERNUMMER].pdf`
 
 ## Testen
 

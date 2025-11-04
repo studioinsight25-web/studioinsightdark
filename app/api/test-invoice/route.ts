@@ -22,28 +22,53 @@ async function getLogoAsBase64(logoUrl?: string): Promise<string | null> {
 
 async function generatePDFFromHTML(html: string): Promise<Buffer | null> {
   try {
-    // Try to import puppeteer - if not available, return null gracefully
-    let puppeteer
-    try {
-      puppeteer = await import('puppeteer')
-    } catch (importError) {
-      console.warn('[Test Invoice] Puppeteer not available - PDF generation skipped')
-      return null
+    // Use Doppio API (lightweight, no build dependencies)
+    const doppioApiKey = process.env.DOPPIO_API_KEY
+    if (doppioApiKey) {
+      const response = await fetch('https://api.doppio.sh/v1/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${doppioApiKey}`
+        },
+        body: JSON.stringify({
+          html: html,
+          format: 'A4',
+          printBackground: true,
+          margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' }
+        })
+      })
+      
+      if (response.ok) {
+        const pdfBuffer = await response.arrayBuffer()
+        return Buffer.from(pdfBuffer)
+      }
     }
     
-    const browser = await puppeteer.default.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
-    })
-    const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: 'networkidle0' })
-    const pdf = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' }
-    })
-    await browser.close()
-    return Buffer.from(pdf)
+    // Alternative: HTMLtoPDF.io
+    const htmlpdfApiKey = process.env.HTMLPDF_API_KEY
+    if (htmlpdfApiKey) {
+      const response = await fetch('https://htmlpdf.io/api/v1/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': htmlpdfApiKey
+        },
+        body: JSON.stringify({
+          html: html,
+          format: 'A4',
+          margin: '20mm'
+        })
+      })
+      
+      if (response.ok) {
+        const pdfBuffer = await response.arrayBuffer()
+        return Buffer.from(pdfBuffer)
+      }
+    }
+    
+    console.warn('[Test Invoice] PDF generation skipped - no API configured')
+    return null
   } catch (error) {
     console.error('[Test Invoice] Error generating PDF:', error)
     return null

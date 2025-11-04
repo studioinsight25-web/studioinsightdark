@@ -31,47 +31,84 @@ async function getLogoAsBase64(logoUrl?: string): Promise<string | null> {
   }
 }
 
-// Generate PDF from HTML using Puppeteer (optional - only if installed)
+// Generate PDF from HTML using external API (lightweight, no build dependencies)
 async function generatePDFFromHTML(html: string): Promise<Buffer | null> {
   try {
-    // Try to import puppeteer - if not available, return null gracefully
-    let puppeteer
-    try {
-      puppeteer = await import('puppeteer')
-    } catch (importError) {
-      console.warn('[Invoice] Puppeteer not available - PDF generation skipped. Install with: npm install puppeteer')
-      return null
+    // Option 1: Use Doppio API (free tier available)
+    const doppioApiKey = process.env.DOPPIO_API_KEY
+    if (doppioApiKey) {
+      const response = await fetch('https://api.doppio.sh/v1/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${doppioApiKey}`
+        },
+        body: JSON.stringify({
+          html: html,
+          format: 'A4',
+          printBackground: true,
+          margin: {
+            top: '20mm',
+            right: '15mm',
+            bottom: '20mm',
+            left: '15mm'
+          }
+        })
+      })
+      
+      if (response.ok) {
+        const pdfBuffer = await response.arrayBuffer()
+        return Buffer.from(pdfBuffer)
+      } else {
+        console.warn('[Invoice] Doppio API error:', await response.text())
+      }
     }
     
-    const browser = await puppeteer.default.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu'
-      ]
-    })
-    
-    const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: 'networkidle0' })
-    
-    const pdf = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '20mm',
-        right: '15mm',
-        bottom: '20mm',
-        left: '15mm'
+    // Option 2: Use HTMLtoPDF.io API (alternative)
+    const htmlpdfApiKey = process.env.HTMLPDF_API_KEY
+    if (htmlpdfApiKey) {
+      const response = await fetch('https://htmlpdf.io/api/v1/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': htmlpdfApiKey
+        },
+        body: JSON.stringify({
+          html: html,
+          format: 'A4',
+          margin: '20mm'
+        })
+      })
+      
+      if (response.ok) {
+        const pdfBuffer = await response.arrayBuffer()
+        return Buffer.from(pdfBuffer)
       }
-    })
+    }
     
-    await browser.close()
-    return Buffer.from(pdf)
+    // Option 3: Fallback - use browser print API (via gotenberg if available)
+    const gotenbergUrl = process.env.GOTENBERG_URL
+    if (gotenbergUrl) {
+      const formData = new FormData()
+      formData.append('html', new Blob([html], { type: 'text/html' }))
+      formData.append('format', 'A4')
+      
+      const response = await fetch(`${gotenbergUrl}/forms/chromium/convert/html`, {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (response.ok) {
+        const pdfBuffer = await response.arrayBuffer()
+        return Buffer.from(pdfBuffer)
+      }
+    }
+    
+    // If no API is configured, return null (email will still be sent without PDF)
+    console.warn('[Invoice] No PDF API configured. Set DOPPIO_API_KEY, HTMLPDF_API_KEY, or GOTENBERG_URL')
+    return null
   } catch (error) {
     console.error('[Invoice] Error generating PDF:', error)
-    // If Puppeteer fails, return null (email will still be sent without PDF)
     return null
   }
 }
@@ -450,7 +487,7 @@ export async function sendInvoiceEmails(orderId: string): Promise<{ customerSent
     const customerHtml = generateCustomerInvoiceHTML(invoiceData, logoBase64)
     const adminHtml = generateAdminInvoiceHTML(invoiceData, logoBase64)
 
-    // Generate PDF from customer invoice HTML
+    // Generate PDF from customer invoice HTML (using external API - lightweight)
     const pdfBuffer = await generatePDFFromHTML(customerHtml)
     const pdfAttachment = pdfBuffer ? {
       name: `Factuur_${invoiceData.orderNumber}.pdf`,
@@ -460,7 +497,7 @@ export async function sendInvoiceEmails(orderId: string): Promise<{ customerSent
     if (pdfBuffer) {
       console.log(`[Invoice] PDF generated successfully (${pdfBuffer.length} bytes)`)
     } else {
-      console.warn(`[Invoice] PDF generation failed or skipped`)
+      console.warn(`[Invoice] PDF generation skipped - no API configured. Add DOPPIO_API_KEY or HTMLPDF_API_KEY to enable PDF attachments`)
     }
 
     // Send invoice to customer with PDF attachment
