@@ -86,21 +86,28 @@ async function generatePDFFromHTML(html: string): Promise<Buffer | null> {
       }
     }
     
-    // Option 3: Fallback - use browser print API (via gotenberg if available)
+    // Option 3: Fallback - use Gotenberg (self-hosted) if available
     const gotenbergUrl = process.env.GOTENBERG_URL
     if (gotenbergUrl) {
-      const formData = new FormData()
-      formData.append('html', new Blob([html], { type: 'text/html' }))
-      formData.append('format', 'A4')
-      
-      const response = await fetch(`${gotenbergUrl}/forms/chromium/convert/html`, {
-        method: 'POST',
-        body: formData
-      })
-      
-      if (response.ok) {
-        const pdfBuffer = await response.arrayBuffer()
-        return Buffer.from(pdfBuffer)
+      try {
+        // Use node-fetch FormData if available, otherwise skip
+        const { FormData: NodeFormData, Blob: NodeBlob } = await import('node-fetch')
+        const formData = new NodeFormData()
+        const blob = new NodeBlob([html], { type: 'text/html' })
+        formData.append('html', blob)
+        formData.append('format', 'A4')
+        
+        const response = await fetch(`${gotenbergUrl}/forms/chromium/convert/html`, {
+          method: 'POST',
+          body: formData as any
+        })
+        
+        if (response.ok) {
+          const pdfBuffer = await response.arrayBuffer()
+          return Buffer.from(pdfBuffer)
+        }
+      } catch (gotenbergError) {
+        console.warn('[Invoice] Gotenberg not available:', gotenbergError)
       }
     }
     
