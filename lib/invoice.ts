@@ -195,8 +195,10 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, logoSrc?: string 
   const subtotalFormatted = formatPrice(data.subtotal)
   const totalFormatted = formatPrice(data.total)
   
-  // Prefer URL over base64 for email client compatibility
-  const finalLogoSrc = logoUrl || logoSrc || ''
+  // Prefer base64 over URL for email client compatibility (works in all clients without external requests)
+  // Base64 is inline embedded, so it works even when email clients block external images
+  const finalLogoSrc = logoSrc || logoUrl || ''
+  const isBase64 = finalLogoSrc.startsWith('data:')
   
   return `
     <!DOCTYPE html>
@@ -218,12 +220,19 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, logoSrc?: string 
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                   <tr>
                     <td align="center" style="padding: 15px;">
-                      <img src="${logoUrl || finalLogoSrc}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
+                      ${isBase64 ? `
+                        <!-- Outlook with base64 -->
+                        <img src="${finalLogoSrc}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
+                      ` : `
+                        <!-- Outlook with URL fallback -->
+                        <img src="${logoUrl || finalLogoSrc}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
+                      `}
                     </td>
                   </tr>
                 </table>
                 <![endif]-->
                 <!--[if !mso]><!-->
+                <!-- Modern email clients: use base64 if available, otherwise URL -->
                 <img src="${finalLogoSrc}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
                 <!--<![endif]-->
               </div>
@@ -317,8 +326,9 @@ export function generateAdminInvoiceHTML(data: InvoiceData, logoSrc?: string | n
   const subtotalFormatted = formatPrice(data.subtotal)
   const totalFormatted = formatPrice(data.total)
   
-  // Prefer URL over base64 for email client compatibility
-  const finalLogoSrc = logoUrl || logoSrc || ''
+  // Prefer base64 over URL for email client compatibility (works in all clients without external requests)
+  const finalLogoSrc = logoSrc || logoUrl || ''
+  const isBase64 = finalLogoSrc.startsWith('data:')
   
   return `
     <!DOCTYPE html>
@@ -340,12 +350,19 @@ export function generateAdminInvoiceHTML(data: InvoiceData, logoSrc?: string | n
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                   <tr>
                     <td align="center" style="padding: 15px;">
-                      <img src="${logoUrl || finalLogoSrc}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
+                      ${isBase64 ? `
+                        <!-- Outlook with base64 -->
+                        <img src="${finalLogoSrc}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
+                      ` : `
+                        <!-- Outlook with URL fallback -->
+                        <img src="${logoUrl || finalLogoSrc}" alt="${company.name}" width="250" style="background: white; padding: 15px; border-radius: 12px; display: block; max-width: 250px; height: auto; border: 0;">
+                      `}
                     </td>
                   </tr>
                 </table>
                 <![endif]-->
                 <!--[if !mso]><!-->
+                <!-- Modern email clients: use base64 if available, otherwise URL -->
                 <img src="${finalLogoSrc}" alt="${company.name}" style="max-width: 250px; width: 100%; height: auto; background: white; padding: 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 0; outline: none; text-decoration: none;">
                 <!--<![endif]-->
               </div>
@@ -532,34 +549,39 @@ export async function sendInvoiceEmails(orderId: string): Promise<{ customerSent
     const company = getCompanyDetails()
     const adminEmail = company.email
 
-    // For email clients, use URL instead of base64 (better compatibility)
-    // Only use base64 as fallback if URL is not available
+    // For email clients, use base64 as primary option (works in all clients without external requests)
+    // Base64 is inline embedded, so it works even when email clients block external images
     let logoBase64: string | null = null
     let logoUrl: string | null = null
     
-    // If logo URL is provided and accessible, use it directly (best for email clients)
+    // If logo URL is provided, fetch it as base64 for inline embedding
     if (company.logoUrl && !company.logoUrl.startsWith('data:')) {
       logoUrl = company.logoUrl
-      // Also try to fetch as base64 for modern email clients that support it
+      // Fetch as base64 for inline embedding (best for email clients)
       try {
         logoBase64 = await getLogoAsBase64(company.logoUrl)
+        if (logoBase64) {
+          console.log(`[Invoice] Logo fetched as base64 (${logoBase64.length} chars)`)
+        }
       } catch (error) {
-        console.warn(`[Invoice] Could not fetch logo as base64, using URL only`)
+        console.warn(`[Invoice] Could not fetch logo as base64, will use URL fallback:`, error)
       }
     } else if (company.logoUrl && company.logoUrl.startsWith('data:')) {
       // Already a data URL
       logoBase64 = company.logoUrl
+      console.log(`[Invoice] Logo already in base64 format`)
     }
     
-    if (logoUrl || logoBase64) {
-      console.log(`[Invoice] Logo available - URL: ${!!logoUrl}, Base64: ${!!logoBase64}`)
+    if (logoBase64 || logoUrl) {
+      console.log(`[Invoice] Logo available - Base64: ${!!logoBase64}, URL fallback: ${!!logoUrl}`)
     } else {
       console.warn(`[Invoice] Logo not available`)
     }
 
-    // Generate HTML with logo (prefer URL over base64 for email compatibility)
-    const customerHtml = generateCustomerInvoiceHTML(invoiceData, logoUrl || logoBase64, logoUrl)
-    const adminHtml = generateAdminInvoiceHTML(invoiceData, logoUrl || logoBase64, logoUrl)
+    // Generate HTML with logo (prefer base64 over URL for email compatibility)
+    // Base64 works in all email clients without external requests
+    const customerHtml = generateCustomerInvoiceHTML(invoiceData, logoBase64 || logoUrl, logoUrl)
+    const adminHtml = generateAdminInvoiceHTML(invoiceData, logoBase64 || logoUrl, logoUrl)
 
     // Generate PDF from customer invoice HTML (using external API - lightweight)
     const pdfBuffer = await generatePDFFromHTML(customerHtml)

@@ -115,14 +115,15 @@ export async function POST(request: NextRequest) {
       paymentId: 'test_payment_' + Date.now()
     }
 
-    // Get logo - use URL for better email client compatibility
+    // Get logo - use base64 as primary option (works in all email clients without external requests)
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
     const logoUrl = process.env.INVOICE_LOGO_URL || `${baseUrl}/logo.png`
-    // Use URL directly (better for email clients) instead of base64
-    const logoBase64 = await getLogoAsBase64(logoUrl) // Keep as fallback
+    // Fetch as base64 for inline embedding (best for email clients)
+    const logoBase64 = await getLogoAsBase64(logoUrl)
     
-    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoUrl || logoBase64, logoUrl)
-    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoUrl || logoBase64, logoUrl)
+    // Prefer base64 over URL for email client compatibility (works in all clients)
+    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoBase64 || logoUrl, logoUrl)
+    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoBase64 || logoUrl, logoUrl)
 
     // Generate PDF
     const pdfBuffer = await generatePDFFromHTML(customerHtml)
@@ -224,14 +225,15 @@ export async function GET(request: NextRequest) {
       paymentId: 'test_payment_' + Date.now()
     }
 
-    // Get logo - use URL for better email client compatibility
+    // Get logo - use base64 as primary option (works in all email clients without external requests)
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
     const logoUrl = process.env.INVOICE_LOGO_URL || `${baseUrl}/logo.png`
-    // Use URL directly (better for email clients) instead of base64
-    const logoBase64 = await getLogoAsBase64(logoUrl) // Keep as fallback
+    // Fetch as base64 for inline embedding (best for email clients)
+    const logoBase64 = await getLogoAsBase64(logoUrl)
     
-    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoUrl || logoBase64, logoUrl)
-    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoUrl || logoBase64, logoUrl)
+    // Prefer base64 over URL for email client compatibility (works in all clients)
+    const customerHtml = generateCustomerInvoiceHTML(testInvoiceData, logoBase64 || logoUrl, logoUrl)
+    const adminHtml = generateAdminInvoiceHTML(testInvoiceData, logoBase64 || logoUrl, logoUrl)
 
     // Generate PDF
     const pdfBuffer = await generatePDFFromHTML(customerHtml)
