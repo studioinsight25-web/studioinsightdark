@@ -364,12 +364,23 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, logoUrl?: string 
         
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
           <thead>
+            <!-- Outlook: Use solid background color -->
+            <!--[if mso]>
+            <tr style="background-color: #0ea5e9;">
+              <th style="padding: 18px; text-align: left; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Product</th>
+              <th style="padding: 18px; text-align: center; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Aantal</th>
+              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Prijs</th>
+              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Subtotaal</th>
+            </tr>
+            <![endif]-->
+            <!--[if !mso]><!-->
             <tr style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: white;">
               <th style="padding: 18px; text-align: left; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Product</th>
               <th style="padding: 18px; text-align: center; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Aantal</th>
               <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Prijs</th>
               <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Subtotaal</th>
             </tr>
+            <!--<![endif]-->
           </thead>
           <tbody>
             ${data.items.map((item, index) => `
@@ -517,12 +528,23 @@ export function generateAdminInvoiceHTML(data: InvoiceData, logoUrl?: string | n
         
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
           <thead>
+            <!-- Outlook: Use solid background color -->
+            <!--[if mso]>
+            <tr style="background-color: #dc2626;">
+              <th style="padding: 18px; text-align: left; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Product</th>
+              <th style="padding: 18px; text-align: center; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Aantal</th>
+              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Prijs</th>
+              <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">Subtotaal</th>
+            </tr>
+            <![endif]-->
+            <!--[if !mso]><!-->
             <tr style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white;">
               <th style="padding: 18px; text-align: left; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Product</th>
               <th style="padding: 18px; text-align: center; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Aantal</th>
               <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Prijs</th>
               <th style="padding: 18px; text-align: right; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Subtotaal</th>
             </tr>
+            <!--<![endif]-->
           </thead>
           <tbody>
             ${data.items.map((item, index) => `
