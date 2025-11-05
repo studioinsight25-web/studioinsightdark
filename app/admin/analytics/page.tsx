@@ -17,9 +17,13 @@ import {
 
 interface AnalyticsData {
   pageViews: number
+  pageViewsChange?: number
   uniqueVisitors: number
+  uniqueVisitorsChange?: number
   conversionRate: number
+  conversionRateChange?: number
   totalRevenue: number
+  revenueChange?: number
   topPages: Array<{
     page: string
     views: number
@@ -47,6 +51,7 @@ export default function AdminAnalytics() {
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState('7d')
   const [gaConnected, setGaConnected] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     loadAnalyticsData()
@@ -55,54 +60,59 @@ export default function AdminAnalytics() {
 
   const checkGoogleAnalyticsConnection = () => {
     // Check if Google Analytics is properly configured
-    const gaId = process.env.NEXT_PUBLIC_GA_ID || 'G-YPF60909JC'
-    setGaConnected(!!gaId && gaId !== 'G-XXXXXXXXXX')
+    // Note: process.env is not available in client components, so we check at build time
+    // For client-side, we can check if GA script is loaded
+    if (typeof window !== 'undefined') {
+      const gaLoaded = typeof (window as any).gtag !== 'undefined'
+      setGaConnected(gaLoaded)
+    } else {
+      setGaConnected(true) // Assume connected on server
+    }
   }
 
-  const loadAnalyticsData = async () => {
+  const loadAnalyticsData = async (isRefresh = false) => {
     try {
-      // For now, we'll use mock data since we need to integrate with Google Analytics API
-      // In a real implementation, you would fetch this from Google Analytics API
-      const mockData: AnalyticsData = {
-        pageViews: 12450,
-        uniqueVisitors: 3240,
-        conversionRate: 3.2,
-        totalRevenue: 15750, // in cents
-        topPages: [
-          { page: '/cursussen', views: 3420 },
-          { page: '/ebooks', views: 2890 },
-          { page: '/reviews', views: 2150 },
-          { page: '/over-ons', views: 1890 },
-          { page: '/contact', views: 1200 }
-        ],
-        topProducts: [
-          { product: 'Podcasten voor beginners', views: 890, conversions: 23 },
-          { product: 'Videobewerking fundamentals', views: 750, conversions: 18 },
-          { product: 'Content strategie masterclass', views: 680, conversions: 15 },
-          { product: 'E-mail marketing voor ondernemers', views: 620, conversions: 12 },
-          { product: 'SEO voor starters', views: 580, conversions: 10 }
-        ],
-        trafficSources: [
-          { source: 'Direct', visitors: 1200, percentage: 37 },
-          { source: 'Google Search', visitors: 980, percentage: 30 },
-          { source: 'Social Media', visitors: 650, percentage: 20 },
-          { source: 'Email', visitors: 410, percentage: 13 }
-        ],
-        recentActivity: [
-          { action: 'Purchase', user: 'user@example.com', timestamp: '2 minuten geleden', value: 19700 },
-          { action: 'Course View', user: 'student@example.com', timestamp: '5 minuten geleden' },
-          { action: 'Ebook Download', user: 'reader@example.com', timestamp: '8 minuten geleden' },
-          { action: 'Purchase', user: 'buyer@example.com', timestamp: '12 minuten geleden', value: 9700 },
-          { action: 'Review View', user: 'reviewer@example.com', timestamp: '15 minuten geleden' }
-        ]
+      if (isRefresh) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
       }
       
-      setAnalyticsData(mockData)
+      // Fetch real analytics data from API
+      const response = await fetch(`/api/admin/analytics?timeRange=${timeRange}`)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch analytics: ${response.statusText}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.error) {
+        throw new Error(data.error)
+      }
+      
+      setAnalyticsData(data)
     } catch (error) {
       console.error('Error loading analytics data:', error)
+      // Set fallback data if API fails
+      setAnalyticsData({
+        pageViews: 0,
+        uniqueVisitors: 0,
+        conversionRate: 0,
+        totalRevenue: 0,
+        topPages: [],
+        topProducts: [],
+        trafficSources: [],
+        recentActivity: []
+      })
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
+  }
+  
+  const handleRefresh = () => {
+    loadAnalyticsData(true)
   }
 
   if (loading) {
@@ -140,11 +150,12 @@ export default function AdminAnalytics() {
               <option value="90d">Laatste 90 dagen</option>
             </select>
             <button
-              onClick={loadAnalyticsData}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-black rounded-lg hover:bg-primary/90 transition-colors"
+              onClick={handleRefresh}
+              disabled={refreshing || loading}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-black rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <RefreshCw className="w-4 h-4" />
-              Vernieuwen
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Laden...' : 'Vernieuwen'}
             </button>
           </div>
         </div>
@@ -184,8 +195,12 @@ export default function AdminAnalytics() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-text-secondary text-sm">Paginaweergaven</p>
-                <p className="text-2xl font-bold text-white">{analyticsData?.pageViews.toLocaleString()}</p>
-                <p className="text-green-400 text-sm">+12% vs vorige periode</p>
+                <p className="text-2xl font-bold text-white">{analyticsData?.pageViews.toLocaleString() || 0}</p>
+                {analyticsData?.pageViewsChange !== undefined && (
+                  <p className={`text-sm ${analyticsData.pageViewsChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {analyticsData.pageViewsChange >= 0 ? '+' : ''}{analyticsData.pageViewsChange.toFixed(1)}% vs vorige periode
+                  </p>
+                )}
               </div>
               <Eye className="w-8 h-8 text-primary" />
             </div>
@@ -195,8 +210,12 @@ export default function AdminAnalytics() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-text-secondary text-sm">Unieke Bezoekers</p>
-                <p className="text-2xl font-bold text-white">{analyticsData?.uniqueVisitors.toLocaleString()}</p>
-                <p className="text-green-400 text-sm">+8% vs vorige periode</p>
+                <p className="text-2xl font-bold text-white">{analyticsData?.uniqueVisitors.toLocaleString() || 0}</p>
+                {analyticsData?.uniqueVisitorsChange !== undefined && (
+                  <p className={`text-sm ${analyticsData.uniqueVisitorsChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {analyticsData.uniqueVisitorsChange >= 0 ? '+' : ''}{analyticsData.uniqueVisitorsChange.toFixed(1)}% vs vorige periode
+                  </p>
+                )}
               </div>
               <Users className="w-8 h-8 text-blue-400" />
             </div>
@@ -206,8 +225,12 @@ export default function AdminAnalytics() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-text-secondary text-sm">Conversiepercentage</p>
-                <p className="text-2xl font-bold text-white">{analyticsData?.conversionRate}%</p>
-                <p className="text-green-400 text-sm">+0.5% vs vorige periode</p>
+                <p className="text-2xl font-bold text-white">{analyticsData?.conversionRate.toFixed(2) || 0}%</p>
+                {analyticsData?.conversionRateChange !== undefined && (
+                  <p className={`text-sm ${analyticsData.conversionRateChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {analyticsData.conversionRateChange >= 0 ? '+' : ''}{analyticsData.conversionRateChange.toFixed(1)}% vs vorige periode
+                  </p>
+                )}
               </div>
               <TrendingUp className="w-8 h-8 text-green-400" />
             </div>
@@ -218,7 +241,11 @@ export default function AdminAnalytics() {
               <div>
                 <p className="text-text-secondary text-sm">Totale Omzet</p>
                 <p className="text-2xl font-bold text-white">€{((analyticsData?.totalRevenue || 0) / 100).toFixed(2)}</p>
-                <p className="text-green-400 text-sm">+15% vs vorige periode</p>
+                {analyticsData?.revenueChange !== undefined && (
+                  <p className={`text-sm ${analyticsData.revenueChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {analyticsData.revenueChange >= 0 ? '+' : ''}{analyticsData.revenueChange.toFixed(1)}% vs vorige periode
+                  </p>
+                )}
               </div>
               <DollarSign className="w-8 h-8 text-green-400" />
             </div>
