@@ -41,10 +41,13 @@ export async function GET(request: NextRequest) {
         }
       ],
       subtotal: subtotalExclVAT,
-      vatAmount: vatAmount,
+      vatAmount: vatAmount, // Explicitly set, always has a value
       total: totalInclVAT,
       paymentId: 'test_payment_' + Date.now()
     }
+
+    // Ensure vatAmount is always defined for TypeScript
+    const safeVatAmount = testInvoiceData.vatAmount ?? 0
 
     // Get logo URL
     const logoUrl = getLogoUrl()
@@ -61,10 +64,10 @@ export async function GET(request: NextRequest) {
       success: true,
       invoiceData: {
         subtotal: testInvoiceData.subtotal,
-        vatAmount: testInvoiceData.vatAmount || 0,
+        vatAmount: safeVatAmount,
         total: testInvoiceData.total,
         subtotalFormatted: (testInvoiceData.subtotal / 100).toFixed(2).replace('.', ','),
-        vatFormatted: ((testInvoiceData.vatAmount || 0) / 100).toFixed(2).replace('.', ','),
+        vatFormatted: (safeVatAmount / 100).toFixed(2).replace('.', ','),
         totalFormatted: (testInvoiceData.total / 100).toFixed(2).replace('.', ',')
       },
       htmlExtracted: {
