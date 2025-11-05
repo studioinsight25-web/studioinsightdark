@@ -16,8 +16,9 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
       }
     }
 
-    const title = product.metaTitle || generateMetaTitle(product)
-    const description = product.metaDescription || generateMetaDescription(product)
+    // Use generated titles/descriptions (metaTitle/metaDescription not in Product interface)
+    const title = generateMetaTitle(product)
+    const description = generateMetaDescription(product)
     const keywords = generateKeywords(product).join(', ')
     const imageUrl = product.imageUrl || `${baseUrl}/og-image.jpg`
     const productUrl = `${baseUrl}/products/${product.id}`
