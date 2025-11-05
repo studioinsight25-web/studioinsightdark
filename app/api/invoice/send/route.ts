@@ -71,14 +71,29 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Invoice Send] Looking for order with number: ${orderNumber}`)
 
-    // Find order by order_number
+    // Find order by order_number first, then try by ID if not found
     let orderResult
     try {
+      // First try by order_number
       orderResult = await DatabaseService.query(
         `SELECT id, user_id, order_number, status, total_amount, payment_id, created_at, updated_at, paid_at 
          FROM orders WHERE order_number = $1`,
         [orderNumber]
       )
+      
+      // If not found, try by ID (partial match or full UUID)
+      if (orderResult.length === 0) {
+        console.log(`[Invoice Send] Order not found by order_number, trying by ID...`)
+        try {
+          orderResult = await DatabaseService.query(
+            `SELECT id, user_id, order_number, status, total_amount, payment_id, created_at, updated_at, paid_at 
+             FROM orders WHERE id::text LIKE $1 OR id::text = $2`,
+            [`%${orderNumber}%`, orderNumber]
+          )
+        } catch (idError) {
+          console.log(`[Invoice Send] Error querying by ID:`, idError)
+        }
+      }
     } catch (error) {
       console.error('[Invoice Send] Error querying order:', error)
       return NextResponse.json(
@@ -90,7 +105,7 @@ export async function POST(request: NextRequest) {
     if (orderResult.length === 0) {
       console.error(`[Invoice Send] Order not found: ${orderNumber}`)
       return NextResponse.json(
-        { error: `Order not found: ${orderNumber}` },
+        { error: `Order not found: ${orderNumber}. Try using full order number (e.g., ORD-1234567890-ABC123) or order ID.` },
         { status: 404 }
       )
     }
@@ -204,14 +219,29 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Invoice Send] GET: Looking for order ${orderNumber}, test email: ${email || 'none'}`)
 
-    // Find order
+    // Find order by order_number first, then try by ID if not found
     let orderResult
     try {
+      // First try by order_number
       orderResult = await DatabaseService.query(
         `SELECT id, user_id, order_number, status, total_amount, payment_id, created_at, updated_at, paid_at 
          FROM orders WHERE order_number = $1`,
         [orderNumber]
       )
+      
+      // If not found, try by ID (partial match or full UUID)
+      if (orderResult.length === 0) {
+        console.log(`[Invoice Send] Order not found by order_number, trying by ID...`)
+        try {
+          orderResult = await DatabaseService.query(
+            `SELECT id, user_id, order_number, status, total_amount, payment_id, created_at, updated_at, paid_at 
+             FROM orders WHERE id::text LIKE $1 OR id::text = $2`,
+            [`%${orderNumber}%`, orderNumber]
+          )
+        } catch (idError) {
+          console.log(`[Invoice Send] Error querying by ID:`, idError)
+        }
+      }
     } catch (error) {
       console.error('[Invoice Send] Error querying order:', error)
       return NextResponse.json(
@@ -222,7 +252,7 @@ export async function GET(request: NextRequest) {
 
     if (orderResult.length === 0) {
       return NextResponse.json(
-        { error: `Order not found: ${orderNumber}` },
+        { error: `Order not found: ${orderNumber}. Try using full order number (e.g., ORD-1234567890-ABC123) or order ID.` },
         { status: 404 }
       )
     }
