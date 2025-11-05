@@ -61,10 +61,10 @@ export async function GET(request: NextRequest) {
       success: true,
       invoiceData: {
         subtotal: testInvoiceData.subtotal,
-        vatAmount: testInvoiceData.vatAmount,
+        vatAmount: testInvoiceData.vatAmount || 0,
         total: testInvoiceData.total,
         subtotalFormatted: (testInvoiceData.subtotal / 100).toFixed(2).replace('.', ','),
-        vatFormatted: (testInvoiceData.vatAmount / 100).toFixed(2).replace('.', ','),
+        vatFormatted: ((testInvoiceData.vatAmount || 0) / 100).toFixed(2).replace('.', ','),
         totalFormatted: (testInvoiceData.total / 100).toFixed(2).replace('.', ',')
       },
       htmlExtracted: {
