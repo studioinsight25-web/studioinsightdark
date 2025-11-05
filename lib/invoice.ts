@@ -580,7 +580,7 @@ export async function getInvoiceData(orderId: string): Promise<InvoiceData | nul
 
     return {
       orderId: order.id,
-      orderNumber: order.order_number || `ORD-${order.id.substring(0, 8).toUpperCase()}`,
+      orderNumber: order.order_number || `SI-${order.id.substring(0, 8).toUpperCase()}`,
       orderDate: order.created_at || new Date().toISOString(),
       paymentDate: order.paid_at || order.updated_at || new Date().toISOString(),
       customer: {

@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     // Create test invoice data with real products
     const testInvoiceData: InvoiceData = {
       orderId: 'test-order-' + Date.now(),
-      orderNumber: 'TEST-' + Date.now(),
+      orderNumber: 'SI-TEST-' + Date.now(),
       orderDate: new Date().toISOString(),
       paymentDate: new Date().toISOString(),
       customer: {
@@ -261,7 +261,7 @@ export async function GET(request: NextRequest) {
     // Create test invoice data with real products
     const testInvoiceData: InvoiceData = {
       orderId: 'test-order-' + Date.now(),
-      orderNumber: 'TEST-' + Date.now(),
+      orderNumber: 'SI-TEST-' + Date.now(),
       orderDate: new Date().toISOString(),
       paymentDate: new Date().toISOString(),
       customer: {

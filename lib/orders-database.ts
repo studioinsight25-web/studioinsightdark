@@ -29,8 +29,8 @@ export class DatabaseOrderService {
       const { randomUUID } = await import('crypto')
       const id = randomUUID()
       
-      // Generate order number (required field)
-      const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+      // Generate order number (required field) - Format: SI-{timestamp}-{random}
+      const orderNumber = `SI-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
       
       console.log(`[DatabaseOrderService] Creating order ${id} (${orderNumber}) for user ${orderData.userId}, status: ${orderData.status}, total: ${orderData.totalAmount}`)
       
