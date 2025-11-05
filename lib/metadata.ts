@@ -5,7 +5,7 @@ export const metadata: Metadata = {
     default: "Studio Insight - Ontwikkel jouw studio, je merk en je impact",
     template: "%s | Studio Insight"
   },
-  description: "Cursussen, e-books en reviews die je helpen om slimmer te groeien. Voor ondernemers en professionals.",
+  description: "Cursussen, e-books en reviews die je helpen om slimmer te groeien. Voor ondernemers en professionals in Nederland.",
   keywords: [
     "studio",
     "cursussen", 
@@ -17,7 +17,11 @@ export const metadata: Metadata = {
     "podcasten",
     "web development",
     "videobewerking",
-    "content strategie"
+    "content strategie",
+    "online cursussen nederland",
+    "e-learning nederland",
+    "digitale cursussen",
+    "ondernemerscursussen",
   ],
   authors: [{ name: "Studio Insight" }],
   creator: "Studio Insight",
@@ -27,16 +31,20 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'),
   alternates: {
     canonical: "/",
+    languages: {
+      'nl-NL': '/',
+      'nl': '/',
+    },
   },
   openGraph: {
     type: "website",
     locale: "nl_NL",
     url: "/",
     title: "Studio Insight - Ontwikkel jouw studio, je merk en je impact",
-    description: "Cursussen, e-books en reviews die je helpen om slimmer te groeien. Voor ondernemers en professionals.",
+    description: "Cursussen, e-books en reviews die je helpen om slimmer te groeien. Voor ondernemers en professionals in Nederland.",
     siteName: "Studio Insight",
     images: [
       {
@@ -50,7 +58,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Studio Insight - Ontwikkel jouw studio, je merk en je impact",
-    description: "Cursussen, e-books en reviews die je helpen om slimmer te groeien.",
+    description: "Cursussen, e-books en reviews die je helpen om slimmer te groeien. Voor ondernemers en professionals.",
     images: ["/og-image.jpg"],
   },
   robots: {
@@ -65,14 +73,12 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "your-google-verification-code",
+    google: process.env.GOOGLE_SITE_VERIFICATION || "your-google-verification-code",
+  },
+  other: {
+    'geo.region': 'NL',
+    'geo.placename': 'Nederland',
+    'geo.position': '52.7069;4.9444',
+    'ICBM': '52.7069, 4.9444',
   },
 }
-
-
-
-
-
-
-
-

@@ -23,6 +23,8 @@ import { useToast } from '@/hooks/useToast'
 import { CardSkeleton, TextSkeleton } from '@/components/LoadingSkeleton'
 // Removed direct database import - using API routes instead
 import SessionManager from '@/lib/session'
+import StructuredData from '@/components/StructuredData'
+import { getProductSchema, getBreadcrumbSchema } from '@/lib/seo'
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -167,10 +169,33 @@ export default function ProductDetailPage() {
     )
   }
 
+  // Generate structured data
+  const structuredData = []
+  if (product) {
+    const baseUrl = typeof window !== 'undefined' 
+      ? window.location.origin 
+      : process.env.NEXT_PUBLIC_BASE_URL || 'https://studio-insight.nl'
+    
+    structuredData.push(getProductSchema(product, baseUrl))
+    
+    // Add breadcrumbs
+    const breadcrumbItems = [
+      { name: 'Home', url: '/' },
+      { 
+        name: product.type === 'course' ? 'Cursussen' : product.type === 'ebook' ? 'E-books' : 'Reviews', 
+        url: `/${product.type === 'course' ? 'cursussen' : product.type === 'ebook' ? 'ebooks' : 'reviews'}` 
+      },
+      { name: product.name, url: `/products/${product.id}` }
+    ]
+    structuredData.push(getBreadcrumbSchema(breadcrumbItems, baseUrl))
+  }
+
   return (
-    <main className="min-h-screen bg-background" aria-label="Product detail pagina">
-      {/* Header */}
-      <section className="py-8 bg-gradient-to-r from-primary/10 to-transparent">
+    <>
+      {product && <StructuredData data={structuredData} />}
+      <main className="min-h-screen bg-background" aria-label="Product detail pagina">
+        {/* Header */}
+        <section className="py-8 bg-gradient-to-r from-primary/10 to-transparent">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="flex items-center gap-4 mb-6">
             <Link
@@ -330,5 +355,6 @@ export default function ProductDetailPage() {
         </div>
       </section>
     </main>
+    </>
   )
 }
