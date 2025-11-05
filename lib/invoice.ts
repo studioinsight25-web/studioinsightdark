@@ -112,8 +112,9 @@ export interface InvoiceData {
     price: number
     subtotal: number
   }>
-  subtotal: number
-  total: number
+  subtotal: number // Subtotaal exclusief BTW
+  vatAmount?: number // BTW bedrag (21%)
+  total: number // Totaal inclusief BTW
   paymentId?: string
 }
 
@@ -200,7 +201,11 @@ function formatDate(date: string | Date): string {
 // Generate invoice HTML for customer
 export function generateCustomerInvoiceHTML(data: InvoiceData, logoUrl?: string | null): string {
   const company = getCompanyDetails()
+  const VAT_RATE = 0.21
+  // Calculate VAT if not provided (backward compatibility)
+  const vatAmount = data.vatAmount !== undefined ? data.vatAmount : (data.total - data.subtotal)
   const subtotalFormatted = formatPrice(data.subtotal)
+  const vatFormatted = formatPrice(vatAmount)
   const totalFormatted = formatPrice(data.total)
   
   // Use ONLY HTTPS URLs - base64 does NOT work in Outlook
@@ -319,8 +324,16 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, logoUrl?: string 
           </tbody>
           <tfoot>
             <tr style="background: #f9fafb;">
-              <td colspan="3" style="padding: 12px 8px; text-align: right; font-weight: 600; font-size: 14px; color: #111827; border-top: 2px solid #e5e7eb;">Totaal:</td>
-              <td style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 16px; border-top: 2px solid #e5e7eb; color: #0ea5e9;">€ ${totalFormatted}</td>
+              <td colspan="3" style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 13px; color: #111827; border-top: 2px solid #e5e7eb;">Subtotaal (excl. BTW):</td>
+              <td style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 13px; border-top: 2px solid #e5e7eb; color: #374151;">€ ${subtotalFormatted}</td>
+            </tr>
+            <tr style="background: #f9fafb;">
+              <td colspan="3" style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 13px; color: #111827;">BTW (21%):</td>
+              <td style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 13px; color: #374151;">€ ${vatFormatted}</td>
+            </tr>
+            <tr style="background: #f9fafb;">
+              <td colspan="3" style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 16px; color: #111827; border-top: 2px solid #0ea5e9;">Totaal (incl. BTW):</td>
+              <td style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 16px; border-top: 2px solid #0ea5e9; color: #0ea5e9;">€ ${totalFormatted}</td>
             </tr>
           </tfoot>
         </table>
@@ -348,7 +361,11 @@ export function generateCustomerInvoiceHTML(data: InvoiceData, logoUrl?: string 
 // Generate invoice HTML for administration/internal use
 export function generateAdminInvoiceHTML(data: InvoiceData, logoUrl?: string | null): string {
   const company = getCompanyDetails()
+  const VAT_RATE = 0.21
+  // Calculate VAT if not provided (backward compatibility)
+  const vatAmount = data.vatAmount !== undefined ? data.vatAmount : (data.total - data.subtotal)
   const subtotalFormatted = formatPrice(data.subtotal)
+  const vatFormatted = formatPrice(vatAmount)
   const totalFormatted = formatPrice(data.total)
   
   // Use ONLY HTTPS URLs - base64 does NOT work in Outlook
@@ -463,8 +480,16 @@ export function generateAdminInvoiceHTML(data: InvoiceData, logoUrl?: string | n
           </tbody>
           <tfoot>
             <tr style="background: #f9fafb;">
-              <td colspan="3" style="padding: 12px 8px; text-align: right; font-weight: 600; font-size: 14px; color: #111827; border-top: 2px solid #e5e7eb;">Totaal:</td>
-              <td style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 16px; border-top: 2px solid #e5e7eb; color: #dc2626;">€ ${totalFormatted}</td>
+              <td colspan="3" style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 13px; color: #111827; border-top: 2px solid #e5e7eb;">Subtotaal (excl. BTW):</td>
+              <td style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 13px; border-top: 2px solid #e5e7eb; color: #374151;">€ ${subtotalFormatted}</td>
+            </tr>
+            <tr style="background: #f9fafb;">
+              <td colspan="3" style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 13px; color: #111827;">BTW (21%):</td>
+              <td style="padding: 10px 8px; text-align: right; font-weight: 600; font-size: 13px; color: #374151;">€ ${vatFormatted}</td>
+            </tr>
+            <tr style="background: #f9fafb;">
+              <td colspan="3" style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 16px; color: #111827; border-top: 2px solid #dc2626;">Totaal (incl. BTW):</td>
+              <td style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 16px; border-top: 2px solid #dc2626; color: #dc2626;">€ ${totalFormatted}</td>
             </tr>
           </tfoot>
         </table>
@@ -546,8 +571,12 @@ export async function getInvoiceData(orderId: string): Promise<InvoiceData | nul
       subtotal: parseFloat(item.price || '0') * parseInt(item.quantity || '1', 10)
     }))
 
-    const subtotal = items.reduce((sum: number, item: InvoiceItem) => sum + item.subtotal, 0)
-    const total = parseFloat(order.total_amount || '0')
+    // Calculate totals: prices in database are INCLUSIVE of VAT (21%)
+    // So we need to calculate: subtotal excl. VAT, VAT amount, and total incl. VAT
+    const totalInclVAT = parseFloat(order.total_amount || '0')
+    const VAT_RATE = 0.21
+    const subtotalExclVAT = Math.round(totalInclVAT / (1 + VAT_RATE))
+    const vatAmount = totalInclVAT - subtotalExclVAT
 
     return {
       orderId: order.id,
@@ -564,8 +593,9 @@ export async function getInvoiceData(orderId: string): Promise<InvoiceData | nul
         company: user.company_name || undefined
       },
       items,
-      subtotal,
-      total,
+      subtotal: subtotalExclVAT, // Subtotaal exclusief BTW
+      vatAmount: vatAmount, // BTW bedrag
+      total: totalInclVAT, // Totaal inclusief BTW
       paymentId: order.payment_id || undefined
     }
   } catch (error) {

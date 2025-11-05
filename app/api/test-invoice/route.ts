@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateCustomerInvoiceHTML, generateAdminInvoiceHTML, InvoiceData, getLogoUrl } from '@/lib/invoice'
 import { brevoSendEmail } from '@/lib/brevo'
+import { DatabaseProductService } from '@/lib/products-database'
 
 async function generatePDFFromHTML(html: string): Promise<Buffer | null> {
   try {
@@ -64,7 +65,53 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}))
     const testEmail = body.email || 'info@studio-insight.nl'
 
-    // Create test invoice data
+    // Fetch real products from database (1 course for test invoice)
+    const allProducts = await DatabaseProductService.getAllProducts()
+    const activeProducts = allProducts
+      .filter(p => p.isActive && p.price > 0 && p.type === 'course')
+      .slice(0, 1) // Take first 1 course
+    
+    // If no products found, use fallback test data
+    let invoiceItems: Array<{ name: string; quantity: number; price: number; subtotal: number }> = []
+    let totalInclVAT = 0
+    
+    if (activeProducts.length > 0) {
+      console.log(`[Test Invoice] Using ${activeProducts.length} real products from database`)
+      invoiceItems = activeProducts.map(product => {
+        const price = product.price // Price is already in cents and includes VAT
+        return {
+          name: product.name,
+          quantity: 1,
+          price: price,
+          subtotal: price
+        }
+      })
+      totalInclVAT = invoiceItems.reduce((sum, item) => sum + item.subtotal, 0)
+    } else {
+      console.log('[Test Invoice] No active products found, using fallback test data')
+      invoiceItems = [
+        {
+          name: 'Test Cursus - Marketing Masterclass',
+          quantity: 1,
+          price: 9900, // €99,00 in cents (inclusief BTW)
+          subtotal: 9900
+        },
+        {
+          name: 'Test E-book - Business Strategie',
+          quantity: 1,
+          price: 4900, // €49,00 in cents (inclusief BTW)
+          subtotal: 4900
+        }
+      ]
+      totalInclVAT = 14800
+    }
+
+    // Calculate BTW: prices are inclusive of VAT (21%)
+    const VAT_RATE = 0.21
+    const subtotalExclVAT = Math.round(totalInclVAT / (1 + VAT_RATE))
+    const vatAmount = totalInclVAT - subtotalExclVAT
+
+    // Create test invoice data with real products
     const testInvoiceData: InvoiceData = {
       orderId: 'test-order-' + Date.now(),
       orderNumber: 'TEST-' + Date.now(),
@@ -72,31 +119,21 @@ export async function POST(request: NextRequest) {
       paymentDate: new Date().toISOString(),
       customer: {
         name: 'Test Klant',
-        email: 'test@example.com',
+        email: testEmail,
         address: 'Teststraat 123',
         city: 'Amsterdam',
         postcode: '1234 AB',
         country: 'Nederland',
         company: 'Test Bedrijf BV'
       },
-      items: [
-        {
-          name: 'Test Cursus - Marketing Masterclass',
-          quantity: 1,
-          price: 9900, // €99,00 in cents
-          subtotal: 9900
-        },
-        {
-          name: 'Test E-book - Business Strategie',
-          quantity: 1,
-          price: 4900, // €49,00 in cents
-          subtotal: 4900
-        }
-      ],
-      subtotal: 14800,
-      total: 14800,
+      items: invoiceItems,
+      subtotal: subtotalExclVAT, // Subtotaal exclusief BTW
+      vatAmount: vatAmount, // BTW bedrag
+      total: totalInclVAT, // Totaal inclusief BTW
       paymentId: 'test_payment_' + Date.now()
     }
+    
+    console.log(`[Test Invoice] Generated invoice with ${invoiceItems.length} items, total: €${(totalInclVAT / 100).toFixed(2)}, VAT: €${(vatAmount / 100).toFixed(2)}`)
 
     // Get HTTPS logo URL (required for email clients)
     const logoUrl = getLogoUrl()
@@ -175,7 +212,53 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const email = searchParams.get('email') || 'info@studio-insight.nl'
 
-    // Create test invoice data
+    // Fetch real products from database (1 course for test invoice)
+    const allProducts = await DatabaseProductService.getAllProducts()
+    const activeProducts = allProducts
+      .filter(p => p.isActive && p.price > 0 && p.type === 'course')
+      .slice(0, 1) // Take first 1 course
+    
+    // If no products found, use fallback test data
+    let invoiceItems: Array<{ name: string; quantity: number; price: number; subtotal: number }> = []
+    let totalInclVAT = 0
+    
+    if (activeProducts.length > 0) {
+      console.log(`[Test Invoice] Using ${activeProducts.length} real products from database`)
+      invoiceItems = activeProducts.map(product => {
+        const price = product.price // Price is already in cents and includes VAT
+        return {
+          name: product.name,
+          quantity: 1,
+          price: price,
+          subtotal: price
+        }
+      })
+      totalInclVAT = invoiceItems.reduce((sum, item) => sum + item.subtotal, 0)
+    } else {
+      console.log('[Test Invoice] No active products found, using fallback test data')
+      invoiceItems = [
+        {
+          name: 'Test Cursus - Marketing Masterclass',
+          quantity: 1,
+          price: 9900, // €99,00 in cents (inclusief BTW)
+          subtotal: 9900
+        },
+        {
+          name: 'Test E-book - Business Strategie',
+          quantity: 1,
+          price: 4900, // €49,00 in cents (inclusief BTW)
+          subtotal: 4900
+        }
+      ]
+      totalInclVAT = 14800
+    }
+
+    // Calculate BTW: prices are inclusive of VAT (21%)
+    const VAT_RATE = 0.21
+    const subtotalExclVAT = Math.round(totalInclVAT / (1 + VAT_RATE))
+    const vatAmount = totalInclVAT - subtotalExclVAT
+
+    // Create test invoice data with real products
     const testInvoiceData: InvoiceData = {
       orderId: 'test-order-' + Date.now(),
       orderNumber: 'TEST-' + Date.now(),
@@ -183,31 +266,21 @@ export async function GET(request: NextRequest) {
       paymentDate: new Date().toISOString(),
       customer: {
         name: 'Test Klant',
-        email: 'test@example.com',
+        email: email,
         address: 'Teststraat 123',
         city: 'Amsterdam',
         postcode: '1234 AB',
         country: 'Nederland',
         company: 'Test Bedrijf BV'
       },
-      items: [
-        {
-          name: 'Test Cursus - Marketing Masterclass',
-          quantity: 1,
-          price: 9900,
-          subtotal: 9900
-        },
-        {
-          name: 'Test E-book - Business Strategie',
-          quantity: 1,
-          price: 4900,
-          subtotal: 4900
-        }
-      ],
-      subtotal: 14800,
-      total: 14800,
+      items: invoiceItems,
+      subtotal: subtotalExclVAT, // Subtotaal exclusief BTW
+      vatAmount: vatAmount, // BTW bedrag
+      total: totalInclVAT, // Totaal inclusief BTW
       paymentId: 'test_payment_' + Date.now()
     }
+    
+    console.log(`[Test Invoice] Generated invoice with ${invoiceItems.length} items, total: €${(totalInclVAT / 100).toFixed(2)}, VAT: €${(vatAmount / 100).toFixed(2)}`)
 
     // Get HTTPS logo URL (required for email clients)
     const logoUrl = getLogoUrl()
