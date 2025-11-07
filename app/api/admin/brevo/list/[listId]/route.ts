@@ -4,12 +4,12 @@ import { requireAdminAPI } from '@/lib/admin-auth'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { listId: string } }
+  { params }: { params: Promise<{ listId: string }> }
 ) {
   try {
     await requireAdminAPI()
 
-    const listIdRaw = params.listId
+    const { listId: listIdRaw } = await params
     const listId = Number(listIdRaw)
 
     if (!Number.isFinite(listId) || listId <= 0) {
