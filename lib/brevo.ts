@@ -338,4 +338,80 @@ export async function brevoSendEmail(
   }
 }
 
+export interface BrevoListContact {
+  email: string
+  name?: string | null
+  status?: string | null
+  attributes?: Record<string, any>
+  createdAt?: string | null
+  updatedAt?: string | null
+  listIds?: number[]
+}
+
+export async function brevoFetchListContacts(listId: number, maxContacts = 500): Promise<BrevoListContact[]> {
+  const apiKey = process.env.BREVO_API_KEY
+  if (!apiKey) {
+    throw new Error('BREVO_API_KEY not configured')
+  }
+
+  if (!Number.isFinite(listId)) {
+    throw new Error('Invalid Brevo list id')
+  }
+
+  const limit = 50
+  let offset = 0
+  const contacts: any[] = []
+
+  while (offset < maxContacts) {
+    const url = new URL(`https://api.brevo.com/v3/contacts/lists/${listId}/contacts`)
+    url.searchParams.set('limit', String(limit))
+    url.searchParams.set('offset', String(offset))
+    url.searchParams.set('sort', 'desc')
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        'api-key': apiKey,
+        accept: 'application/json'
+      }
+    })
+
+    const data = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      const message = data?.message || res.statusText || 'Brevo API error'
+      throw new Error(`${message} (status ${res.status})`)
+    }
+
+    const batch = Array.isArray(data?.contacts) ? data.contacts : []
+    if (batch.length === 0) {
+      break
+    }
+
+    contacts.push(...batch)
+    offset += batch.length
+
+    if (batch.length < limit || contacts.length >= maxContacts) {
+      break
+    }
+  }
+
+  return contacts.slice(0, maxContacts).map((contact: any) => {
+    const attributes = contact?.attributes || {}
+    const name = attributes.FIRSTNAME || attributes.firstname || attributes.NAME || attributes.name || null
+    const status = attributes.STATUS || attributes.status || null
+    const createdAt = contact?.createdAt || contact?.created_at || contact?.statistics?.firstEmailSent || null
+    const updatedAt = contact?.modifiedAt || contact?.modified_at || contact?.statistics?.lastModified || null
+
+    return {
+      email: contact?.email || '',
+      name,
+      status,
+      attributes,
+      createdAt,
+      updatedAt,
+      listIds: contact?.listIds || contact?.list_ids || []
+    }
+  }).filter((contact: BrevoListContact) => contact.email)
+}
+
 
