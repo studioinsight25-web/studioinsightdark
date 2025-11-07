@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lock, Mail, Eye, EyeOff, AlertCircle, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
@@ -17,6 +17,14 @@ export default function LoginPage() {
   const [twoFaOpen, setTwoFaOpen] = useState(false)
   const [qr, setQr] = useState<string>('')
   const [token, setToken] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const twoFaInputRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    if (twoFaOpen && twoFaInputRef.current) {
+      twoFaInputRef.current.focus()
+    }
+  }, [twoFaOpen])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -294,37 +302,50 @@ export default function LoginPage() {
             ) : (
               <p className="text-sm text-text-secondary mb-4">Voer de 6‑cijferige code uit je authenticator app in.</p>
             )}
-            <input
-              type="text"
-              inputMode="numeric"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="6‑cijferige code"
-              className="w-full px-3 py-2 bg-dark-section border border-dark-border rounded-lg text-white placeholder-text-secondary focus:outline-none focus:border-primary mb-4"
-            />
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={async () => {
-                  try {
-                    const res = await fetch('/api/auth/2fa/verify', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      credentials: 'same-origin',
-                      body: JSON.stringify({ token })
-                    })
-                    const data = await res.json()
-                    if (!res.ok) throw new Error(data?.error || data?.details || 'Verificatie mislukt')
-                    setTwoFaOpen(false)
-                    window.location.href = '/admin'
-                  } catch (e) {
-                    alert(e instanceof Error ? e.message : 'Verificatie mislukt')
-                  }
-                }}
-                className="px-4 py-2 rounded-lg bg-primary text-black font-semibold hover:bg-primary/90"
-              >
-                Verifiëren
-              </button>
-            </div>
+            <form
+              onSubmit={async (event) => {
+                event.preventDefault()
+                if (!token || verifying) return
+                try {
+                  setVerifying(true)
+                  const res = await fetch('/api/auth/2fa/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ token })
+                  })
+                  const data = await res.json()
+                  if (!res.ok) throw new Error(data?.error || data?.details || 'Verificatie mislukt')
+                  setTwoFaOpen(false)
+                  window.location.href = '/admin'
+                } catch (e) {
+                  alert(e instanceof Error ? e.message : 'Verificatie mislukt')
+                } finally {
+                  setVerifying(false)
+                }
+              }}
+            >
+              <input
+                ref={twoFaInputRef}
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={token}
+                onChange={(e) => setToken(e.target.value.replace(/[^0-9]/g, ''))}
+                maxLength={6}
+                placeholder="6‑cijferige code"
+                className="w-full px-3 py-2 bg-dark-section border border-dark-border rounded-lg text-white placeholder-text-secondary focus:outline-none focus:border-primary mb-4"
+              />
+              <div className="flex justify-end gap-3">
+                <button
+                  type="submit"
+                  disabled={!token || verifying}
+                  className="px-4 py-2 rounded-lg bg-primary text-black font-semibold hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {verifying ? 'Bezig…' : 'Verifiëren'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
