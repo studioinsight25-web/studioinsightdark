@@ -1,6 +1,5 @@
 import LeadMagnetForm from '@/components/LeadMagnetForm'
 import Footer from '@/components/Footer'
-import Link from 'next/link'
 
 export const metadata = {
   title: 'Download de gratis gids: 15 zichtbaarheid-acties zonder advertenties | Studio Insight',
@@ -22,21 +21,33 @@ const highlights = [
   }
 ]
 
-const productSpotlights = [
+const guideContent = [
   {
-    title: 'Contentkalender 90 dagen',
-    description: 'Plan je zichtbaarheid voor de komende drie maanden met bewezen formats en ritme.',
-    href: '/products'
+    title: 'Actieplanner per week',
+    description: 'Een kant-en-klaar schema voor de eerste 30 dagen, zodat je precies weet welke actie je wanneer uitvoert.'
   },
   {
-    title: 'E-book: Storytelling voor experts',
-    description: 'Verander je expertise in verhalen die onthouden en gedeeld worden.',
-    href: '/ebooks'
+    title: 'Content prompts en scripts',
+    description: 'Voor Instagram, LinkedIn en e-mail. Je vult jouw invalshoek in en kunt meteen posten of versturen.'
   },
   {
-    title: 'Live sessie: Zichtbaarheid Q&A',
-    description: 'Stel je vragen live en krijg direct advies voor jouw situatie.',
-    href: '/courses'
+    title: 'Mini-dashboard voor voortgang',
+    description: 'Meet je zichtbaarheid zonder ingewikkelde tools. Houd bij welke acties de meeste reacties opleveren.'
+  }
+]
+
+const nurtureMoments = [
+  {
+    title: 'Na inschrijving',
+    description: 'Bevestigingsmail + directe downloadlink. Geef extra context over hoe je de gids het best gebruikt en nodig uit om te reageren.'
+  },
+  {
+    title: '48 uur later',
+    description: 'Check-inmail met één vraag: “Welke actie heb je al getest?”. Deel een miniwins en verwijs naar je socials voor meer voorbeelden.'
+  },
+  {
+    title: 'Dag 5-7',
+    description: 'Introduceer een mini-aanbod of strategie call. Maak het concreet met een korte case en zet een duidelijke call-to-action.'
   }
 ]
 
@@ -125,56 +136,42 @@ export default function LeadMagnetPage() {
         </div>
       </section>
 
-      {/* Product spotlights */}
+      {/* Guide content */}
       <section className="py-20 border-t border-dark-border/60">
-        <div className="container mx-auto px-4 max-w-6xl">
+        <div className="container mx-auto px-4 max-w-5xl">
           <div className="mb-12 text-center space-y-4">
-            <h2 className="text-3xl md:text-4xl font-bold text-white">Meer manieren om zichtbaar te blijven</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-white">Dit vind je allemaal in de gids</h2>
             <p className="text-text-secondary max-w-2xl mx-auto">
-              Zet de energie van je nieuwe leads door naar producten die perfect aansluiten op de gids.
+              Geen theoretische tips, maar concrete bouwstenen waarmee je zichtbaar blijft en je expertise laat zien – zonder extra advertentiebudget.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {productSpotlights.map((spotlight) => (
-              <div key={spotlight.title} className="bg-dark-card border border-dark-border rounded-2xl p-6 flex flex-col space-y-6">
-                <div className="space-y-3">
-                  <h3 className="text-xl font-semibold text-white">{spotlight.title}</h3>
-                  <p className="text-text-secondary text-sm leading-relaxed">{spotlight.description}</p>
-                </div>
-                <Link
-                  href={spotlight.href}
-                  className="inline-flex items-center justify-center gap-2 text-primary font-semibold border border-primary/50 rounded-lg px-4 py-2 hover:bg-primary hover:text-black transition-colors"
-                >
-                  Ontdek meer
-                  <span aria-hidden>→</span>
-                </Link>
+            {guideContent.map((item) => (
+              <div key={item.title} className="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-3">
+                <h3 className="text-xl font-semibold text-white">{item.title}</h3>
+                <p className="text-text-secondary text-sm leading-relaxed">{item.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="py-20">
-        <div className="container mx-auto px-4 max-w-4xl space-y-8">
-          <div className="text-center space-y-4">
-            <h2 className="text-3xl md:text-4xl font-bold text-white">Veelgestelde vragen</h2>
-            <p className="text-text-secondary">Alles wat je wilt weten over de gids en opvolging.</p>
+      {/* Nurture tips */}
+      <section className="py-20 bg-gradient-to-b from-dark-section/40 via-transparent to-transparent">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <div className="mb-12 text-center space-y-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-white">Zo bouw je momentum met nieuwe leads</h2>
+            <p className="text-text-secondary max-w-2xl mx-auto">
+              Gebruik deze drie nurture-momenten om je expertise te verdiepen en warme leads stap voor stap naar een gesprek of aanbod te begeleiden.
+            </p>
           </div>
-
-          <div className="space-y-6">
-            <div className="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-3">
-              <h3 className="text-lg font-semibold text-white">Hoe ontvang ik de gids?</h3>
-              <p className="text-text-secondary text-sm">Na je inschrijving ontvang je een bevestigingsmail. Zodra je die bevestigt, sturen we direct de downloadlink en kun je aan de slag.</p>
-            </div>
-            <div className="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-3">
-              <h3 className="text-lg font-semibold text-white">Kan ik de opvolgemails aanpassen?</h3>
-              <p className="text-text-secondary text-sm">Ja, je kunt de templates inzetten in MailerLite, Beehiiv of je eigen e-mailtool. We leveren koppen, CTA’s en timing-suggesties zodat je ze eenvoudig personaliseert.</p>
-            </div>
-            <div className="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-3">
-              <h3 className="text-lg font-semibold text-white">Wat als ik al een lead magnet heb?</h3>
-              <p className="text-text-secondary text-sm">Gebruik de acties als upgrade voor je huidige magnet, of koppel de gids als bonus aan je bestaande aanbod. De templates werken ook zelfstandig.</p>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {nurtureMoments.map((moment) => (
+              <div key={moment.title} className="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-3">
+                <h3 className="text-xl font-semibold text-white">{moment.title}</h3>
+                <p className="text-text-secondary text-sm leading-relaxed">{moment.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
