@@ -144,25 +144,32 @@ export default function AdminLeadMagnetPage() {
     pending: brevoSubscribers.filter((s) => (s.status || '').toLowerCase() === 'pending').length
   }
 
-  const summaryCards = viewMode === 'local'
+  type Tone = 'primary' | 'green' | 'yellow'
+
+  const summaryCards: Array<{
+    icon: typeof BookOpen
+    label: string
+    value: number
+    tone: Tone
+  }> = viewMode === 'local'
     ? [
         {
           icon: BookOpen,
           label: 'Totaal leads (lokaal)',
           value: localStats.total,
-          tone: 'primary'
+          tone: 'primary' as Tone
         },
         {
           icon: CheckCircle,
           label: 'Bevestigd',
           value: localStats.confirmed,
-          tone: 'green'
+          tone: 'green' as Tone
         },
         {
           icon: Clock,
           label: 'In afwachting',
           value: localStats.pending,
-          tone: 'yellow'
+          tone: 'yellow' as Tone
         }
       ]
     : [
@@ -170,23 +177,23 @@ export default function AdminLeadMagnetPage() {
           icon: BookOpen,
           label: `Brevo lijst #${LEAD_MAGNET_LIST_ID}`,
           value: brevoStats.total,
-          tone: 'primary'
+          tone: 'primary' as Tone
         },
         {
           icon: CheckCircle,
           label: 'Status: confirmed',
           value: brevoStats.confirmed,
-          tone: 'green'
+          tone: 'green' as Tone
         },
         {
           icon: Clock,
           label: 'Status: pending',
           value: brevoStats.pending,
-          tone: 'yellow'
+          tone: 'yellow' as Tone
         }
       ]
 
-  const getToneClasses = (tone: 'primary' | 'green' | 'yellow') => {
+  const getToneClasses = (tone: Tone) => {
     switch (tone) {
       case 'green':
         return 'text-green-400'
