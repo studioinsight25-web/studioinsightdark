@@ -1,195 +1,51 @@
-import LeadMagnetForm from '@/components/LeadMagnetForm'
-import Footer from '@/components/Footer'
-
 export const metadata = {
   title: 'Download de gratis gids: 15 zichtbaarheid-acties zonder advertenties | Studio Insight',
   description: 'Ontvang een gratis gids met 15 zichtbaarheid-acties die je vandaag nog kunt implementeren. Inclusief opvolgsequentie, bonusresources en templates.'
 }
 
-const highlights = [
-  {
-    title: '15 zichtbaarheid-acties',
-    description: 'Concreet en toepasbaar. Iedere actie kun je in 30-45 minuten afronden, zonder advertentiebudget.'
-  },
-  {
-    title: 'Directe templates',
-    description: 'Format voor social posts, e-mails en stories zodat je niet vanaf een leeg scherm hoeft te starten.'
-  },
-  {
-    title: 'Mini-tracker',
-    description: 'Houd je voortgang bij en zie welke tactieken het snelst resultaat opleveren.'
-  }
-]
-
-const guideContent = [
-  {
-    title: 'Actieplanner per week',
-    description: 'Een kant-en-klaar schema voor de eerste 30 dagen, zodat je precies weet welke actie je wanneer uitvoert.'
-  },
-  {
-    title: 'Content prompts en scripts',
-    description: 'Voor Instagram, LinkedIn en e-mail. Je vult jouw invalshoek in en kunt meteen posten of versturen.'
-  },
-  {
-    title: 'Mini-dashboard voor voortgang',
-    description: 'Meet je zichtbaarheid zonder ingewikkelde tools. Houd bij welke acties de meeste reacties opleveren.'
-  }
-]
-
-const nurtureMoments = [
-  {
-    title: 'Na inschrijving',
-    description: 'Bevestigingsmail + directe downloadlink. Geef extra context over hoe je de gids het best gebruikt en nodig uit om te reageren.'
-  },
-  {
-    title: '48 uur later',
-    description: 'Check-inmail met één vraag: “Welke actie heb je al getest?”. Deel een miniwins en verwijs naar je socials voor meer voorbeelden.'
-  },
-  {
-    title: 'Dag 5-7',
-    description: 'Introduceer een mini-aanbod of strategie call. Maak het concreet met een korte case en zet een duidelijke call-to-action.'
-  }
+const visibilityTips = [
+  'Start elke week met een zichtbaarheidssprint van twee uur waarin je content creëert voor de komende dagen.',
+  'Publiceer minimaal drie social posts per week met een duidelijke expertisehoek en uitnodiging tot reactie.',
+  'Gebruik stories of reels om één behind-the-scenes moment te delen waarmee volgers de mens achter je merk leren kennen.',
+  'Vraag iedere nieuwe volger om een korte introductie via DM en nodig ze uit voor een mini-call of resource.',
+  'Herwerk één lange vorm artikel of podcast per maand in meerdere snackable contentstukken om je bereik te vergroten.',
+  'Plan een wekelijks live-moment (Instagram, LinkedIn of YouTube) waarin je één vraag van je doelgroep beantwoordt.',
+  'Maak een lijst van tien relevante communities of groepen en deel daar elke week waardevolle inzichten zonder salespitch.',
+  'Voeg onder iedere post een mini-CTA toe naar je lead magnet, wachtlijst of kennismakingsgesprek.',
+  'Stuur elke week een korte nieuwsbrief met één tip, één reflectievraag en één link naar een relevant aanbod.',
+  'Gebruik testimonials of mini-cases in je content om concreet resultaat zichtbaar te maken.',
+  'Zoek één partner per maand voor een gezamenlijke live of guest post om elkaars bereik te versterken.',
+  'Plan één kwartaalcampagne rond een specifiek thema en bouw daar al je zichtbaarheidstaken omheen.',
+  'Meet iedere week drie kerncijfers: nieuwe leads, aantal gesprekken en afspraken die uit je zichtbaarheid komen.',
+  'Optimaliseer je LinkedIn- of Instagram-profiel zodat bezoekers direct snappen wat je aanbiedt en hoe ze contact opnemen.',
+  'Voeg een herinneringstelling aan je agenda toe om maandelijks je resultaten te evalueren en de volgende zichtbaarheid-acties te kiezen.'
 ]
 
 export default function LeadMagnetPage() {
   return (
-    <main className="min-h-screen bg-background">
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent" />
-        <div className="relative container mx-auto px-4 py-24 lg:py-32 max-w-6xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div className="space-y-6">
-              <span className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold border border-primary/20">
-                Nieuw • Gratis gids
-              </span>
-              <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight">
-                Download de gratis gids: 15 zichtbaarheid-acties zonder advertenties
-              </h1>
-              <p className="text-lg text-text-secondary max-w-xl">
-                Ontvang 15 praktische acties waarmee je vandaag al nieuwe leads aantrekt. Geen marketing-jargon, maar concrete scripts, visuals en opvolgtemplates die in de praktijk werken.
-              </p>
-              <ul className="space-y-3 text-text-secondary">
-                <li className="flex items-start gap-3">
-                  <span className="text-primary mt-1">✓</span>
-                  <span>Perfect voor coaches, creatieve studio’s en consultants die constant zichtbaar willen zijn.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary mt-1">✓</span>
-                  <span>Inclusief opvolgsequentie: bevestigingsmail, check-in na 2 dagen en tripwire-aanbieding.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary mt-1">✓</span>
-                  <span>Bonus: checklist voor socials + e-mail templates om meteen te testen.</span>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <LeadMagnetForm />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Highlighted value */}
-      <section className="py-20 border-t border-dark-border/60">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {highlights.map((item) => (
-              <div key={item.title} className="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-3">
-                <h3 className="text-xl font-semibold text-white">{item.title}</h3>
-                <p className="text-text-secondary text-sm leading-relaxed">{item.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Flow timeline */}
-      <section className="py-20 bg-gradient-to-b from-dark-section/40 via-transparent to-transparent">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="mb-12 text-center space-y-4">
-            <h2 className="text-3xl md:text-4xl font-bold text-white">Zo haal je alles uit de gids</h2>
-            <p className="text-text-secondary max-w-2xl mx-auto">
-              Gebruik de opvolgflow om nieuwe leads te verwarmen en door te stromen naar je producten en diensten.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-4">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold">1</span>
-              <h3 className="text-xl font-semibold text-white">Automatische levering</h3>
-              <p className="text-text-secondary text-sm">Bevestigingsmail met directe downloadlink zodat nieuwe contacten meteen waarde ervaren.</p>
-            </div>
-            <div className="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-4">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold">2</span>
-              <h3 className="text-xl font-semibold text-white">Check-in na 2 dagen</h3>
-              <p className="text-text-secondary text-sm">Vraag welke actie ze al geprobeerd hebben, nodig uit om een resultaat te delen en bied extra tips.</p>
-            </div>
-            <div className="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-4">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold">3</span>
-              <h3 className="text-xl font-semibold text-white">Introductie tripwire</h3>
-              <p className="text-text-secondary text-sm">Promoot een laagdrempelige aanbieding (cheatsheet + templates) met een tijdgebonden bonus.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Guide content */}
-      <section className="py-20 border-t border-dark-border/60">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="mb-12 text-center space-y-4">
-            <h2 className="text-3xl md:text-4xl font-bold text-white">Dit vind je allemaal in de gids</h2>
-            <p className="text-text-secondary max-w-2xl mx-auto">
-              Geen theoretische tips, maar concrete bouwstenen waarmee je zichtbaar blijft en je expertise laat zien – zonder extra advertentiebudget.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {guideContent.map((item) => (
-              <div key={item.title} className="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-3">
-                <h3 className="text-xl font-semibold text-white">{item.title}</h3>
-                <p className="text-text-secondary text-sm leading-relaxed">{item.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Nurture tips */}
-      <section className="py-20 bg-gradient-to-b from-dark-section/40 via-transparent to-transparent">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="mb-12 text-center space-y-4">
-            <h2 className="text-3xl md:text-4xl font-bold text-white">Zo bouw je momentum met nieuwe leads</h2>
-            <p className="text-text-secondary max-w-2xl mx-auto">
-              Gebruik deze drie nurture-momenten om je expertise te verdiepen en warme leads stap voor stap naar een gesprek of aanbod te begeleiden.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {nurtureMoments.map((moment) => (
-              <div key={moment.title} className="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-3">
-                <h3 className="text-xl font-semibold text-white">{moment.title}</h3>
-                <p className="text-text-secondary text-sm leading-relaxed">{moment.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="py-24 bg-gradient-to-br from-primary/15 via-transparent to-transparent">
-        <div className="container mx-auto px-4 max-w-4xl text-center space-y-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-white">Ben je klaar voor constante zichtbaarheid?</h2>
-          <p className="text-text-secondary text-lg max-w-2xl mx-auto">
-            Sluit je aan bij honderden ondernemers die zichtbaar blijven zonder advertenties. Download de gids en start vandaag met acties die werken.
+    <main className="min-h-screen bg-background py-24">
+      <div className="container mx-auto px-4 max-w-4xl space-y-10">
+        <header className="space-y-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight">
+            15 zichtbaarheid-acties uit onze gratis gids
+          </h1>
+          <p className="text-lg text-text-secondary">
+            Deze gids helpt creatieve ondernemers, coaches en consultants om zonder advertenties zichtbaar te blijven. Elke tip is direct toepasbaar en ontworpen om nieuwe gesprekken, leads en klanten op te leveren.
           </p>
-          <div className="max-w-xl mx-auto">
-            <LeadMagnetForm />
-          </div>
-        </div>
-      </section>
+        </header>
 
-      <Footer />
+        <section className="space-y-6">
+          <p className="text-text-secondary">
+            Hieronder vind je de volledige lijst met 15 acties. Print ze uit, plan ze in en herhaal wat voor jou werkt. Zo bouw je stap voor stap een consistente zichtbaarheid rondom jouw expertise.
+          </p>
+
+          <ol className="space-y-5 list-decimal list-inside text-text-secondary">
+            {visibilityTips.map((tip, index) => (
+              <li key={index} className="leading-relaxed">{tip}</li>
+            ))}
+          </ol>
+        </section>
+      </div>
     </main>
   )
 }
