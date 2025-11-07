@@ -23,7 +23,7 @@ export default function LeadMagnetForm() {
       const response = await fetch('/api/newsletter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name: name || undefined, consent: true })
+        body: JSON.stringify({ email, name: name || undefined, consent: true, source: 'lead-magnet' })
       })
 
       const data = await response.json().catch(() => ({}))

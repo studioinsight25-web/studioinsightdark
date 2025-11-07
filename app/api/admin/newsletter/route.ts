@@ -7,14 +7,26 @@ import { randomBytes } from 'crypto'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status') // 'all', 'pending', 'confirmed'
+    const status = searchParams.get('status')
+    const source = searchParams.get('source')
 
     let query = 'SELECT * FROM "newsletterSubscriptions"'
     const params: any[] = []
 
+    const clauses: string[] = []
+
     if (status && status !== 'all') {
-      query += ' WHERE status = $1'
+      clauses.push(`status = $${params.length + 1}`)
       params.push(status)
+    }
+
+    if (source && source !== 'all') {
+      clauses.push(`"source" = $${params.length + 1}`)
+      params.push(source)
+    }
+
+    if (clauses.length > 0) {
+      query += ' WHERE ' + clauses.join(' AND ')
     }
 
     query += ' ORDER BY "createdAt" DESC'
@@ -28,6 +40,7 @@ export async function GET(request: NextRequest) {
       consent: sub.consent,
       status: sub.status,
       confirmedAt: sub.confirmedAt,
+      source: sub.source,
       createdAt: sub.createdAt,
       updatedAt: sub.updatedAt
     })))
@@ -43,13 +56,16 @@ export async function GET(request: NextRequest) {
 // Create a new newsletter subscriber (admin)
 export async function POST(request: NextRequest) {
   try {
-    const { email, name, status = 'confirmed', skipConfirmation = true } = await request.json()
+    const { email, name, status = 'confirmed', skipConfirmation = true, source = 'admin' } = await request.json()
 
     if (!email || typeof email !== 'string') {
       return NextResponse.json({ error: 'E-mail is verplicht' }, { status: 400 })
     }
 
     const normalizedEmail = email.trim().toLowerCase()
+    const normalizedSource = typeof source === 'string' && source.trim().length > 0
+      ? source.trim().toLowerCase()
+      : 'admin'
     const confirmationToken = randomBytes(32).toString('hex')
 
     // Check if subscription exists
@@ -63,11 +79,12 @@ export async function POST(request: NextRequest) {
     if (existing.length > 0) {
       // Update existing subscription
       const result = await DatabaseService.query(
-        'UPDATE "newsletterSubscriptions" SET name = $1, status = $2, "confirmedAt" = $3, "updatedAt" = NOW() WHERE email = $4 RETURNING *',
+        'UPDATE "newsletterSubscriptions" SET name = $1, status = $2, "confirmedAt" = $3, "source" = $4, "updatedAt" = NOW() WHERE email = $5 RETURNING *',
         [
           name || null,
           status,
           skipConfirmation && status === 'confirmed' ? new Date().toISOString() : null,
+          normalizedSource,
           normalizedEmail
         ]
       )
@@ -76,13 +93,14 @@ export async function POST(request: NextRequest) {
       // Create new subscription
       const id = `newsletter-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       const result = await DatabaseService.query(
-        'INSERT INTO "newsletterSubscriptions" (id, email, name, consent, status, "confirmationToken", "confirmedAt", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW()) RETURNING *',
+        'INSERT INTO "newsletterSubscriptions" (id, email, name, consent, status, "source", "confirmationToken", "confirmedAt", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *',
         [
           id,
           normalizedEmail,
           name || null,
           true,
           status,
+          normalizedSource,
           confirmationToken,
           skipConfirmation && status === 'confirmed' ? new Date().toISOString() : null
         ]
@@ -106,6 +124,7 @@ export async function POST(request: NextRequest) {
       consent: subscription.consent,
       status: subscription.status,
       confirmedAt: subscription.confirmedAt,
+      source: subscription.source,
       createdAt: subscription.createdAt,
       updatedAt: subscription.updatedAt
     }, { status: 201 })

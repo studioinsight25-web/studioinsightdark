@@ -9,7 +9,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
-    const { email, name, status } = await request.json()
+    const { email, name, status, source } = await request.json()
 
     const updates: string[] = []
     const values: any[] = []
@@ -35,6 +35,11 @@ export async function PUT(
       } else if (status === 'pending') {
         updates.push(`"confirmedAt" = NULL`)
       }
+    }
+
+    if (source !== undefined) {
+      updates.push(`"source" = $${paramCount++}`)
+      values.push(source)
     }
 
     if (updates.length === 0) {
@@ -70,6 +75,7 @@ export async function PUT(
       consent: subscription.consent,
       status: subscription.status,
       confirmedAt: subscription.confirmedAt,
+      source: subscription.source,
       createdAt: subscription.createdAt,
       updatedAt: subscription.updatedAt
     })

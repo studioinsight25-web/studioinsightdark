@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS "newsletterSubscriptions" (
   name VARCHAR(255),
   consent BOOLEAN DEFAULT true,
   status VARCHAR(50) DEFAULT 'pending',
+  "source" VARCHAR(100),
   "confirmationToken" VARCHAR(255) UNIQUE,
   "confirmedAt" TIMESTAMP,
   "createdAt" TIMESTAMP DEFAULT NOW(),
@@ -16,4 +17,6 @@ CREATE TABLE IF NOT EXISTS "newsletterSubscriptions" (
 -- Create index for better performance
 CREATE INDEX IF NOT EXISTS idx_newsletter_email ON "newsletterSubscriptions"(email);
 CREATE INDEX IF NOT EXISTS idx_newsletter_status ON "newsletterSubscriptions"(status);
+CREATE INDEX IF NOT EXISTS idx_newsletter_source ON "newsletterSubscriptions"("source");
+
 

@@ -30,6 +30,41 @@ export async function GET(request: NextRequest) {
         previousStartDate = new Date(startDate.getTime() - 7 * 24 * 60 * 60 * 1000)
     }
 
+    // Helper to normalise source labels
+    const normalizeSource = (source: string | null | undefined) => {
+      const value = (source || '').toLowerCase()
+      switch (value) {
+        case 'lead-magnet':
+        case 'lead magnet':
+          return 'lead-magnet'
+        case 'newsletter':
+        case 'email':
+          return 'newsletter'
+        case 'admin':
+        case 'manual':
+          return 'admin'
+        case 'checkout':
+          return 'checkout'
+        default:
+          return 'unknown'
+      }
+    }
+
+    const formatSourceLabel = (source: string) => {
+      switch (source) {
+        case 'lead-magnet':
+          return 'Lead magnet'
+        case 'newsletter':
+          return 'Nieuwsbrief'
+        case 'admin':
+          return 'Handmatig toegevoegd'
+        case 'checkout':
+          return 'Checkout'
+        default:
+          return 'Onbekend'
+      }
+    }
+
     // Get paid orders in time range
     const paidOrdersResult = await DatabaseService.query(
       `SELECT 
@@ -50,6 +85,20 @@ export async function GET(request: NextRequest) {
       WHERE o.status = 'PAID' 
         AND o.created_at >= $1
       ORDER BY o.created_at DESC`,
+      [startDate.toISOString()]
+    )
+
+    const newUsersResult = await DatabaseService.query(
+      `SELECT email, created_at 
+       FROM users
+       WHERE created_at >= $1`,
+      [startDate.toISOString()]
+    )
+
+    const newsletterSubscriptionsResult = await DatabaseService.query(
+      `SELECT email, COALESCE("source", 'unknown') AS source, "createdAt"
+       FROM "newsletterSubscriptions"
+       WHERE "createdAt" >= $1`,
       [startDate.toISOString()]
     )
 
@@ -84,6 +133,22 @@ export async function GET(request: NextRequest) {
       [previousStartDate.toISOString(), previousEndDate.toISOString()]
     )
 
+    const previousNewUsersResult = await DatabaseService.query(
+      `SELECT email, created_at 
+       FROM users
+       WHERE created_at >= $1
+         AND created_at < $2`,
+      [previousStartDate.toISOString(), previousEndDate.toISOString()]
+    )
+
+    const previousNewsletterSubscriptionsResult = await DatabaseService.query(
+      `SELECT email, COALESCE("source", 'unknown') AS source, "createdAt"
+       FROM "newsletterSubscriptions"
+       WHERE "createdAt" >= $1
+         AND "createdAt" < $2`,
+      [previousStartDate.toISOString(), previousEndDate.toISOString()]
+    )
+
     const previousRevenue = previousPaidOrdersResult.reduce((sum: number, order: any) => {
       return sum + parseFloat(order.total_amount || '0')
     }, 0)
@@ -95,9 +160,16 @@ export async function GET(request: NextRequest) {
     const previousTotalOrders = previousAllOrdersResult.length
     const previousConversionRate = previousTotalOrders > 0 ? (previousPaidOrdersCount / previousTotalOrders) * 100 : 0
 
-    const previousUniqueBuyers = new Set(previousPaidOrdersResult.map((o: any) => o.user_email).filter(Boolean))
-    const previousUniqueVisitors = previousUniqueBuyers.size || Math.floor((previousTotalOrders * 15) / 3.8)
-    const previousPageViews = previousTotalOrders * 15
+    const previousUniqueVisitorEmails = new Set(
+      [
+        ...previousPaidOrdersResult.map((o: any) => o.user_email).filter(Boolean),
+        ...previousNewUsersResult.map((u: any) => u.email).filter(Boolean),
+        ...previousNewsletterSubscriptionsResult.map((n: any) => n.email).filter(Boolean)
+      ]
+    )
+
+    const previousUniqueVisitors = previousUniqueVisitorEmails.size
+    const previousPageViews = Math.max(previousTotalOrders * 15, previousUniqueVisitors * 3)
 
     // Get all products with sales data
     const productsResult = await DatabaseService.query(
@@ -129,7 +201,13 @@ export async function GET(request: NextRequest) {
     const conversionRate = totalOrders > 0 ? (paidOrdersCount / totalOrders) * 100 : 0
 
     // Get unique users who made purchases
-    const uniqueBuyers = new Set(paidOrdersResult.map((o: any) => o.user_email).filter(Boolean))
+    const visitorEmails = new Set(
+      [
+        ...paidOrdersResult.map((o: any) => o.user_email).filter(Boolean),
+        ...newUsersResult.map((u: any) => u.email).filter(Boolean),
+        ...newsletterSubscriptionsResult.map((n: any) => n.email).filter(Boolean)
+      ]
+    )
     
     // Get top products (by sales)
     const topProducts = productsResult
@@ -172,25 +250,71 @@ export async function GET(request: NextRequest) {
 
     // Top pages - we'll use static data since we don't track page views in database
     // In the future, you could add a page_views table
-    const topPages = [
-      { page: '/cursussen', views: 0 },
-      { page: '/ebooks', views: 0 },
-      { page: '/reviews', views: 0 },
-      { page: '/over-ons', views: 0 },
-      { page: '/contact', views: 0 }
-    ]
+    const pageViewCounts = new Map<string, number>()
+    const incrementPageView = (page: string, amount = 1) => {
+      const current = pageViewCounts.get(page) || 0
+      pageViewCounts.set(page, current + amount)
+    }
 
-    // Traffic sources - static for now (could be enhanced with tracking)
-    const totalUniqueVisitors = uniqueBuyers.size
-    const trafficSources = [
-      { source: 'Direct', visitors: Math.floor(totalUniqueVisitors * 0.37), percentage: 37 },
-      { source: 'Google Search', visitors: Math.floor(totalUniqueVisitors * 0.30), percentage: 30 },
-      { source: 'Social Media', visitors: Math.floor(totalUniqueVisitors * 0.20), percentage: 20 },
-      { source: 'Email', visitors: Math.floor(totalUniqueVisitors * 0.13), percentage: 13 }
-    ]
+    // Estimate page views based on newsletter sources and orders
+    if (newsletterSubscriptionsResult.length > 0) {
+      const leadMagnetCount = newsletterSubscriptionsResult.filter((n: any) => normalizeSource(n.source) === 'lead-magnet').length
+      const newsletterCount = newsletterSubscriptionsResult.filter((n: any) => normalizeSource(n.source) === 'newsletter').length
+      if (leadMagnetCount > 0) incrementPageView('/lead-magnet', leadMagnetCount)
+      if (newsletterCount > 0) incrementPageView('/', newsletterCount)
+    }
+
+    if (totalOrders > 0) {
+      incrementPageView('/checkout', totalOrders)
+      incrementPageView('/cart', Math.max(Math.round(totalOrders * 1.5), totalOrders))
+    }
+
+    const topPages = Array.from(pageViewCounts.entries())
+      .map(([page, views]) => ({ page, views }))
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 5)
+
+    if (topPages.length === 0) {
+      topPages.push(
+        { page: '/lead-magnet', views: 0 },
+        { page: '/cursussen', views: 0 },
+        { page: '/ebooks', views: 0 }
+      )
+    }
+
+    // Traffic sources based on recorded newsletter sources and orders
+    const trafficSourceCounts = new Map<string, number>()
+    newsletterSubscriptionsResult.forEach((subscriber: any) => {
+      const key = normalizeSource(subscriber.source)
+      trafficSourceCounts.set(key, (trafficSourceCounts.get(key) || 0) + 1)
+    })
+
+    if (totalOrders > 0) {
+      trafficSourceCounts.set('checkout', (trafficSourceCounts.get('checkout') || 0) + totalOrders)
+    }
+
+    const totalTrafficVisitors = Array.from(trafficSourceCounts.values()).reduce((sum, value) => sum + value, 0)
+
+    let trafficSources
+    if (totalTrafficVisitors > 0) {
+      trafficSources = Array.from(trafficSourceCounts.entries())
+        .map(([source, visitors]) => ({
+          source: formatSourceLabel(source),
+          visitors,
+          percentage: Math.max(1, Math.round((visitors / totalTrafficVisitors) * 100))
+        }))
+        .sort((a, b) => b.visitors - a.visitors)
+    } else {
+      trafficSources = [
+        { source: 'Direct', visitors: 0, percentage: 0 },
+        { source: 'Google Search', visitors: 0, percentage: 0 },
+        { source: 'Social Media', visitors: 0, percentage: 0 }
+      ]
+    }
 
     // Calculate page views (estimated based on orders and products)
-    const estimatedPageViews = totalOrders * 15 // Rough estimate
+    const newsletterPageViews = newsletterSubscriptionsResult.length * 2
+    const estimatedPageViews = Math.max(totalOrders * 15, newsletterPageViews, visitorEmails.size * 3)
     
     // Calculate percentage changes
     const calculatePercentageChange = (current: number, previous: number): number => {
@@ -199,7 +323,7 @@ export async function GET(request: NextRequest) {
     }
 
     const pageViewsChange = calculatePercentageChange(estimatedPageViews, previousPageViews)
-    const uniqueVisitorsCount = uniqueBuyers.size || Math.floor(estimatedPageViews / 3.8)
+    const uniqueVisitorsCount = visitorEmails.size || Math.floor(estimatedPageViews / 3.8)
     const uniqueVisitorsChange = calculatePercentageChange(uniqueVisitorsCount, previousUniqueVisitors)
     const conversionRateChange = calculatePercentageChange(conversionRate, previousConversionRate)
     const revenueChange = calculatePercentageChange(totalRevenue, previousRevenue)

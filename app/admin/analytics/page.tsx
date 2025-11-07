@@ -52,6 +52,7 @@ export default function AdminAnalytics() {
   const [timeRange, setTimeRange] = useState('7d')
   const [gaConnected, setGaConnected] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const hasTrafficData = analyticsData?.trafficSources?.some((source) => source.visitors > 0)
 
   useEffect(() => {
     loadAnalyticsData()
@@ -298,30 +299,39 @@ export default function AdminAnalytics() {
         {/* Traffic Sources */}
         <div className="bg-dark-card rounded-lg p-6 border border-dark-border">
           <h3 className="text-lg font-semibold text-white mb-4">Verkeersbronnen</h3>
-          <div className="space-y-4">
-            {analyticsData?.trafficSources.map((source) => (
-              <div key={source.source} className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <MousePointer className="w-4 h-4 text-text-secondary mr-3" />
-                  <span className="text-white">{source.source}</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-32 bg-dark-section rounded-full h-2">
-                    <div 
-                      className="bg-primary h-2 rounded-full" 
-                      style={{ width: `${source.percentage}%` }}
-                    ></div>
+          {hasTrafficData ? (
+            <div className="space-y-4">
+              {analyticsData?.trafficSources.map((source) => (
+                <div key={source.source} className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <MousePointer className="w-4 h-4 text-text-secondary mr-3" />
+                    <span className="text-white">{source.source}</span>
                   </div>
-                  <span className="text-text-secondary w-16 text-right">
-                    {source.percentage}%
-                  </span>
-                  <span className="text-text-secondary w-20 text-right">
-                    {source.visitors.toLocaleString()}
-                  </span>
+                  <div className="flex items-center gap-4">
+                    <div className="w-32 bg-dark-section rounded-full h-2">
+                      <div 
+                        className="bg-primary h-2 rounded-full" 
+                        style={{ width: `${Math.min(100, source.percentage)}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-text-secondary w-16 text-right">
+                      {source.percentage}%
+                    </span>
+                    <span className="text-text-secondary w-20 text-right">
+                      {source.visitors.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-yellow-900/10 border border-yellow-500/30 rounded-lg p-4 text-yellow-200 text-sm">
+              <p className="font-medium mb-2">Nog geen verkeersdata voor deze periode.</p>
+              <p>
+                Koppel Google Analytics (NEXT_PUBLIC_GA_ID) of verzamel leads via de gratis gids om verkeersbronnen automatisch te vullen.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Recent Activity */}

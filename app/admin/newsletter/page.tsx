@@ -24,6 +24,7 @@ interface NewsletterSubscriber {
   consent: boolean
   status: 'pending' | 'confirmed'
   confirmedAt: string | null
+  source?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -34,6 +35,7 @@ export default function AdminNewsletter() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
+  const [sourceFilter, setSourceFilter] = useState('all')
   const [showAddModal, setShowAddModal] = useState(false)
   const [selectedSubscribers, setSelectedSubscribers] = useState<string[]>([])
 
@@ -49,8 +51,16 @@ export default function AdminNewsletter() {
 
   const loadSubscribers = async () => {
     try {
-      const statusParam = filterStatus === 'all' ? '' : `?status=${filterStatus}`
-      const response = await fetch(`/api/admin/newsletter${statusParam}`)
+      setLoading(true)
+      const params = new URLSearchParams()
+      if (filterStatus !== 'all') {
+        params.append('status', filterStatus)
+      }
+      if (sourceFilter !== 'all') {
+        params.append('source', sourceFilter)
+      }
+      const query = params.toString()
+      const response = await fetch(`/api/admin/newsletter${query ? `?${query}` : ''}`)
       if (response.ok) {
         const data = await response.json()
         setSubscribers(data)
@@ -66,14 +76,15 @@ export default function AdminNewsletter() {
 
   useEffect(() => {
     loadSubscribers()
-  }, [filterStatus])
+  }, [filterStatus, sourceFilter])
 
   const filteredSubscribers = subscribers.filter(sub => {
     const matchesSearch = sub.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (sub.name && sub.name.toLowerCase().includes(searchTerm.toLowerCase()))
     const matchesStatus = filterStatus === 'all' || sub.status === filterStatus
+    const matchesSource = sourceFilter === 'all' || (sub.source || 'unknown') === sourceFilter
     
-    return matchesSearch && matchesStatus
+    return matchesSearch && matchesStatus && matchesSource
   })
 
   const handleAddSubscriber = async (e: React.FormEvent) => {
@@ -163,7 +174,8 @@ export default function AdminNewsletter() {
   const stats = {
     total: subscribers.length,
     confirmed: subscribers.filter(s => s.status === 'confirmed').length,
-    pending: subscribers.filter(s => s.status === 'pending').length
+    pending: subscribers.filter(s => s.status === 'pending').length,
+    leadMagnet: subscribers.filter(s => (s.source || '') === 'lead-magnet').length
   }
 
   if (loading) {
@@ -200,7 +212,7 @@ export default function AdminNewsletter() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-dark-card rounded-lg p-4 border border-dark-border">
             <div className="flex items-center gap-3">
               <Mail className="w-8 h-8 text-primary" />
@@ -225,6 +237,15 @@ export default function AdminNewsletter() {
               <div>
                 <p className="text-text-secondary text-sm">In Afwachting</p>
                 <p className="text-xl font-bold text-white">{stats.pending}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-dark-card rounded-lg p-4 border border-dark-border">
+            <div className="flex items-center gap-3">
+              <Mail className="w-8 h-8 text-primary" />
+              <div>
+                <p className="text-text-secondary text-sm">Gratis gids leads</p>
+                <p className="text-xl font-bold text-white">{stats.leadMagnet}</p>
               </div>
             </div>
           </div>
@@ -254,6 +275,16 @@ export default function AdminNewsletter() {
                 <option value="all">Alle Status</option>
                 <option value="confirmed">Bevestigd</option>
                 <option value="pending">In Afwachting</option>
+              </select>
+              <select
+                value={sourceFilter}
+                onChange={(e) => setSourceFilter(e.target.value)}
+                className="px-4 py-2 bg-dark-section border border-dark-border rounded-lg text-white focus:outline-none focus:border-primary"
+              >
+                <option value="all">Alle bronnen</option>
+                <option value="lead-magnet">Gratis gids</option>
+                <option value="newsletter">Nieuwsbrief</option>
+                <option value="admin">Handmatig toegevoegd</option>
               </select>
             </div>
           </div>
@@ -287,6 +318,9 @@ export default function AdminNewsletter() {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                     Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+                    Bron
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                     Aangemaakt
@@ -338,6 +372,9 @@ export default function AdminNewsletter() {
                           </>
                         )}
                       </button>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-text-secondary capitalize">{subscriber.source || 'onbekend'}</span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center">

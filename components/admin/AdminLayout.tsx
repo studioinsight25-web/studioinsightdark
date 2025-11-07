@@ -12,7 +12,8 @@ import {
   Menu,
   X,
   LogOut,
-  Mail
+  Mail,
+  BookOpen
 } from 'lucide-react'
 
 interface AdminLayoutProps {
@@ -28,6 +29,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Bestellingen', href: '/admin/orders', icon: ShoppingCart },
     { name: 'Gebruikers', href: '/admin/users', icon: Users },
     { name: 'Nieuwsbrief', href: '/admin/newsletter', icon: Mail },
+    { name: 'Gratis gids leads', href: '/admin/lead-magnet', icon: BookOpen },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Instellingen', href: '/admin/settings', icon: Settings },
   ]

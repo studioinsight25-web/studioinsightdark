@@ -5,13 +5,16 @@ import { randomBytes } from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, name, consent = true } = await request.json()
+    const { email, name, consent = true, source = 'newsletter' } = await request.json()
 
     if (!email || typeof email !== 'string') {
       return NextResponse.json({ error: 'E-mail is verplicht' }, { status: 400 })
     }
 
     const normalizedEmail = email.trim().toLowerCase()
+    const normalizedSource = typeof source === 'string' && source.trim().length > 0
+      ? source.trim().toLowerCase()
+      : 'newsletter'
     const confirmationToken = randomBytes(32).toString('hex')
 
     // Ensure table exists (create if it doesn't)
@@ -25,12 +28,15 @@ export async function POST(request: NextRequest) {
           status VARCHAR(50) DEFAULT 'pending',
           "confirmationToken" VARCHAR(255) UNIQUE,
           "confirmedAt" TIMESTAMP,
+          "source" VARCHAR(100),
           "createdAt" TIMESTAMP DEFAULT NOW(),
           "updatedAt" TIMESTAMP DEFAULT NOW()
         )
       `)
+      await DatabaseService.query(`ALTER TABLE "newsletterSubscriptions" ADD COLUMN IF NOT EXISTS "source" VARCHAR(100)`)
       await DatabaseService.query(`CREATE INDEX IF NOT EXISTS idx_newsletter_email ON "newsletterSubscriptions"(email)`)
       await DatabaseService.query(`CREATE INDEX IF NOT EXISTS idx_newsletter_status ON "newsletterSubscriptions"(status)`)
+      await DatabaseService.query(`CREATE INDEX IF NOT EXISTS idx_newsletter_source ON "newsletterSubscriptions"("source")`)
     } catch (tableError) {
       // Table might already exist or there's a real error - continue anyway
       console.log('Table creation check:', tableError)
@@ -46,16 +52,16 @@ export async function POST(request: NextRequest) {
     if (existing.length > 0) {
       // Update existing subscription
       const result = await DatabaseService.query(
-        'UPDATE "newsletterSubscriptions" SET name = $1, consent = $2, status = $3, "confirmationToken" = $4, "confirmedAt" = NULL, "updatedAt" = NOW() WHERE email = $5 RETURNING *',
-        [name || null, consent, 'pending', confirmationToken, normalizedEmail]
+        'UPDATE "newsletterSubscriptions" SET name = $1, consent = $2, status = $3, "source" = $4, "confirmationToken" = $5, "confirmedAt" = NULL, "updatedAt" = NOW() WHERE email = $6 RETURNING *',
+        [name || null, consent, 'pending', normalizedSource, confirmationToken, normalizedEmail]
       )
       subscription = result[0]
     } else {
       // Create new subscription
       const id = `newsletter-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       const result = await DatabaseService.query(
-        'INSERT INTO "newsletterSubscriptions" (id, email, name, consent, status, "confirmationToken", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) RETURNING *',
-        [id, normalizedEmail, name || null, consent, 'pending', confirmationToken]
+        'INSERT INTO "newsletterSubscriptions" (id, email, name, consent, status, "source", "confirmationToken", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW()) RETURNING *',
+        [id, normalizedEmail, name || null, consent, 'pending', normalizedSource, confirmationToken]
       )
       subscription = result[0]
     }
