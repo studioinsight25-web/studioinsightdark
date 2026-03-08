@@ -1,0 +1,89 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  hasAccess     Boolean   @default(false)
+  discordId     String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  purchases     Purchase[]
+  
+  @@map("users")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  content     String?  // JSON string with course content/chapters
+  price       Int      // Price in cents
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("courses")
+}
+
+model Ebook {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  fileUrl     String   // S3/R2 URL
+  price       Int      // Price in cents
+  coverUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("ebooks")
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  productName String
+  brand       String
+  rating      Int      // 1-5 stars
+  pros        String
+  cons        String
+  content     String
+  affiliateUrl String
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("reviews")
+}
+
+model Purchase {
+  id          String   @id @default(cuid())
+  userId      String
+  productId   String
+  productType String   // "course" or "ebook"
+  amount      Int      // Price paid in cents
+  stripeSessionId String?
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, productId])
+  @@map("purchases")
+}

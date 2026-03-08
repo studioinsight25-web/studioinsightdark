@@ -1,36 +1,118 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Studio Insight - Next.js 15 Setup
 
-## Getting Started
+Een schone Next.js 15 setup met App Router, Tailwind CSS en donker thema.
 
-First, run the development server:
+## 🚀 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Next.js 15** met App Router
+- **TypeScript** voor type safety
+- **Tailwind CSS** voor styling
+- **Donker thema** met Slate kleuren
+- **Inter font** via Google Fonts
+- **ESLint** voor code kwaliteit
+
+## 📁 Projectstructuur
+
+```
+src/
+├── app/
+│   ├── globals.css      # Global styles met Tailwind
+│   ├── layout.tsx       # Root layout met donker thema
+│   └── page.tsx         # Homepage
+├── components/
+│   └── Header.tsx       # Header component
+└── lib/
+    └── utils.ts         # Utility functions
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🎨 Design System
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### Kleuren
+- **Achtergrond**: `#0f172a` (slate-900)
+- **Tekst**: `#e2e8f0` (slate-100)
+- **Primair**: `#059669` (emerald-600)
+- **Accent**: `#22d3ee` (cyan-400)
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+### Component Classes
+- `.btn-primary` - Primaire groene knop
+- `.btn-secondary` - Secundaire grijze knop
+- `.input-field` - Input veld styling
+- `.card` - Card container
 
-## Learn More
+## 🛠 Development
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# Installeer dependencies
+npm install
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Start development server
+npm run dev
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+# Build voor productie
+npm run build
 
-## Deploy on Vercel
+# Start productie server
+npm run start
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Lint code
+npm run lint
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+## 📱 Responsive Design
+
+De setup is volledig responsive en werkt op:
+- Desktop (1024px+)
+- Tablet (768px - 1023px)
+- Mobile (320px - 767px)
+
+## 🔧 Customization
+
+### Kleuren aanpassen
+Bewerk `tailwind.config.ts` om de kleuren te wijzigen:
+
+```typescript
+theme: {
+  extend: {
+    colors: {
+      primary: {
+        // Jouw kleuren hier
+      }
+    }
+  }
+}
+```
+
+### Nieuwe componenten
+Maak nieuwe componenten in `src/components/`:
+
+```typescript
+// src/components/MyComponent.tsx
+export default function MyComponent() {
+  return (
+    <div className="card">
+      <h2>Mijn Component</h2>
+    </div>
+  );
+}
+```
+
+### Utility functions
+Voeg utility functions toe in `src/lib/utils.ts`:
+
+```typescript
+export function myUtilityFunction() {
+  // Jouw code hier
+}
+```
+
+## 🚀 Deployment
+
+Deze setup is klaar voor deployment op:
+- **Vercel** (aanbevolen)
+- **Netlify**
+- **Railway**
+- **Docker**
+
+## 📄 License
+
+MIT License - vrij te gebruiken voor persoonlijke en commerciële projecten.
