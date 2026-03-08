@@ -46,13 +46,13 @@ export default function RegisterPage() {
 
     // Client-side validation
     if (formData.password !== formData.confirmPassword) {
-      setError('Wachtwoorden komen niet overeen');
+      setError('Passwords do not match');
       setIsLoading(false);
       return;
     }
 
     if (formData.password.length < 8) {
-      setError('Wachtwoord moet minimaal 8 karakters lang zijn');
+      setError('Password must be at least 8 characters long');
       setIsLoading(false);
       return;
     }
@@ -74,11 +74,11 @@ export default function RegisterPage() {
       if (data.success) {
         router.push('/dashboard');
       } else {
-        setError(data.error || 'Er is een fout opgetreden bij het aanmaken van je account');
+        setError(data.error || 'An error occurred while creating your account');
       }
     } catch (error) {
       console.error('Registration error:', error);
-      setError('Er is een fout opgetreden bij het aanmaken van je account');
+      setError('An error occurred while creating your account');
     } finally {
       setIsLoading(false);
     }
@@ -97,12 +97,12 @@ export default function RegisterPage() {
             Maak een account aan
           </h2>
           <p className="mt-2 text-center text-sm text-dark-300">
-            Of{' '}
+            Or{' '}
             <Link
               href="/login"
               className="font-medium text-primary-400 hover:text-primary-300 transition-colors duration-200"
             >
-              log in op je bestaande account
+              log in to your existing account
             </Link>
           </p>
         </div>
@@ -111,7 +111,7 @@ export default function RegisterPage() {
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-dark-200">
-                E-mailadres
+                Email address
               </label>
               <input
                 id="email"
@@ -128,7 +128,7 @@ export default function RegisterPage() {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-dark-200">
-                Wachtwoord
+                Password
               </label>
               <input
                 id="password"
@@ -139,16 +139,16 @@ export default function RegisterPage() {
                 value={formData.password}
                 onChange={handleChange}
                 className="input-field mt-1"
-                placeholder="Minimaal 8 karakters"
+                placeholder="At least 8 characters"
               />
               <p className="mt-1 text-xs text-dark-400">
-                Wachtwoord moet minimaal 8 karakters bevatten met hoofdletters, kleine letters en cijfers
+                Password must contain at least 8 characters with uppercase, lowercase and numbers
               </p>
             </div>
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-dark-200">
-                Bevestig wachtwoord
+                Confirm password
               </label>
               <input
                 id="confirmPassword"
@@ -159,7 +159,7 @@ export default function RegisterPage() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 className="input-field mt-1"
-                placeholder="Herhaal je wachtwoord"
+                placeholder="Repeat your password"
               />
             </div>
           </div>
@@ -176,19 +176,19 @@ export default function RegisterPage() {
               disabled={isLoading}
               className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-800 text-white px-4 py-3 rounded-lg font-medium transition-colors duration-200"
             >
-              {isLoading ? 'Account aanmaken...' : 'Account aanmaken'}
+              {isLoading ? 'Creating account...' : 'Create account'}
             </button>
           </div>
 
           <div className="text-center">
             <p className="text-xs text-dark-400">
-              Door een account aan te maken, ga je akkoord met onze{' '}
+              By creating an account, you agree to our{' '}
               <Link href="/terms" className="text-primary-400 hover:text-primary-300">
-                voorwaarden
+                terms
               </Link>{' '}
-              en{' '}
+              and{' '}
               <Link href="/privacy" className="text-primary-400 hover:text-primary-300">
-                privacybeleid
+                privacy policy
               </Link>
               .
             </p>
@@ -199,7 +199,7 @@ export default function RegisterPage() {
               href="/"
               className="text-sm text-dark-400 hover:text-dark-300 transition-colors duration-200"
             >
-              ← Terug naar home
+              ← Back to home
             </Link>
           </div>
         </form>

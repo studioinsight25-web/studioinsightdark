@@ -40,9 +40,7 @@ export default function StickyHeader() {
 
   const navigation = [
     { name: 'Home', href: '/' },
-    { name: 'Cursussen', href: '/cursus' },
-    { name: 'E-books', href: '/e-books' },
-    { name: 'Reviews', href: '/reviews' },
+    { name: 'AI Trading Analytics', href: '/ai-trading-analytics' },
     { name: 'Community', href: '/community' },
     { name: 'Contact', href: '/contact' },
   ];
@@ -85,7 +83,7 @@ export default function StickyHeader() {
                   onClick={handleLogout}
                   className="text-dark-200 hover:text-red-400 transition-colors duration-200"
                 >
-                  Uitloggen
+                  Log out
                 </button>
               </div>
             ) : (
@@ -94,13 +92,13 @@ export default function StickyHeader() {
                   href="/login"
                   className="text-dark-200 hover:text-primary-400 transition-colors duration-200"
                 >
-                  Inloggen
+                  Log in
                 </Link>
                 <Link
                   href="/register"
                   className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
                 >
-                  Registreren
+                  Sign up
                 </Link>
               </div>
             )}
@@ -154,7 +152,7 @@ export default function StickyHeader() {
                       }}
                       className="block w-full text-left px-3 py-2 text-dark-200 hover:text-red-400 transition-colors duration-200"
                     >
-                      Uitloggen
+                      Log out
                     </button>
                   </>
                 ) : (
@@ -164,14 +162,14 @@ export default function StickyHeader() {
                       className="block px-3 py-2 text-dark-200 hover:text-primary-400 transition-colors duration-200"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      Inloggen
+                      Log in
                     </Link>
                     <Link
                       href="/register"
                       className="block px-3 py-2 text-dark-200 hover:text-primary-400 transition-colors duration-200"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      Registreren
+                      Sign up
                     </Link>
                   </>
                 )}

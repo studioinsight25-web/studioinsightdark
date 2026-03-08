@@ -38,7 +38,7 @@ export default function CommunityPage() {
       if (data.success) {
         setDiscordInvite(data);
       } else {
-        alert(data.error || 'Er is een fout opgetreden bij het genereren van de invite');
+        alert(data.error || 'An error occurred while generating the invite');
       }
     } catch (error) {
       console.error('Discord invite error:', error);
@@ -65,8 +65,8 @@ export default function CommunityPage() {
             Studio Insight Community
           </h1>
           <p className="text-xl text-dark-300 max-w-3xl mx-auto">
-            Exclusieve Discord community voor leden. Connect met andere ondernemers, 
-            stel vragen en deel je ervaringen.
+            Exclusive Discord community for members. Connect with other entrepreneurs, 
+            ask questions and share your experiences.
           </p>
         </div>
 
@@ -80,17 +80,17 @@ export default function CommunityPage() {
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-white mb-4">
-                Inloggen vereist
+                Login required
               </h2>
               <p className="text-dark-300 mb-6">
-                Je moet ingelogd zijn om toegang te krijgen tot de community.
+                You must be logged in to access the community.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/login" className="btn-primary">
-                  Inloggen
+                  Log in
                 </Link>
                 <Link href="/register" className="btn-secondary">
-                  Account Aanmaken
+                  Create account
                 </Link>
               </div>
             </div>
@@ -105,17 +105,17 @@ export default function CommunityPage() {
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-white mb-4">
-                Community toegang vereist
+                Community access required
               </h2>
               <p className="text-dark-300 mb-6">
-                Je hebt een cursus of e-book gekocht om toegang te krijgen tot de community.
+                Purchase AI Trading Analytics to get access to the community.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/cursus" className="btn-primary">
-                  Bekijk Cursussen
+                <Link href="/ai-trading-analytics" className="btn-primary">
+                  AI Trading Analytics
                 </Link>
-                <Link href="/e-books" className="btn-secondary">
-                  Bekijk E-books
+                <Link href="/contact" className="btn-secondary">
+                  Contact
                 </Link>
               </div>
             </div>
@@ -130,9 +130,9 @@ export default function CommunityPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
-                  <h3 className="text-lg font-semibold text-green-400">Welkom in de community!</h3>
+                  <h3 className="text-lg font-semibold text-green-400">Welcome to the community!</h3>
                   <p className="text-green-300 text-sm">
-                    Je hebt toegang tot de exclusieve Studio Insight Discord community.
+                    You have access to the exclusive Studio Insight Discord community.
                   </p>
                 </div>
               </div>
@@ -141,17 +141,17 @@ export default function CommunityPage() {
             {/* Discord Access */}
             <div className="bg-dark-800 rounded-lg p-8">
               <h2 className="text-2xl font-bold text-white mb-4">
-                Ga naar Discord
+                Go to Discord
               </h2>
               <p className="text-dark-300 mb-6">
-                Klik op de knop hieronder om een tijdelijke invite link te genereren voor de Discord community.
-                Deze link is 24 uur geldig.
+                Click the button below to generate a temporary invite link for the Discord community.
+                This link is valid for 24 hours.
               </p>
               
               {discordInvite ? (
                 <div className="space-y-4">
                   <div className="bg-dark-700 rounded-lg p-4">
-                    <p className="text-sm text-dark-300 mb-2">Je invite link:</p>
+                    <p className="text-sm text-dark-300 mb-2">Your invite link:</p>
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
@@ -163,11 +163,11 @@ export default function CommunityPage() {
                         onClick={() => navigator.clipboard.writeText(discordInvite.inviteUrl)}
                         className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded text-sm transition-colors duration-200"
                       >
-                        Kopiëren
+                        Copy
                       </button>
                     </div>
                     <p className="text-xs text-dark-400 mt-2">
-                      Verloopt op: {new Date(discordInvite.expiresAt).toLocaleString('nl-NL')}
+                      Expires: {new Date(discordInvite.expiresAt).toLocaleString('en-US')}
                     </p>
                   </div>
                   <button
@@ -183,7 +183,7 @@ export default function CommunityPage() {
                   disabled={isGeneratingInvite}
                   className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-800 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
                 >
-                  {isGeneratingInvite ? 'Genereren...' : 'Genereer Discord Invite'}
+                  {isGeneratingInvite ? 'Generating...' : 'Generate Discord Invite'}
                 </button>
               )}
             </div>
@@ -191,45 +191,45 @@ export default function CommunityPage() {
             {/* Community Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-dark-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-3">Wat kun je verwachten?</h3>
+                <h3 className="text-lg font-semibold text-white mb-3">What can you expect?</h3>
                 <ul className="space-y-2 text-dark-300 text-sm">
                   <li className="flex items-center">
                     <span className="w-2 h-2 bg-primary-500 rounded-full mr-3"></span>
-                    Directe toegang tot experts
+                    Direct access to experts
                   </li>
                   <li className="flex items-center">
                     <span className="w-2 h-2 bg-primary-500 rounded-full mr-3"></span>
-                    Exclusieve content en tips
+                    Exclusive content and tips
                   </li>
                   <li className="flex items-center">
                     <span className="w-2 h-2 bg-primary-500 rounded-full mr-3"></span>
-                    Netwerken met andere leden
+                    Network with other members
                   </li>
                   <li className="flex items-center">
                     <span className="w-2 h-2 bg-primary-500 rounded-full mr-3"></span>
-                    Vroege toegang tot nieuwe content
+                    Early access to new content
                   </li>
                 </ul>
               </div>
               
               <div className="bg-dark-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-3">Community regels</h3>
+                <h3 className="text-lg font-semibold text-white mb-3">Community rules</h3>
                 <ul className="space-y-2 text-dark-300 text-sm">
                   <li className="flex items-center">
                     <span className="w-2 h-2 bg-accent-500 rounded-full mr-3"></span>
-                    Respecteer andere leden
+                    Respect other members
                   </li>
                   <li className="flex items-center">
                     <span className="w-2 h-2 bg-accent-500 rounded-full mr-3"></span>
-                    Deel relevante content
+                    Share relevant content
                   </li>
                   <li className="flex items-center">
                     <span className="w-2 h-2 bg-accent-500 rounded-full mr-3"></span>
-                    Geen spam of promotie
+                    No spam or promotion
                   </li>
                   <li className="flex items-center">
                     <span className="w-2 h-2 bg-accent-500 rounded-full mr-3"></span>
-                    Help elkaar waar mogelijk
+                    Help each other when possible
                   </li>
                 </ul>
               </div>

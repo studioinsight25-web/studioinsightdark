@@ -57,11 +57,11 @@ export default function LoginPage() {
       if (data.success) {
         router.push('/dashboard');
       } else {
-        setError(data.error || 'Er is een fout opgetreden bij het inloggen');
+        setError(data.error || 'An error occurred while logging in');
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('Er is een fout opgetreden bij het inloggen');
+      setError('An error occurred while logging in');
     } finally {
       setIsLoading(false);
     }
@@ -77,15 +77,15 @@ export default function LoginPage() {
             </Link>
           </div>
           <h2 className="mt-6 text-center text-3xl font-bold text-white">
-            Inloggen op je account
+            Log in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-dark-300">
-            Of{' '}
+            Or{' '}
             <Link
               href="/register"
               className="font-medium text-primary-400 hover:text-primary-300 transition-colors duration-200"
             >
-              maak een nieuw account aan
+              create a new account
             </Link>
           </p>
         </div>
@@ -94,7 +94,7 @@ export default function LoginPage() {
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-dark-200">
-                E-mailadres
+                Email address
               </label>
               <input
                 id="email"
@@ -111,7 +111,7 @@ export default function LoginPage() {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-dark-200">
-                Wachtwoord
+                Password
               </label>
               <input
                 id="password"
@@ -122,7 +122,7 @@ export default function LoginPage() {
                 value={formData.password}
                 onChange={handleChange}
                 className="input-field mt-1"
-                placeholder="Je wachtwoord"
+                placeholder="Your password"
               />
             </div>
           </div>
@@ -139,7 +139,7 @@ export default function LoginPage() {
               disabled={isLoading}
               className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-800 text-white px-4 py-3 rounded-lg font-medium transition-colors duration-200"
             >
-              {isLoading ? 'Inloggen...' : 'Inloggen'}
+              {isLoading ? 'Logging in...' : 'Log in'}
             </button>
           </div>
 
@@ -148,7 +148,7 @@ export default function LoginPage() {
               href="/"
               className="text-sm text-dark-400 hover:text-dark-300 transition-colors duration-200"
             >
-              ← Terug naar home
+              ← Back to home
             </Link>
           </div>
         </form>

@@ -14,7 +14,7 @@ export async function GET() {
 
     if (!user.hasAccess) {
       return NextResponse.json(
-        { error: 'Access denied. You need to purchase a course or ebook first.' },
+        { error: 'Access denied. You need AI Trading Analytics access first.' },
         { status: 403 }
       );
     }

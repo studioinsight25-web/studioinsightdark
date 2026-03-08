@@ -9,19 +9,7 @@ export default function sitemap() {
       priority: 1,
     },
     {
-      url: `${baseUrl}/cursus`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/e-books`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/reviews`,
+      url: `${baseUrl}/ai-trading-analytics`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,

@@ -26,20 +26,20 @@ export default function ContactPage() {
 
     // Simple validation
     if (!formData.name || !formData.email || !formData.message) {
-      setMessage('Vul alle verplichte velden in');
+      setMessage('Please fill in all required fields');
       setIsSubmitting(false);
       return;
     }
 
     if (!formData.email.includes('@')) {
-      setMessage('Voer een geldig e-mailadres in');
+      setMessage('Please enter a valid email address');
       setIsSubmitting(false);
       return;
     }
 
     // Simulate form submission
     setTimeout(() => {
-      setMessage('Bedankt voor je bericht! We nemen zo snel mogelijk contact met je op.');
+      setMessage('Thank you for your message! We will get back to you as soon as possible.');
       setFormData({ name: '', email: '', subject: '', message: '' });
       setIsSubmitting(false);
     }, 1000);
@@ -54,7 +54,7 @@ export default function ContactPage() {
             Contact
           </h1>
           <p className="text-xl text-dark-300 max-w-3xl mx-auto">
-            Heb je vragen of opmerkingen? We horen graag van je!
+            Have questions or feedback? We&apos;d love to hear from you!
           </p>
         </div>
 
@@ -62,13 +62,13 @@ export default function ContactPage() {
           {/* Contact Form */}
           <div className="bg-dark-800 rounded-lg p-8">
             <h2 className="text-2xl font-bold text-white mb-6">
-              Stuur ons een bericht
+              Send us a message
             </h2>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-dark-200 mb-2">
-                  Naam *
+                  Name *
                 </label>
                 <input
                   type="text"
@@ -78,13 +78,13 @@ export default function ContactPage() {
                   onChange={handleChange}
                   required
                   className="input-field"
-                  placeholder="Je volledige naam"
+                  placeholder="Your full name"
                 />
               </div>
 
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-dark-200 mb-2">
-                  E-mailadres *
+                  Email address *
                 </label>
                 <input
                   type="email"
@@ -100,7 +100,7 @@ export default function ContactPage() {
 
               <div>
                 <label htmlFor="subject" className="block text-sm font-medium text-dark-200 mb-2">
-                  Onderwerp
+                  Subject
                 </label>
                 <input
                   type="text"
@@ -109,13 +109,13 @@ export default function ContactPage() {
                   value={formData.subject}
                   onChange={handleChange}
                   className="input-field"
-                  placeholder="Waar gaat je bericht over?"
+                  placeholder="What is your message about?"
                 />
               </div>
 
               <div>
                 <label htmlFor="message" className="block text-sm font-medium text-dark-200 mb-2">
-                  Bericht *
+                  Message *
                 </label>
                 <textarea
                   id="message"
@@ -125,7 +125,7 @@ export default function ContactPage() {
                   required
                   rows={6}
                   className="input-field resize-none"
-                  placeholder="Vertel ons hoe we je kunnen helpen..."
+                  placeholder="Tell us how we can help..."
                 />
               </div>
 
@@ -134,12 +134,12 @@ export default function ContactPage() {
                 disabled={isSubmitting}
                 className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-800 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
               >
-                {isSubmitting ? 'Verzenden...' : 'Verstuur bericht'}
+                {isSubmitting ? 'Sending...' : 'Send message'}
               </button>
 
               {message && (
                 <div className={`p-4 rounded-lg text-sm ${
-                  message.includes('Bedankt') 
+                  message.includes('Thank you') 
                     ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
                     : 'bg-red-500/10 text-red-400 border border-red-500/20'
                 }`}>
@@ -153,7 +153,7 @@ export default function ContactPage() {
           <div className="space-y-8">
             <div className="bg-dark-800 rounded-lg p-8">
               <h2 className="text-2xl font-bold text-white mb-6">
-                Contact informatie
+                Contact information
               </h2>
               
               <div className="space-y-6">
@@ -164,7 +164,7 @@ export default function ContactPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-white mb-1">E-mail</h3>
+                    <h3 className="text-lg font-semibold text-white mb-1">Email</h3>
                     <p className="text-dark-300">info@studioinsight.nl</p>
                   </div>
                 </div>
@@ -176,8 +176,8 @@ export default function ContactPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-white mb-1">Reactietijd</h3>
-                    <p className="text-dark-300">Binnen 24 uur op werkdagen</p>
+                    <h3 className="text-lg font-semibold text-white mb-1">Response time</h3>
+                    <p className="text-dark-300">Within 24 hours on business days</p>
                   </div>
                 </div>
 
@@ -189,7 +189,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-white mb-1">Discord Community</h3>
-                    <p className="text-dark-300">Voor leden met toegang</p>
+                    <p className="text-dark-300">For members with access</p>
                   </div>
                 </div>
               </div>
@@ -197,34 +197,25 @@ export default function ContactPage() {
 
             <div className="bg-dark-800 rounded-lg p-8">
               <h2 className="text-2xl font-bold text-white mb-6">
-                Veelgestelde vragen
+                Frequently asked questions
               </h2>
               
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">
-                    Hoe krijg ik toegang tot de Discord community?
+                    How do I get access to the Discord community?
                   </h3>
                   <p className="text-dark-300 text-sm">
-                    Na het kopen van een cursus of e-book krijg je automatisch toegang tot de exclusieve Discord community.
+                    After getting AI Trading Analytics access you automatically get access to the exclusive Discord community.
                   </p>
                 </div>
 
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">
-                    Kan ik mijn aankoop annuleren?
+                    How can I get AI Trading Analytics access?
                   </h3>
                   <p className="text-dark-300 text-sm">
-                    Ja, je hebt 14 dagen om je aankoop te annuleren. Neem contact met ons op voor meer informatie.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    Zijn de betalingen veilig?
-                  </h3>
-                  <p className="text-dark-300 text-sm">
-                    Ja, alle betalingen worden verwerkt via Stripe, een van de meest veilige betalingsproviders ter wereld.
+                    Visit our AI Trading Analytics page and contact us to discuss access options.
                   </p>
                 </div>
               </div>
